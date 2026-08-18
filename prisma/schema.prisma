@@ -1,0 +1,299 @@
+// Prisma Schema for Smart Apartment Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  MANAGER
+  RESIDENT
+}
+
+enum ApartmentStatus {
+  VACANT
+  OCCUPIED
+  UNDER_MAINTENANCE
+}
+
+enum ResidentStatus {
+  RESIDING
+  MOVED_OUT
+  TEMPORARY_ABSENT
+}
+
+enum ResidentRelationship {
+  OWNER
+  FAMILY
+  TENANT
+}
+
+enum ContractType {
+  SALE
+  RENT
+}
+
+enum ContractStatus {
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+enum FeeUnit {
+  PER_M2
+  PER_MONTH
+  PER_VEHICLE
+  PER_KWH
+  PER_M3
+  FIXED
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  VNPAY
+  MOMO
+  BANK_TRANSFER
+  CASH
+}
+
+enum TicketCategory {
+  ELECTRIC
+  WATER
+  ELEVATOR
+  SECURITY
+  CLEANLINESS
+  OTHER
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  NEW
+  PROCESSING
+  RESOLVED
+  REJECTED
+}
+
+// 1. User & Account Auth
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  fullName      String
+  phone         String?
+  avatarUrl     String?
+  role          Role           @default(RESIDENT)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  residentProfile   Resident?
+  sentNotifications Notification[]     @relation("SentNotifications")
+  readNotifications NotificationRead[]
+
+  @@map("users")
+}
+
+// 2. Apartment
+model Apartment {
+  id        String          @id @default(cuid())
+  code      String          @unique // e.g. "A-1001"
+  building  String // e.g. "Tòa A"
+  floor     Int // e.g. 10
+  bedrooms  Int             @default(2)
+  bathrooms Int             @default(2)
+  area      Float // m2
+  status    ApartmentStatus @default(VACANT)
+  note      String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  residents     Resident[]
+  contracts     Contract[]
+  invoices      Invoice[]
+  feedbacks     Feedback[]
+  notifications NotificationApartment[]
+
+  @@map("apartments")
+}
+
+// 3. Resident Profile
+model Resident {
+  id                  String               @id @default(cuid())
+  userId              String?              @unique
+  user                User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  apartmentId         String?
+  apartment           Apartment?           @relation(fields: [apartmentId], references: [id], onDelete: SetNull)
+  fullName            String
+  identityCard        String               @unique // CCCD / Passport
+  phone               String
+  email               String?
+  dateOfBirth         DateTime?
+  gender              String?
+  relationshipToOwner ResidentRelationship @default(OWNER)
+  status              ResidentStatus       @default(RESIDING)
+  avatarUrl           String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  contracts Contract[]
+  feedbacks Feedback[]
+
+  @@map("residents")
+}
+
+// 4. Contract
+model Contract {
+  id           String         @id @default(cuid())
+  contractCode String         @unique
+  apartmentId  String
+  apartment    Apartment      @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  residentId   String
+  resident     Resident       @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  type         ContractType   @default(RENT)
+  startDate    DateTime
+  endDate      DateTime
+  monthlyRent  Float?
+  deposit      Float?
+  fileUrl      String?
+  status       ContractStatus @default(ACTIVE)
+  note         String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("contracts")
+}
+
+// 5. Fee Category (Danh mục phí)
+model FeeCategory {
+  id          String   @id @default(cuid())
+  code        String   @unique // MGMT, PARKING_MOTO, PARKING_CAR, WATER, ELECTRIC...
+  name        String // Phí quản lý, Phí xe máy...
+  unit        FeeUnit  @default(PER_MONTH)
+  unitPrice   Float
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  invoiceItems InvoiceItem[]
+
+  @@map("fee_categories")
+}
+
+// 6. Fee Invoice & Items
+model Invoice {
+  id            String         @id @default(cuid())
+  code          String         @unique // e.g. INV-202608-A1001
+  apartmentId   String
+  apartment     Apartment      @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  billingMonth  String // "YYYY-MM" e.g. "2026-08"
+  dueDate       DateTime
+  totalAmount   Float          @default(0)
+  status        InvoiceStatus  @default(UNPAID)
+  paidAt        DateTime?
+  paymentMethod PaymentMethod?
+  transactionId String?
+  note          String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  items InvoiceItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id            String       @id @default(cuid())
+  invoiceId     String
+  invoice       Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  feeCategoryId String?
+  feeCategory   FeeCategory? @relation(fields: [feeCategoryId], references: [id], onDelete: SetNull)
+  title         String
+  quantity      Float        @default(1)
+  unitPrice     Float
+  amount        Float
+  note          String?
+  createdAt     DateTime     @default(now())
+
+  @@map("invoice_items")
+}
+
+// 7. Feedback & Incident Tickets
+model Feedback {
+  id              String         @id @default(cuid())
+  code            String         @unique // e.g. FB-2026-0001
+  residentId      String
+  resident        Resident       @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  apartmentId     String
+  apartment       Apartment      @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  category        TicketCategory @default(OTHER)
+  title           String
+  content         String
+  images          String[]       @default([])
+  priority        TicketPriority @default(MEDIUM)
+  status          TicketStatus   @default(NEW)
+  responseContent String?
+  rating          Int? // 1 to 5 stars
+  ratingComment   String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@map("feedbacks")
+}
+
+// 8. Notifications
+model Notification {
+  id         String   @id @default(cuid())
+  title      String
+  content    String
+  isGlobal   Boolean  @default(true)
+  targetRole Role?
+  senderId   String
+  sender     User     @relation("SentNotifications", fields: [senderId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  apartments NotificationApartment[]
+  reads      NotificationRead[]
+
+  @@map("notifications")
+}
+
+model NotificationApartment {
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  apartmentId    String
+  apartment      Apartment    @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+
+  @@id([notificationId, apartmentId])
+  @@map("notification_apartments")
+}
+
+model NotificationRead {
+  id             String       @id @default(cuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt         DateTime     @default(now())
+
+  @@unique([notificationId, userId])
+  @@map("notification_reads")
+}

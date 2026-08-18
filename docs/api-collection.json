@@ -1,0 +1,120 @@
+{
+  "info": {
+    "name": "Smart Apartment Management System API",
+    "description": "Nội bộ REST API của Hệ thống Quản lý Chung cư Thông minh (Next.js Route Handlers)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Đăng nhập Credentials",
+          "request": {
+            "method": "POST",
+            "url": "http://localhost:3000/api/auth/callback/credentials",
+            "body": {
+              "mode": "json",
+              "raw": "{\n  \"email\": \"admin@building.com\",\n  \"password\": \"admin123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Đăng ký Cư dân mới",
+          "request": {
+            "method": "POST",
+            "url": "http://localhost:3000/api/auth/register",
+            "body": {
+              "mode": "json",
+              "raw": "{\n  \"fullName\": \"Nguyễn Văn A\",\n  \"email\": \"nguyenvana@gmail.com\",\n  \"phone\": \"0987654321\",\n  \"identityCard\": \"012345678999\",\n  \"password\": \"resident123\",\n  \"apartmentCode\": \"A-1001\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Apartments",
+      "item": [
+        {
+          "name": "Lấy danh sách căn hộ",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:3000/api/apartments?page=1&limit=10&status=OCCUPIED"
+          }
+        },
+        {
+          "name": "Thêm căn hộ mới",
+          "request": {
+            "method": "POST",
+            "url": "http://localhost:3000/api/apartments",
+            "body": {
+              "mode": "json",
+              "raw": "{\n  \"code\": \"A-1205\",\n  \"building\": \"Tòa A\",\n  \"floor\": 12,\n  \"bedrooms\": 2,\n  \"bathrooms\": 2,\n  \"area\": 75.5,\n  \"status\": \"VACANT\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "Lấy danh sách hóa đơn",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:3000/api/invoices?billingMonth=2026-08"
+          }
+        },
+        {
+          "name": "Tự động phát hành hóa đơn tháng",
+          "request": {
+            "method": "POST",
+            "url": "http://localhost:3000/api/invoices/generate",
+            "body": {
+              "mode": "json",
+              "raw": "{\n  \"billingMonth\": \"2026-08\",\n  \"dueDate\": \"2026-08-25\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Thanh toán hóa đơn Sandbox",
+          "request": {
+            "method": "POST",
+            "url": "http://localhost:3000/api/invoices/:id/pay",
+            "body": {
+              "mode": "json",
+              "raw": "{\n  \"paymentMethod\": \"VNPAY\",\n  \"transactionId\": \"PAY-123456\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feedbacks",
+      "item": [
+        {
+          "name": "Cư dân gửi báo cáo sự cố",
+          "request": {
+            "method": "POST",
+            "url": "http://localhost:3000/api/feedbacks",
+            "body": {
+              "mode": "json",
+              "raw": "{\n  \"category\": \"WATER\",\n  \"title\": \"Hỏng van nước phòng tắm\",\n  \"content\": \"Áp lực nước yếu và chảy rò rỉ\",\n  \"priority\": \"HIGH\"\n}"
+            }
+          }
+        },
+        {
+          "name": "BQL phản hồi & xử lý sự cố",
+          "request": {
+            "method": "POST",
+            "url": "http://localhost:3000/api/feedbacks/:id/respond",
+            "body": {
+              "mode": "json",
+              "raw": "{\n  \"status\": \"RESOLVED\",\n  \"responseContent\": \"Đã cử kỹ thuật viên tới thay van khóa tổng mới.\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
