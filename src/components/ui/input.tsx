@@ -1,20 +1,50 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  error?: boolean | string;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, error, leftIcon, rightIcon, ...props }, ref) => {
+    const hasError = Boolean(error);
+
     return (
-      <input
-        type={type}
-        className={cn(
-          'flex h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-600 disabled:cursor-not-allowed disabled:opacity-50',
-          className
+      <div className="relative w-full">
+        {leftIcon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center justify-center">
+            {leftIcon}
+          </div>
         )}
-        ref={ref}
-        {...props}
-      />
+        <input
+          type={type}
+          className={cn(
+            'flex h-9 w-full rounded-lg border bg-white px-3 py-1.5 text-sm text-slate-900 shadow-2xs transition-all duration-150',
+            'placeholder:text-slate-400',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0',
+            hasError
+              ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20'
+              : 'border-slate-200 hover:border-slate-300 focus-visible:border-blue-600 focus-visible:ring-blue-600/15',
+            'disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200',
+            leftIcon && 'pl-9',
+            rightIcon && 'pr-9',
+            className
+          )}
+          ref={ref}
+          aria-invalid={hasError}
+          {...props}
+        />
+        {rightIcon && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 flex items-center justify-center">
+            {rightIcon}
+          </div>
+        )}
+        {typeof error === 'string' && (
+          <p className="mt-1 text-xs font-medium text-red-600">{error}</p>
+        )}
+      </div>
     );
   }
 );
