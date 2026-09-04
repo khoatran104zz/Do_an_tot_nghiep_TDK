@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Building2, Layers, Users, Home } from 'lucide-react';
+import { Plus, Edit, Trash2, Building2, Layers, Users, Home, RotateCcw } from 'lucide-react';
 import {
   useApartments,
   useCreateApartment,
@@ -42,7 +42,7 @@ export default function ApartmentsPage() {
   });
 
   // Queries & Mutations
-  const { data: response, isLoading } = useApartments({
+  const { data: response, isLoading, isError, error, refetch } = useApartments({
     search: search || undefined,
     building: buildingFilter || undefined,
     status: (statusFilter as ApartmentStatus) || undefined,
@@ -56,6 +56,14 @@ export default function ApartmentsPage() {
 
   const apartments = response?.data || [];
   const meta = response?.meta || { page: 1, totalPages: 1, total: 0 };
+  const hasActiveFilters = Boolean(search || buildingFilter || statusFilter);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setBuildingFilter('');
+    setStatusFilter('');
+    setPage(1);
+  };
 
   const handleOpenCreate = () => {
     setEditingItem(null);
@@ -168,13 +176,14 @@ export default function ApartmentsPage() {
     {
       header: 'Thao tác',
       cell: (row) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleOpenEdit(row)}
-            className="h-8 w-8 text-blue-600 hover:bg-blue-50"
-            title="Chỉnh sửa"
+            className="h-9 w-9 min-h-[36px] min-w-[36px] text-blue-600 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-600/30"
+            title={`Chỉnh sửa căn hộ ${row.code}`}
+            aria-label={`Chỉnh sửa căn hộ ${row.code}`}
           >
             <Edit className="h-4 w-4" />
           </Button>
@@ -182,8 +191,9 @@ export default function ApartmentsPage() {
             variant="ghost"
             size="icon"
             onClick={() => setDeletingId(row.id)}
-            className="h-8 w-8 text-red-600 hover:bg-red-50"
-            title="Xóa căn hộ"
+            className="h-9 w-9 min-h-[36px] min-w-[36px] text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-600/30"
+            title={`Xóa căn hộ ${row.code}`}
+            aria-label={`Xóa căn hộ ${row.code}`}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -204,43 +214,55 @@ export default function ApartmentsPage() {
       </PageHeader>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Lọc theo Tòa nhà</label>
-          <Select
-            value={buildingFilter}
-            onChange={(e) => {
-              setBuildingFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả tòa nhà</option>
-            <option value="Tòa A">Tòa A</option>
-            <option value="Tòa B">Tòa B</option>
-            <option value="Tòa C">Tòa C</option>
-          </Select>
-        </div>
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Lọc theo Tòa nhà</label>
+            <Select
+              value={buildingFilter}
+              onChange={(e) => {
+                setBuildingFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Tất cả tòa nhà</option>
+              <option value="Tòa A">Tòa A</option>
+              <option value="Tòa B">Tòa B</option>
+              <option value="Tòa C">Tòa C</option>
+            </Select>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Lọc theo Trạng thái</label>
-          <Select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="VACANT">Đang trống</option>
-            <option value="OCCUPIED">Đang ở</option>
-            <option value="UNDER_MAINTENANCE">Đang sửa chữa</option>
-          </Select>
-        </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Lọc theo Trạng thái</label>
+            <Select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="VACANT">Đang trống</option>
+              <option value="OCCUPIED">Đang ở</option>
+              <option value="UNDER_MAINTENANCE">Đang sửa chữa</option>
+            </Select>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Tổng số bản ghi</label>
-          <div className="h-9 flex items-center px-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-semibold text-slate-700">
-            {meta.total} Căn hộ
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Tổng số bản ghi</label>
+            <div className="h-9 flex items-center justify-between px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">
+              <span>{meta.total} Căn hộ</span>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Đặt lại
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -250,6 +272,9 @@ export default function ApartmentsPage() {
         columns={columns}
         data={apartments}
         isLoading={isLoading}
+        isError={isError}
+        errorMessage={(error as any)?.message}
+        onRetry={() => refetch()}
         searchPlaceholder="Tìm mã căn hộ (VD: A-1001)..."
         searchValue={search}
         onSearchChange={(val) => {
@@ -274,7 +299,9 @@ export default function ApartmentsPage() {
         <form onSubmit={handleSubmitForm} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Mã căn hộ (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Mã căn hộ <span className="text-red-500">*</span>
+              </label>
               <Input
                 placeholder="A-1001"
                 value={formData.code}
@@ -284,7 +311,9 @@ export default function ApartmentsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Tòa nhà (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Tòa nhà <span className="text-red-500">*</span>
+              </label>
               <Select
                 value={formData.building}
                 onChange={(e) => setFormData({ ...formData, building: e.target.value })}
@@ -298,7 +327,9 @@ export default function ApartmentsPage() {
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Tầng (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Tầng <span className="text-red-500">*</span>
+              </label>
               <Input
                 type="number"
                 min={1}
@@ -309,7 +340,9 @@ export default function ApartmentsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Diện tích (m²) (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Diện tích (m²) <span className="text-red-500">*</span>
+              </label>
               <Input
                 type="number"
                 step="0.1"
@@ -365,13 +398,19 @@ export default function ApartmentsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setIsFormOpen(false)}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
               Hủy bỏ
             </Button>
             <Button
               type="submit"
+              isLoading={createMutation.isPending || updateMutation.isPending}
               disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 font-semibold"
             >
               {createMutation.isPending || updateMutation.isPending
                 ? 'Đang lưu...'

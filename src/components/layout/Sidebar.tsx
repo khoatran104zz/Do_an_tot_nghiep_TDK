@@ -183,7 +183,7 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
                       href={item.href}
                       onClick={() => setIsMobileOpen(false)}
                       className={cn(
-                        'group flex items-center gap-3 rounded-xl min-h-[44px] sm:min-h-[40px] px-3 py-2 text-sm font-medium transition-all duration-150 relative select-none',
+                        'group flex items-center gap-3 rounded-xl min-h-[44px] sm:min-h-[40px] px-3 py-2 text-sm font-medium transition-all duration-150 ease-out relative select-none active:scale-[0.98]',
                         isCollapsed && !isMobileOpen ? 'justify-center px-0' : '',
                         isActive
                           ? 'bg-blue-50/90 text-blue-700 font-semibold shadow-2xs'
@@ -191,11 +191,11 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
                       )}
                     >
                       {isActive && (
-                        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-blue-600" />
+                        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-blue-600 animate-in fade-in-50 duration-200" />
                       )}
                       <Icon
                         className={cn(
-                          'h-5 w-5 shrink-0 transition-colors',
+                          'h-5 w-5 shrink-0 transition-all duration-150 group-hover:scale-105',
                           isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-700'
                         )}
                       />

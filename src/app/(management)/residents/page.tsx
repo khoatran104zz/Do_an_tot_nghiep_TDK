@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, User, Phone, Mail, Home, CreditCard } from 'lucide-react';
+import { Plus, Edit, Trash2, User, Phone, Mail, Home, CreditCard, RotateCcw } from 'lucide-react';
 import {
   useResidents,
   useCreateResident,
@@ -43,7 +43,7 @@ export default function ResidentsPage() {
   });
 
   // Queries
-  const { data: response, isLoading } = useResidents({
+  const { data: response, isLoading, isError, error, refetch } = useResidents({
     search: search || undefined,
     relationshipToOwner: (relationshipFilter as ResidentRelationship) || undefined,
     status: (statusFilter as ResidentStatus) || undefined,
@@ -60,6 +60,14 @@ export default function ResidentsPage() {
 
   const residents = response?.data || [];
   const meta = response?.meta || { page: 1, totalPages: 1, total: 0 };
+  const hasActiveFilters = Boolean(search || relationshipFilter || statusFilter);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setRelationshipFilter('');
+    setStatusFilter('');
+    setPage(1);
+  };
 
   const handleOpenCreate = () => {
     setEditingItem(null);
@@ -200,13 +208,14 @@ export default function ResidentsPage() {
     {
       header: 'Thao tác',
       cell: (row) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleOpenEdit(row)}
-            className="h-8 w-8 text-blue-600 hover:bg-blue-50"
-            title="Chỉnh sửa hồ sơ"
+            className="h-9 w-9 min-h-[36px] min-w-[36px] text-blue-600 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-600/30"
+            title={`Chỉnh sửa hồ sơ ${row.fullName}`}
+            aria-label={`Chỉnh sửa hồ sơ ${row.fullName}`}
           >
             <Edit className="h-4 w-4" />
           </Button>
@@ -214,8 +223,9 @@ export default function ResidentsPage() {
             variant="ghost"
             size="icon"
             onClick={() => setDeletingId(row.id)}
-            className="h-8 w-8 text-red-600 hover:bg-red-50"
-            title="Xóa cư dân"
+            className="h-9 w-9 min-h-[36px] min-w-[36px] text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-600/30"
+            title={`Xóa cư dân ${row.fullName}`}
+            aria-label={`Xóa cư dân ${row.fullName}`}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -236,43 +246,55 @@ export default function ResidentsPage() {
       </PageHeader>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Lọc Quan hệ Chủ hộ</label>
-          <Select
-            value={relationshipFilter}
-            onChange={(e) => {
-              setRelationshipFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả vai trò</option>
-            <option value="OWNER">Chủ hộ</option>
-            <option value="FAMILY">Thân nhân gia đình</option>
-            <option value="TENANT">Người thuê nhà</option>
-          </Select>
-        </div>
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Lọc Quan hệ Chủ hộ</label>
+            <Select
+              value={relationshipFilter}
+              onChange={(e) => {
+                setRelationshipFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Tất cả vai trò</option>
+              <option value="OWNER">Chủ hộ</option>
+              <option value="FAMILY">Thân nhân gia đình</option>
+              <option value="TENANT">Người thuê nhà</option>
+            </Select>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Trạng thái Cư trú</label>
-          <Select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="RESIDING">Đang cư trú</option>
-            <option value="TEMPORARY_ABSENT">Tạm vắng</option>
-            <option value="MOVED_OUT">Đã chuyển đi</option>
-          </Select>
-        </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Trạng thái Cư trú</label>
+            <Select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="RESIDING">Đang cư trú</option>
+              <option value="TEMPORARY_ABSENT">Tạm vắng</option>
+              <option value="MOVED_OUT">Đã chuyển đi</option>
+            </Select>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Tổng số cư dân</label>
-          <div className="h-9 flex items-center px-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-semibold text-slate-700">
-            {meta.total} Hồ sơ Cư dân
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Tổng số cư dân</label>
+            <div className="h-9 flex items-center justify-between px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">
+              <span>{meta.total} Cư dân</span>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Đặt lại
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -282,6 +304,9 @@ export default function ResidentsPage() {
         columns={columns}
         data={residents}
         isLoading={isLoading}
+        isError={isError}
+        errorMessage={(error as any)?.message}
+        onRetry={() => refetch()}
         searchPlaceholder="Tìm theo tên, SĐT, CCCD..."
         searchValue={search}
         onSearchChange={(val) => {
@@ -305,7 +330,9 @@ export default function ResidentsPage() {
 
         <form onSubmit={handleSubmitForm} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Họ và Tên (*)</label>
+            <label className="text-xs font-medium text-slate-700">
+              Họ và Tên <span className="text-red-500">*</span>
+            </label>
             <Input
               placeholder="Nguyễn Văn A"
               value={formData.fullName}
@@ -316,7 +343,9 @@ export default function ResidentsPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Số CCCD/CMND (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Số CCCD/CMND <span className="text-red-500">*</span>
+              </label>
               <Input
                 placeholder="012345678901"
                 value={formData.identityCard}
@@ -326,7 +355,9 @@ export default function ResidentsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Số điện thoại (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Số điện thoại <span className="text-red-500">*</span>
+              </label>
               <Input
                 placeholder="0987654321"
                 value={formData.phone}
@@ -362,12 +393,15 @@ export default function ResidentsPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Gán Căn hộ</label>
+              <label className="text-xs font-medium text-slate-700">
+                Gán Căn hộ <span className="text-red-500">*</span>
+              </label>
               <Select
                 value={formData.apartmentId}
                 onChange={(e) => setFormData({ ...formData, apartmentId: e.target.value })}
+                required
               >
-                <option value="">-- Chưa gán căn hộ --</option>
+                <option value="">-- Chọn căn hộ --</option>
                 {apartmentOptions.map((apt: any) => (
                   <option key={apt.id} value={apt.id}>
                     {apt.code} ({apt.building} - Tầng {apt.floor})
@@ -402,13 +436,19 @@ export default function ResidentsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setIsFormOpen(false)}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
               Hủy bỏ
             </Button>
             <Button
               type="submit"
+              isLoading={createMutation.isPending || updateMutation.isPending}
               disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 font-semibold"
             >
               {createMutation.isPending || updateMutation.isPending
                 ? 'Đang lưu...'

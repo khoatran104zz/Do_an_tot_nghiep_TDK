@@ -6,18 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Bell, Plus, Trash2, Megaphone, Calendar } from 'lucide-react';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { Bell, Plus, Trash2, Megaphone, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useNotifications, useCreateNotification, useDeleteNotification } from '@/hooks/use-notifications';
 import { formatDateTime } from '@/lib/utils';
 
 export default function NotificationsManagementPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
   });
 
-  const { data: response, isLoading } = useNotifications();
+  const { data: response, isLoading, isError, error, refetch } = useNotifications();
   const notifications = response?.data || [];
 
   const createMutation = useCreateNotification();
@@ -40,6 +42,14 @@ export default function NotificationsManagementPage() {
     );
   };
 
+  const handleDeleteConfirm = () => {
+    if (deletingId) {
+      deleteMutation.mutate(deletingId, {
+        onSuccess: () => setDeletingId(null),
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -57,6 +67,25 @@ export default function NotificationsManagementPage() {
             <div key={i} className="h-28 rounded-xl bg-slate-200 animate-pulse" />
           ))}
         </div>
+      ) : isError ? (
+        <Card className="p-8 text-center border-rose-200 bg-rose-50/40">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 mx-auto mb-3">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <p className="font-semibold text-slate-800">Không thể tải danh sách thông báo</p>
+          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            {(error as any)?.message || 'Đã có lỗi xảy ra khi kết nối tới máy chủ.'}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="mt-4 gap-1.5 text-xs text-slate-700 hover:bg-white"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Thử lại
+          </Button>
+        </Card>
       ) : notifications.length === 0 ? (
         <Card className="p-8 text-center">
           <Bell className="h-12 w-12 text-slate-300 mx-auto mb-3" />
@@ -66,7 +95,7 @@ export default function NotificationsManagementPage() {
       ) : (
         <div className="space-y-4">
           {notifications.map((item: any) => (
-            <Card key={item.id} className="border-slate-200">
+            <Card key={item.id} className="border-slate-200 hover:shadow-xs transition-shadow">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -76,8 +105,9 @@ export default function NotificationsManagementPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => deleteMutation.mutate(item.id)}
+                    onClick={() => setDeletingId(item.id)}
                     className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                    title="Xóa thông báo"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -109,7 +139,9 @@ export default function NotificationsManagementPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Tiêu đề thông báo (*)</label>
+            <label className="text-xs font-medium text-slate-700">
+              Tiêu đề thông báo <span className="text-red-500">*</span>
+            </label>
             <Input
               placeholder="VD: Thông báo bảo trì thang máy Tòa A ngày 25/08..."
               value={formData.title}
@@ -119,7 +151,9 @@ export default function NotificationsManagementPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Nội dung chi tiết (*)</label>
+            <label className="text-xs font-medium text-slate-700">
+              Nội dung chi tiết <span className="text-red-500">*</span>
+            </label>
             <textarea
               className="w-full rounded-md border border-slate-300 p-2.5 text-xs focus:ring-1 focus:ring-blue-600 outline-none"
               rows={5}
@@ -131,15 +165,35 @@ export default function NotificationsManagementPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setIsFormOpen(false)}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              disabled={createMutation.isPending}
+            >
               Hủy
             </Button>
-            <Button type="submit" disabled={createMutation.isPending} className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              type="submit"
+              isLoading={createMutation.isPending}
+              disabled={createMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700 font-semibold"
+            >
               {createMutation.isPending ? 'Đang đăng...' : 'Đăng Thông báo'}
             </Button>
           </DialogFooter>
         </form>
       </Dialog>
+
+      {/* Delete Confirm */}
+      <ConfirmDialog
+        open={!!deletingId}
+        onOpenChange={(open) => !open && setDeletingId(null)}
+        title="Xác nhận xóa thông báo?"
+        description="Thông báo này sẽ bị gỡ bỏ khỏi bảng tin của toàn bộ cư dân. Thao tác không thể hoàn tác."
+        isLoading={deleteMutation.isPending}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }

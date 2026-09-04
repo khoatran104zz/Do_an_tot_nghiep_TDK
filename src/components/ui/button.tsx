@@ -4,17 +4,17 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 focus-visible:border-blue-600 disabled:pointer-events-none disabled:opacity-50 select-none cursor-pointer active:scale-[0.98]',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 focus-visible:border-blue-600 select-none cursor-pointer active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none',
   {
     variants: {
       variant: {
         default: 'bg-blue-600 text-white shadow-xs hover:bg-blue-700 hover:shadow-sm active:bg-blue-800',
-        destructive: 'bg-red-600 text-white shadow-xs hover:bg-red-700 active:bg-red-800',
-        outline: 'border border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300',
+        destructive: 'bg-red-600 text-white shadow-xs hover:bg-red-700 hover:shadow-sm active:bg-red-800',
+        outline: 'border border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 active:bg-slate-100',
         secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 active:bg-slate-300',
-        ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
-        link: 'text-blue-600 underline-offset-4 hover:underline p-0 h-auto',
-        success: 'bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 active:bg-emerald-800',
+        ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200',
+        link: 'text-blue-600 underline-offset-4 hover:underline p-0 h-auto active:scale-100',
+        success: 'bg-emerald-600 text-white shadow-xs hover:bg-emerald-700 hover:shadow-sm active:bg-emerald-800',
         soft: 'bg-blue-50 text-blue-700 hover:bg-blue-100 active:bg-blue-200',
       },
       size: {

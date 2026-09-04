@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { MessageSquareWarning, Plus, Star, Wrench } from 'lucide-react';
 import { useFeedbacks, useCreateFeedback, useRateFeedback } from '@/hooks/use-feedbacks';
@@ -29,7 +31,7 @@ export default function ResidentFeedbackPage() {
     ratingComment: '',
   });
 
-  const { data: response, isLoading } = useFeedbacks();
+  const { data: response, isLoading, isError, error, refetch } = useFeedbacks();
   const feedbacks = response?.data || [];
 
   const createMutation = useCreateFeedback();
@@ -75,15 +77,39 @@ export default function ResidentFeedbackPage() {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-28 rounded-xl bg-slate-200 animate-pulse" />
+            <Card key={i} className="p-5 border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-5 w-24 rounded-full" />
+              </div>
+              <Skeleton className="h-5 w-56" />
+              <Skeleton className="h-4 w-full" />
+            </Card>
           ))}
         </div>
-      ) : feedbacks.length === 0 ? (
-        <Card className="p-8 text-center">
-          <MessageSquareWarning className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-          <p className="font-semibold text-slate-700">Chưa có phản ánh nào</p>
-          <p className="text-xs text-slate-400 mt-1">Bấm "Gửi Phản ánh mới" để gửi yêu cầu tới Ban Quản Lý.</p>
+      ) : isError ? (
+        <Card className="p-8 text-center border-rose-200 bg-rose-50/40">
+          <p className="font-semibold text-slate-800">Không thể tải danh sách phản ánh</p>
+          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            {(error as any)?.message || 'Vui lòng kiểm tra lại kết nối mạng và thử lại.'}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="mt-4 text-xs text-slate-700 hover:bg-white"
+          >
+            Thử lại
+          </Button>
         </Card>
+      ) : feedbacks.length === 0 ? (
+        <EmptyState
+          icon={MessageSquareWarning}
+          title="Chưa có phản ánh nào"
+          description="Bấm 'Gửi Phản ánh mới' để gửi yêu cầu hỗ trợ tới Ban Quản Lý."
+          actionLabel="Gửi Phản ánh mới"
+          onAction={() => setIsFormOpen(true)}
+        />
       ) : (
         <div className="space-y-4">
           {feedbacks.map((item: any) => (

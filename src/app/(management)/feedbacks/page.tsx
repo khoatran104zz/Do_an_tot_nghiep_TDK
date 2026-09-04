@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { MessageSquareWarning, Wrench, ShieldAlert, CheckCircle2, Clock, Eye, Send } from 'lucide-react';
+import { MessageSquareWarning, Wrench, ShieldAlert, CheckCircle2, Clock, Eye, Send, RotateCcw } from 'lucide-react';
 import { useFeedbacks, useRespondFeedback } from '@/hooks/use-feedbacks';
 import { TicketCategory, TicketPriority, TicketStatus } from '@prisma/client';
 import { formatDateTime } from '@/lib/utils';
@@ -25,7 +25,7 @@ export default function FeedbacksPage() {
     responseContent: '',
   });
 
-  const { data: response, isLoading } = useFeedbacks({
+  const { data: response, isLoading, isError, error, refetch } = useFeedbacks({
     search: search || undefined,
     category: (categoryFilter as TicketCategory) || undefined,
     status: (statusFilter as TicketStatus) || undefined,
@@ -37,6 +37,14 @@ export default function FeedbacksPage() {
 
   const feedbacks = response?.data || [];
   const meta = response?.meta || { page: 1, totalPages: 1, total: 0 };
+  const hasActiveFilters = Boolean(search || categoryFilter || statusFilter);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setCategoryFilter('');
+    setStatusFilter('');
+    setPage(1);
+  };
 
   const handleOpenRespond = (item: any) => {
     setSelectedItem(item);
@@ -168,46 +176,58 @@ export default function FeedbacksPage() {
       />
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Lọc danh mục sự cố</label>
-          <Select
-            value={categoryFilter}
-            onChange={(e) => {
-              setCategoryFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả sự cố</option>
-            <option value="ELECTRIC">Điện</option>
-            <option value="WATER">Nước</option>
-            <option value="ELEVATOR">Thang máy</option>
-            <option value="SECURITY">An ninh</option>
-            <option value="CLEANLINESS">Vệ sinh</option>
-          </Select>
-        </div>
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Lọc danh mục sự cố</label>
+            <Select
+              value={categoryFilter}
+              onChange={(e) => {
+                setCategoryFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Tất cả sự cố</option>
+              <option value="ELECTRIC">Điện sinh hoạt</option>
+              <option value="WATER">Nước & Đường ống</option>
+              <option value="ELEVATOR">Thang máy</option>
+              <option value="SECURITY">An ninh tòa nhà</option>
+              <option value="CLEANLINESS">Vệ sinh</option>
+            </Select>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Lọc trạng thái xử lý</label>
-          <Select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="NEW">Mới tiếp nhận</option>
-            <option value="PROCESSING">Đang xử lý</option>
-            <option value="RESOLVED">Hoàn thành</option>
-            <option value="REJECTED">Từ chối</option>
-          </Select>
-        </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Lọc trạng thái xử lý</label>
+            <Select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="NEW">Mới tiếp nhận</option>
+              <option value="PROCESSING">Đang xử lý</option>
+              <option value="RESOLVED">Hoàn thành</option>
+              <option value="REJECTED">Từ chối</option>
+            </Select>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Tổng phản ánh</label>
-          <div className="h-9 flex items-center px-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-semibold text-slate-700">
-            {meta.total} Sự cố báo cáo
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Tổng phản ánh</label>
+            <div className="h-9 flex items-center justify-between px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">
+              <span>{meta.total} Sự cố báo cáo</span>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Đặt lại
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -217,6 +237,9 @@ export default function FeedbacksPage() {
         columns={columns}
         data={feedbacks}
         isLoading={isLoading}
+        isError={isError}
+        errorMessage={(error as any)?.message}
+        onRetry={() => refetch()}
         searchPlaceholder="Tìm mã sự cố, căn hộ, tiêu đề..."
         searchValue={search}
         onSearchChange={(val) => {
@@ -250,7 +273,9 @@ export default function FeedbacksPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700">Cập nhật trạng thái xử lý (*)</label>
+                <label className="text-xs font-medium text-slate-700">
+                  Cập nhật trạng thái xử lý <span className="text-red-500">*</span>
+                </label>
                 <Select
                   value={respondForm.status}
                   onChange={(e) => setRespondForm({ ...respondForm, status: e.target.value as TicketStatus })}
@@ -259,7 +284,7 @@ export default function FeedbacksPage() {
                   <option value="NEW">Mới tiếp nhận</option>
                   <option value="PROCESSING">Đang cử kỹ thuật xử lý</option>
                   <option value="RESOLVED">Đã hoàn thành sửa chữa</option>
-                  <option value="REJECTED">Từ chối / Khống thuộc thẩm quyền</option>
+                  <option value="REJECTED">Từ chối / Không thuộc thẩm quyền</option>
                 </Select>
               </div>
 
@@ -275,10 +300,20 @@ export default function FeedbacksPage() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setSelectedItem(null)}>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setSelectedItem(null)}
+                  disabled={respondMutation.isPending}
+                >
                   Hủy
                 </Button>
-                <Button type="submit" disabled={respondMutation.isPending} className="bg-blue-600 hover:bg-blue-700">
+                <Button
+                  type="submit"
+                  isLoading={respondMutation.isPending}
+                  disabled={respondMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700 font-semibold"
+                >
                   {respondMutation.isPending ? 'Đang lưu...' : 'Lưu phản hồi'}
                 </Button>
               </DialogFooter>

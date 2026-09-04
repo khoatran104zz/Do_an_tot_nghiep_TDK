@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Receipt, DollarSign, CheckCircle2, Clock, Zap, Eye, Trash2, Calendar } from 'lucide-react';
+import { Receipt, DollarSign, CheckCircle2, Clock, Zap, Eye, Trash2, Calendar, RotateCcw } from 'lucide-react';
 import {
   useInvoices,
   useGenerateMonthlyInvoices,
@@ -37,7 +37,7 @@ export default function InvoicesPage() {
   });
 
   // Queries
-  const { data: response, isLoading } = useInvoices({
+  const { data: response, isLoading, isError, error, refetch } = useInvoices({
     search: search || undefined,
     billingMonth: billingMonthFilter || undefined,
     status: (statusFilter as InvoiceStatus) || undefined,
@@ -50,6 +50,14 @@ export default function InvoicesPage() {
 
   const invoices = response?.data || [];
   const meta = response?.meta || { page: 1, totalPages: 1, total: 0 };
+  const hasActiveFilters = Boolean(search || statusFilter || billingMonthFilter !== '2026-08');
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setBillingMonthFilter('2026-08');
+    setStatusFilter('');
+    setPage(1);
+  };
 
   // Calculate summaries
   const totalAmount = invoices.reduce((sum: number, inv: any) => sum + inv.totalAmount, 0);
@@ -192,42 +200,54 @@ export default function InvoicesPage() {
       </div>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Chọn Kỳ Billing</label>
-          <Select
-            value={billingMonthFilter}
-            onChange={(e) => {
-              setBillingMonthFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="2026-08">Tháng 08/2026</option>
-            <option value="2026-07">Tháng 07/2026</option>
-            <option value="2026-06">Tháng 06/2026</option>
-          </Select>
-        </div>
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Chọn Kỳ Billing</label>
+            <Select
+              value={billingMonthFilter}
+              onChange={(e) => {
+                setBillingMonthFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="2026-08">Tháng 08/2026</option>
+              <option value="2026-07">Tháng 07/2026</option>
+              <option value="2026-06">Tháng 06/2026</option>
+            </Select>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Trạng thái Thanh toán</label>
-          <Select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="UNPAID">Chưa thanh toán</option>
-            <option value="PAID">Đã thanh toán</option>
-            <option value="OVERDUE">Quá hạn</option>
-          </Select>
-        </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Trạng thái Thanh toán</label>
+            <Select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="UNPAID">Chưa thanh toán</option>
+              <option value="PAID">Đã thanh toán</option>
+              <option value="OVERDUE">Quá hạn</option>
+            </Select>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Tổng số Hóa đơn</label>
-          <div className="h-9 flex items-center px-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-semibold text-slate-700">
-            {meta.total} Hóa đơn
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Tổng số Hóa đơn</label>
+            <div className="h-9 flex items-center justify-between px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">
+              <span>{meta.total} Hóa đơn</span>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Đặt lại
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -237,6 +257,9 @@ export default function InvoicesPage() {
         columns={columns}
         data={invoices}
         isLoading={isLoading}
+        isError={isError}
+        errorMessage={(error as any)?.message}
+        onRetry={() => refetch()}
         searchPlaceholder="Tìm theo mã HĐ, mã căn hộ..."
         searchValue={search}
         onSearchChange={(val) => {
@@ -252,17 +275,19 @@ export default function InvoicesPage() {
       {/* Auto Batch Generation Modal */}
       <Dialog open={isGenerateOpen} onOpenChange={setIsGenerateOpen}>
         <DialogHeader>
-          <DialogTitle>Tự động Tạo Hóa đơn Hàng loạt</DialogTitle>
+          <DialogTitle>Tự động Tạo Hóa đơn Hàng tháng</DialogTitle>
           <DialogDescription>
-            Hệ thống sẽ quét toàn bộ danh sách căn hộ và tự tính toán phí quản lý (theo m²), phí gửi xe, điện, nước để phát hành hóa đơn.
+            Hệ thống sẽ quét toàn bộ hợp đồng đang hoạt động và các định mức phí cơ bản để phát hành hóa đơn đồng loạt.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleGenerateSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Kỳ Billing (Tháng/Năm) (*)</label>
+            <label className="text-xs font-medium text-slate-700">
+              Kỳ thanh toán (YYYY-MM) <span className="text-red-500">*</span>
+            </label>
             <Input
-              placeholder="YYYY-MM"
+              type="month"
               value={generateForm.billingMonth}
               onChange={(e) => setGenerateForm({ ...generateForm, billingMonth: e.target.value })}
               required
@@ -270,7 +295,9 @@ export default function InvoicesPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Hạn thanh toán hóa đơn (*)</label>
+            <label className="text-xs font-medium text-slate-700">
+              Hạn chót thanh toán (Due Date) <span className="text-red-500">*</span>
+            </label>
             <Input
               type="date"
               value={generateForm.dueDate}
@@ -280,13 +307,19 @@ export default function InvoicesPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setIsGenerateOpen(false)}>
-              Hủy bỏ
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsGenerateOpen(false)}
+              disabled={generateMutation.isPending}
+            >
+              Hủy
             </Button>
             <Button
               type="submit"
+              isLoading={generateMutation.isPending}
               disabled={generateMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 font-semibold"
             >
               {generateMutation.isPending ? 'Đang tự động tạo...' : 'Phát hành Hóa đơn'}
             </Button>

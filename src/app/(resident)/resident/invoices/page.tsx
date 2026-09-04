@@ -5,6 +5,8 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Receipt, CreditCard, Download, CheckCircle2, QrCode, ArrowRight } from 'lucide-react';
 import { useInvoices, useProcessPayment } from '@/hooks/use-invoices';
@@ -13,7 +15,7 @@ import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 
 export default function ResidentInvoicesPage() {
-  const { data: response, isLoading } = useInvoices();
+  const { data: response, isLoading, isError, error, refetch } = useInvoices();
   const invoices = response?.data || [];
 
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -82,15 +84,40 @@ export default function ResidentInvoicesPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-48 rounded-xl bg-slate-200 animate-pulse" />
+            <Card key={i} className="p-5 border-slate-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+              <Skeleton className="h-5 w-36" />
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            </Card>
           ))}
         </div>
-      ) : invoices.length === 0 ? (
-        <Card className="p-8 text-center">
-          <Receipt className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-          <p className="font-semibold text-slate-700">Chưa có hóa đơn nào</p>
-          <p className="text-xs text-slate-400 mt-1">Căn hộ của bạn hiện chưa phát sinh hóa đơn mới.</p>
+      ) : isError ? (
+        <Card className="p-8 text-center border-rose-200 bg-rose-50/40">
+          <p className="font-semibold text-slate-800">Không thể tải thông tin hóa đơn</p>
+          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            {(error as any)?.message || 'Vui lòng kiểm tra lại kết nối mạng và thử lại.'}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="mt-4 text-xs text-slate-700 hover:bg-white"
+          >
+            Thử lại
+          </Button>
         </Card>
+      ) : invoices.length === 0 ? (
+        <EmptyState
+          icon={Receipt}
+          title="Chưa có hóa đơn nào"
+          description="Căn hộ của bạn hiện chưa phát sinh hóa đơn mới."
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {invoices.map((inv: any) => (

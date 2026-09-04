@@ -38,31 +38,33 @@ export function Pagination({
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            size="xs"
+            size="sm"
+            className="min-h-[40px] sm:min-h-[36px] px-3 font-medium"
             disabled={page <= 1 || isLoading}
             onClick={() => onPageChange(page - 1)}
-            aria-label="Trang trước"
+            aria-label="Chuyển đến trang trước"
           >
-            <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+            <ChevronLeft className="h-4 w-4 mr-1" />
             Trước
           </Button>
 
-          <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 rounded-md text-slate-700">
+          <span className="text-xs font-semibold px-3 py-2 bg-slate-100 rounded-lg text-slate-700 select-none">
             Trang {page} / {totalPages}
           </span>
 
           <Button
             variant="outline"
-            size="xs"
+            size="sm"
+            className="min-h-[40px] sm:min-h-[36px] px-3 font-medium"
             disabled={page >= totalPages || isLoading}
             onClick={() => onPageChange(page + 1)}
-            aria-label="Trang sau"
+            aria-label="Chuyển đến trang sau"
           >
             Sau
-            <ChevronRight className="h-3.5 w-3.5 ml-1" />
+            <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
       )}

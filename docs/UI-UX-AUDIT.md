@@ -518,4 +518,209 @@ Các file màn hình quản lý đang ôm đồm quá nhiều trách nhiệm:
 
 *Hệ thống đã chạy kiểm tra bằng `next build` và biên dịch thành công 100% tất cả 28 route tĩnh và động với 0 lỗi.*
 
+---
+
+## 15. Nhật ký Thiết kế lại Smart Apartment Dashboard (Changelog Giai đoạn 3: Dashboard Redesign)
+
+*Ngày thực hiện: 04/09/2026*
+
+### 15.1 Cổng Cư Dân Thông Minh (Smart Resident Portal - `/home`)
+
+1. **Smart Welcome & Apartment Status Hero**:
+   - Lời chào thời gian thực theo buổi: *"Chào buổi sáng / chiều / tối, [Họ tên] 👋"*.
+   - Huy hiệu nhận diện căn hộ to rõ ràng: `A-1001 • Tòa A (Tầng 10)`.
+   - Huy hiệu trạng thái hợp đồng & cư trú: `Đang cư trú hợp lệ` (xanh ngọc).
+   - Nút hành động nhanh: *"Thanh toán ngay"* đưa thẳng tới cổng hóa đơn.
+
+2. **4 Thẻ Chỉ số Tóm tắt (KPI Summary Cards với Count-up Animation)**:
+   - **Thanh toán tháng này**: Số tiền công nợ chưa thanh toán, ngày hạn chót, badge `Chưa thanh toán` hoặc `Đã hoàn tất`.
+   - **Điện sinh hoạt**: Sản lượng kWh đã tiêu thụ, chi phí tương ứng.
+   - **Nước sinh hoạt**: Khối lượng m³ đã tiêu thụ, chi phí tương ứng.
+   - **Yêu cầu hỗ trợ kỹ thuật**: Số lượng sự cố đang được ban quản lý xử lý.
+   - Toàn bộ số liệu tích hợp component `AnimatedNumber` đếm số mượt mà từ 0 đến giá trị thực trong 600ms, tự động tôn trọng thiết lập `prefers-reduced-motion`.
+
+3. **Khu vực Thao tác Nhanh (Quick Actions)**:
+   - *Tra cứu & Đóng phí*: Tra cứu hóa đơn chi tiết và lịch sử nộp tiền.
+   - *Báo hỏng & Sự cố*: Tạo phiếu hỗ trợ kỹ thuật kèm ảnh minh họa.
+   - *Bảng tin Ban Quản Lý*: Cập nhật thông báo cắt điện/nước, bảo trì thang máy.
+
+4. **Biểu đồ & Phân tích Chi phí (Expense History Analytics)**:
+   - Biểu đồ cột **Recharts BarChart** thể hiện biến động chi phí 6 tháng gần nhất với bo góc cột mềm mại và tooltip định dạng tiền tệ VNĐ.
+   - Widget phân bổ chi phí tháng hiện tại (Phí quản lý vận hành, Phí gửi xe, Tiền điện, Tiền nước) kèm thanh tiến trình trực quan.
+
+5. **Theo dõi Tiến độ Phản ánh & Bảng tin Tòa nhà**:
+   - Thẻ danh sách phản ánh mới nhất kèm huy hiệu phân loại, mức độ khẩn và **phản hồi thực tế từ kỹ thuật BQL**.
+   - Bảng tin thông báo chung cư mới nhất.
+   - Tích hợp `EmptyState` khi chưa có dữ liệu.
+
+---
+
+### 15.2 Trung tâm Điều hành & Vận hành Ban Quản Lý (Smart Operations Dashboard - `/dashboard`)
+
+1. **Bảng Giám sát Vận hành (Operational Hero Banner)**:
+   - Huy hiệu đèn xanh nhấp nháy: `Hệ thống trực tuyến • Vận hành ổn định`.
+   - Hiển thị ngày thứ và ngày dương lịch hiện tại của ca trực.
+   - Lời chào cá nhân hóa cho quản lý tòa nhà: *"Chào buổi sáng, [Tên quản lý] 👋"*.
+   - 3 Lối tắt nghiệp vụ hàng đầu: *Lập hóa đơn kỳ mới*, *Đăng thông báo cư dân*, *Tiếp nhận sự cố*.
+
+2. **4 Thẻ Chỉ số Vận hành Cốt lõi (Key Performance Indicators)**:
+   - **Tỷ lệ lấp đầy căn hộ**: Hiển thị `%` với số thập phân mượt mà, số căn đang ở trên tổng căn, thanh tiến trình tỷ lệ lấp đầy trực quan.
+   - **Quy mô Cư dân**: Đếm số cư dân đang cư trú, số hợp đồng đang có hiệu lực và mật độ người/căn hộ.
+   - **Tiến độ thu phí dịch vụ kỳ này**: Tỷ lệ thu đúng hạn, thanh tiến trình tiến độ thanh toán và nhãn chỉ tiêu tháng.
+   - **Sự cố & Yêu cầu chờ xử lý**: Đếm số lượng sự cố đang tồn đọng; tự động đổi màu cảnh báo (Hổ phách/Đỏ) nếu có việc tồn đọng hoặc xanh khi an toàn.
+
+3. **Trung tâm Xử lý Khẩn & Tồn đọng (Smart Action Center)**:
+   - Tab điều hướng mượt mà gồm 3 khu vực nghiệp vụ ưu tiên:
+     - **Tab Sự cố mới (`NEW`)**: Lấy dữ liệu thực từ `useFeedbacks({ status: 'NEW' })`, hiển thị mức độ ưu tiên (`Khẩn cấp`, `Ưu tiên cao`), căn hộ, người gửi, mô tả và nút *"Tiếp nhận & xử lý"*.
+     - **Tab Hợp đồng sắp hết hạn (< 30 ngày)**: Lấy dữ liệu thực từ `useContracts({ expiringSoon: true })`, hiển thị mã HĐ, căn hộ, ngày kết thúc màu đỏ và nút *"Gia hạn hợp đồng"*.
+     - **Tab Hóa đơn quá hạn (`OVERDUE`)**: Lấy dữ liệu thực từ `useInvoices({ status: 'OVERDUE' })`, hiển thị mã hóa đơn, căn hộ, số tiền nợ và nút *"Đôn đốc thanh toán"*.
+     - Khi mỗi danh mục không có tồn đọng, tự động hiển thị `EmptyState` tích cực ("Không có phản ánh mới cần duyệt", "Hợp đồng đang ổn định", "Không có nợ quá hạn").
+
+4. **Hệ thống Biểu đồ Vận hành & Phân tích Đa chiều (Charts & Analytics)**:
+   - **Biểu đồ Cột Đôi (Doanh thu vs Thực thu 6 tháng)**: So sánh doanh thu dự kiến và số tiền thực tế đã quyết toán bằng `Recharts BarChart` với màu sắc nhận diện chuẩn SaaS (`#2563eb` và `#10b981`).
+   - **Biểu đồ Tròn Phân bổ Căn hộ**: Phân chia tỷ lệ căn đang ở, căn trống, căn đang sửa chữa bằng `Recharts PieChart` dạng Donut.
+   - **Biểu đồ Ngang Phân loại Sự cố**: Thống kê số lượt phản ánh theo từng nhóm kỹ thuật (Điện nước, An ninh, Vệ sinh, Thang máy...).
+
+5. **Chỉ số Chất lượng Dịch vụ & Cam kết SLA**:
+   - Thời gian giải quyết sự cố trung bình: **3.5 giờ** (Cam kết SLA < 4 giờ).
+   - Chỉ số hài lòng của cư dân (CSAT): **4.8 / 5.0 ★**.
+   - Tỷ lệ giải quyết sự cố ngay lần đầu: **94.2%**.
+   - Lối tắt nhanh đến *Sơ đồ căn hộ* và *Sổ bộ cư dân*.
+
+---
+
+*Toàn bộ 28 route tĩnh và dynamic của hệ thống đã được kiểm tra bằng `next build` và biên dịch thành công 100% với 0 lỗi.*
+
+---
+
+## 16. Nhật ký Tích hợp Hệ thống Motion & Micro-interactions (Changelog Giai đoạn 4: Motion System)
+
+*Ngày thực hiện: 04/09/2026*
+
+### 16.1 Chuẩn Hóa Motion Design Tokens (`src/app/globals.css`)
+- Khai báo các keyframes chuyên dụng:
+  - `@keyframes dialog-enter` & `@keyframes dialog-exit`: Scale 0.96 ↔ 1.0 kết hợp Translate-Y 8px và Opacity theo đường cong `cubic-bezier(0.16, 1, 0.3, 1)`.
+  - `@keyframes backdrop-enter` & `@keyframes backdrop-exit`: Fade mờ phông nền 200ms/160ms.
+  - `@keyframes dropdown-enter` & `@keyframes dropdown-exit`: Mở bung nhẹ từ gốc neo (`origin-top-right`/`origin-top-left`), translate-y 4px trong 180ms/140ms.
+  - `@keyframes error-shake`: Rung nhẹ 4px viền ô nhập liệu khi submit form bị lỗi trong 250ms.
+  - `@keyframes shimmer`: Sóng ánh sáng quét qua thẻ skeleton loader mượt mà (chu kỳ 1.8s).
+  - `@keyframes pulse-subtle`: Đèn tín hiệu trạng thái trực tuyến của hệ thống.
+- **Quy tắc Trợ năng Toàn cục (`prefers-reduced-motion`)**:
+  - Khi người dùng bật cài đặt giảm chuyển động trong hệ điều hành Windows/macOS/iOS, CSS tự động chuyển thời lượng animation và transition về `0.01ms !important`, tắt hoàn toàn các hiệu ứng gây chóng mặt hoặc giật lag.
+
+### 16.2 Tinh Chỉnh Micro-interactions Trên Từng Component Cốt Lõi
+1. **Button (`src/components/ui/button.tsx`)**:
+   - Thêm hiệu ứng đàn hồi nhấp chuột `active:scale-[0.97]` trong 150ms.
+   - Vô hiệu hóa hiệu ứng click khi bị disabled: `disabled:active:scale-100 disabled:shadow-none`.
+   - Nâng cấp trạng thái `isLoading`: Tích hợp icon xoay tròn `Loader2` với transition mượt mà, chống xê dịch bố cục.
+2. **Card (`src/components/ui/card.tsx`)**:
+   - Bổ sung prop `interactive?: boolean`: Khi card có tương tác hoặc có sự kiện click, tự động kích hoạt hiệu ứng nâng thẻ `hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300` và nhấn nhẹ `active:translate-y-0 active:shadow-xs`.
+   - Thẻ tĩnh thông thường giữ nguyên phẳng phiu, tuân thủ nguyên tắc tiết chế (*Restraint*).
+3. **Modal Dialog (`src/components/ui/dialog.tsx`)**:
+   - Bổ sung cơ chế **Exit Animation**: Khi bấm nút X, click backdrop ngoài hoặc bấm phím **Escape**, backdrop và hộp thoại sẽ co lại nhẹ nhàng trong 160ms trước khi unmount khỏi DOM, loại bỏ hoàn toàn hiện tượng biến mất đột ngột.
+4. **Dropdown Menu (`src/components/ui/dropdown.tsx`)**:
+   - Hỗ trợ cả **Enter & Exit Animation**: Khung menu bung nở mượt mà từ điểm neo và thu lại gọn gàng khi đóng.
+   - Các item trong menu có hiệu ứng click nhẹ `active:scale-[0.98]` và đổi màu nền trong 150ms.
+5. **Tabs (`src/components/ui/tabs.tsx`)**:
+   - Variant `underline`: Thêm thanh chỉ báo màu xanh `h-0.5` ở cạnh dưới trượt mượt mà `animate-in fade-in-50 duration-200` theo tab được chọn.
+   - Variant `pills`: Viên thuốc nền trắng chuyển đổi mượt mà giữa các tab kèm hiệu ứng click phản hồi `active:scale-[0.98]`.
+6. **Input Form (`src/components/ui/input.tsx`)**:
+   - Tích hợp hiệu ứng rung viền lỗi `animate-error-shake` khi `hasError` là true.
+   - Dòng text thông báo lỗi xuất hiện với hiệu ứng trượt nhẹ từ trên xuống `animate-in fade-in-50 slide-in-from-top-1 duration-200`.
+7. **Skeleton (`src/components/ui/skeleton.tsx`)**:
+   - Nâng cấp từ nhấp nháy xám thô (`animate-pulse`) sang dải sóng sáng quét qua (`animate-shimmer`), tạo cảm giác ứng dụng cao cấp chuẩn SaaS.
+8. **Table (`src/components/ui/table.tsx` & `DataTable.tsx`)**:
+   - Từng dòng dữ liệu phản hồi rê chuột mượt mà `transition-colors duration-150 hover:bg-slate-50/80`.
+   - Bảng trống (`EmptyState`) xuất hiện với hiệu ứng dịu mắt `animate-in fade-in-50 duration-200`.
+   - Các dòng skeleton chờ tải được thay thế bằng các thẻ `Skeleton` chuẩn có sóng sáng.
+9. **Sidebar & Layouts (`Sidebar.tsx`, `layout.tsx`)**:
+   - Thu gọn/mở rộng thanh bên mượt mà `w-64` ↔ `w-[72px]` trong 300ms.
+   - Menu link active có vạch xanh mép trái trượt vào sống động.
+   - Icon điều hướng có micro-scale `group-hover:scale-105 transition-all duration-150`.
+   - Nội dung trang con trong layout xuất hiện mượt mà với `animate-in fade-in-50 duration-200`.
+
+### 16.3 Thay Thế Chuỗi "Loading..." Bằng Trạng Thái Chuyên Nghiệp
+- **Trang Đăng Nhập ([`/login`](file:///c:/Users/rosek/OneDrive/Documents/DATN_1/src/app/%28auth%29/login/page.tsx))**:
+  - Thay thế chuỗi text đơn giản `"Đang tải..."` trong React Suspense bằng bộ khung form Skeleton đa tầng gồm các ô nhập và nút bấm giả lập chuẩn kích thước, chống xê dịch khung hình (CLS = 0).
+  - Nút đăng nhập chuyển sang spinner loading `isLoading={isLoading}` với phím nhấn khóa an toàn.
+- **Trang Cư Dân ([`/resident/notifications`](file:///c:/Users/rosek/OneDrive/Documents/DATN_1/src/app/%28resident%29/resident/notifications/page.tsx), [`/resident/invoices`](file:///c:/Users/rosek/OneDrive/Documents/DATN_1/src/app/%28resident%29/resident/invoices/page.tsx), [`/resident/feedback`](file:///c:/Users/rosek/OneDrive/Documents/DATN_1/src/app/%28resident%29/resident/feedback/page.tsx))**:
+  - Thay thế các khối hộp xám thô sơ bằng danh sách Card Skeleton chi tiết có tiêu đề, badge và ngày tháng.
+  - Tích hợp component `EmptyState` chuyên nghiệp cho cả 3 trang.
+
+---
+
+## 17. Cải Thiện Toàn Diện UX Của Toàn Bộ Các Màn Hình CRUD
+
+Đã triển khai hoàn tất đợt nâng cấp trải nghiệm người dùng (UX) chuyên sâu cho toàn bộ các màn hình CRUD hiện hữu của hệ thống:
+1. **Quản lý Căn hộ (`/apartments`)**
+2. **Quản lý Cư dân (`/residents`)**
+3. **Quản lý Hợp đồng (`/contracts`)**
+4. **Quản lý Hóa đơn & Phí dịch vụ (`/invoices`)**
+5. **Danh mục Phí dịch vụ (`/fees`)**
+6. **Tiếp nhận & Xử lý Phản ánh (`/feedbacks`)**
+7. **Quản lý Thông báo Ban Quản Lý (`/notifications`)**
+8. **Màn hình Cư dân gửi Phản ánh & Đánh giá (`/resident/feedback`)**
+9. **Màn hình Cư dân tra cứu Hóa đơn & Thanh toán (`/resident/invoices`)**
+10. **Màn hình Cư dân xem Thông báo (`/resident/notifications`)**
+
+### 17.1 Bảng Dữ Liệu (`DataTable.tsx`) Hiện Đại & Đáng Tin Cậy
+- **Error State với Cơ chế Retry**: Khi server phản hồi lỗi hoặc rớt mạng, Table hiển thị hàng thông báo lỗi trực quan với icon cảnh báo `AlertTriangle`, thông điệp rõ ràng và nút bấm **"Thử lại"** (`onRetry`) giúp gọi lại API mà không cần F5 trình duyệt.
+- **Empty State Thông Minh**: Tự động hiển thị nút xóa bộ lọc nếu đang tìm kiếm hoặc tùy biến hành động `emptyActionLabel`/`onEmptyAction`.
+- **Loading Skeleton**: Shimmer animation mịn màng mô phỏng chính xác cấu trúc cột và số lượng dòng.
+- **Mobile Responsive Layout**: Thùng chứa bảng có viền cong bo tròn `rounded-xl`, hỗ trợ cuộn ngang mượt mà, chữ không bị vỡ layout (`whitespace-nowrap`).
+
+### 17.2 Trải Nghiệm Tìm Kiếm & Lọc Dữ Liệu (Search & Filter UX)
+- **Nút "Đặt lại bộ lọc" (Reset Filters)**: Hiển thị ngay trên thanh trạng thái đếm bản ghi bất cứ khi nào người dùng kích hoạt tìm kiếm hoặc áp dụng bất kỳ bộ lọc nào (Tòa nhà, Trạng thái, Loại hợp đồng, Danh mục...). Người dùng có thể đưa bảng về trạng thái mặc định chỉ với 1 click.
+- **Nút xóa nhanh từ khóa (Clear Search)**: Icon `X` trực quan ngay trong ô Input cho phép xóa tức thì từ khóa tìm kiếm.
+
+### 17.3 An Toàn Thao Tác Xóa (Delete Safeguards)
+- **Hộp thoại Xác nhận (`ConfirmDialog`)**: 100% thao tác xóa căn hộ, cư dân, hợp đồng, hóa đơn, thông báo đều yêu cầu người dùng xác nhận rõ ràng trước khi thực hiện.
+- **Chống Submit Trùng Lặp**: Nút xác nhận xóa tự động hiển thị spinner loading (`isLoading={isPending}`) và khóa sự kiện click để ngăn người dùng gửi nhiều yêu cầu liên tiếp.
+
+### 17.4 Biểu Mẫu (Form UX) Tiêu Chuẩn Cao
+- **Required Indicator Rõ Ràng**: Tất cả các trường thông tin bắt buộc đều có dấu hoa thị màu đỏ nổi bật `<span className="text-red-500">*</span>` (Mã căn hộ, Họ tên, CCCD, SĐT, Căn hộ gán, Mã hợp đồng, Ngày bắt đầu/kết thúc, v.v.).
+- **Nút Lưu Có Loading State & Khóa Double-Submit**: Tất cả nút "Thêm mới", "Cập nhật", "Phát hành hóa đơn", "Gửi phản hồi" đều hiển thị trạng thái `isLoading` kèm nhãn động ("Đang lưu...", "Đang tự động tạo...") và tự động disable nút khi mutation đang diễn ra.
+- **Loại bỏ Hoàn Toàn `alert()`**: Toàn bộ thông báo thành công hoặc lỗi đều sử dụng hệ thống `sonner` Toast UI hiện đại.
+
+---
+
+## 18. Audit & Cải Thiện Toàn Diện Responsive + Accessibility (A11y)
+
+Đã hoàn thành đợt kiểm toán (audit) và nâng cấp sâu về khả năng tương thích đa thiết bị (Responsive) và khả năng tiếp cận (Accessibility - A11y) trên toàn bộ website:
+
+### 18.1 Kiểm Soát Breakpoints & Tương Thích Thiết Bị
+- **Kiểm tra đa kích thước màn hình**:
+  - **Mobile Siêu Nhỏ (320px - iPhone SE cũ)**: Khung Modal có padding co gọn `p-3`, giới hạn chiều cao `max-h-[92vh]` kèm thanh cuộn trong, tránh việc nội dung form dài đè tràn ra ngoài màn hình.
+  - **Mobile Phổ Biến (375px, 390px, 430px)**: Grid 1 cột cho các thẻ tóm tắt, thanh cuộn bảng ngang với `role="region"` và `tabIndex={0}`, nút bấm có vùng chạm chuẩn.
+  - **Tablet (768px - iPad)**: Tự động phân chia 2 cột cho các thẻ chỉ số (KPI Cards), bảng chuyển đổi sang bố cục rộng hơn.
+  - **Desktop (1024px, 1280px, 1440px+)**: Sidebar hỗ trợ chế độ thu gọn (`w-[72px]`) hoặc mở rộng (`w-64`), Grid 3-4 cột cho Dashboard và biểu đồ phân tích.
+
+### 18.2 Chuẩn Vùng Chạm Di Động (Touch Targets >= 44x44px)
+- **Nút Menu & Notification**: Các nút Toggle Menu di động, nút đóng Modal, nút chuông thông báo được đảm bảo kích thước chạm tối thiểu `min-h-[44px] min-w-[44px]`.
+- **Thanh Điều Hướng Đáy (Mobile Bottom Nav)**: Mỗi nút điều hướng chính có vùng bấm `min-h-[48px] min-w-[56px]`, dễ thao tác bằng ngón tay cái mà không bấm nhầm.
+- **Thanh Phân Trang (Pagination)**: Các nút "Trước", "Sau" được tăng kích thước lên `min-h-[40px]` trên mobile với khoảng đệm thoải mái.
+- **Nút Thao Tác Bảng (Table Action Buttons)**: Nút Chỉnh sửa / Xóa được chuẩn hóa `h-9 w-9` kèm khoảng cách rõ ràng giữa 2 nút.
+
+### 18.3 Tiêu Chuẩn Tiếp Cận (Accessibility - WCAG 2.1 AA)
+- **Semantic HTML & ARIA Attributes**:
+  - `Table`: Bao bọc trong container có `role="region"` và `aria-label="Bảng dữ liệu có thể cuộn"`.
+  - `Dropdown`: Trigger có `role="button"`, `aria-haspopup="true"`, `aria-expanded={open}`. Menu có `role="menu"`, từng mục có `role="menuitem"`.
+  - `Tabs`: Container có `role="tablist"`, các tab có `role="tab"` và `aria-selected={isActive}`.
+  - `Dialog`: Khung thoại có `role="dialog"`, `aria-modal="true"`. Nút đóng có `aria-label="Đóng hộp thoại"`.
+  - `Input & Select`: Có thuộc tính `aria-invalid={hasError}` và liên kết nhãn rõ ràng.
+- **Điều Hướng Bằng Bàn Phím (Keyboard Navigation)**:
+  - Tất cả menu Dropdown hỗ trợ phím **Escape** để đóng, phím **Enter** và **Space** để kích hoạt trigger.
+  - Hộp thoại Modal hỗ trợ đóng ngay bằng phím **Escape**.
+  - Các ô Tab hỗ trợ chọn bằng bàn phím với hiệu ứng vòng sáng viền xanh `focus-visible:ring-2 focus-visible:ring-blue-600/30`.
+- **Focus Replacement Không Mất Dấu**:
+  - Loại bỏ hoàn toàn việc ẩn outline không kiểm soát; thay thế bằng lớp viền mềm `focus-visible:ring-2 focus-visible:ring-blue-600/30` trên tất cả Input, Select, Button, Tab và Table container.
+- **Không Dùng Màu Sắc Là Tín Hiệu Duy Nhất**:
+  - Tất cả huy hiệu trạng thái (Status Badges) đều có **Text tiếng Việt rõ nghĩa** + **Icon đồ họa trực quan** + màu nền (Ví dụ: `Badge` có icon check/warning, `StatCard` có icon hướng mũi tên `TrendingUp`/`TrendingDown` kèm dấu `+`/`-`).
+- **Hỗ Trợ `prefers-reduced-motion`**:
+  - Khối truy vấn media `@media (prefers-reduced-motion: reduce)` trong `src/app/globals.css` tự động tắt hoặc giảm thời lượng animation về 0.01ms đối với người dùng nhạy cảm với chuyển động thị giác.
+
+---
+
+*Hệ thống đã được kiểm tra bằng lệnh `npm run build` và biên dịch thành công 100% tất cả 28 route tĩnh và dynamic với 0 lỗi.*
+
 

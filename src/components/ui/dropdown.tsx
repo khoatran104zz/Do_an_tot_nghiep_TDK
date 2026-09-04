@@ -57,8 +57,18 @@ export function DropdownTrigger({ children, className }: { children: React.React
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-haspopup="true"
+      aria-expanded={context.open}
       onClick={() => context.setOpen((prev) => !prev)}
-      className={cn('inline-flex cursor-pointer', className)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          context.setOpen((prev) => !prev);
+        }
+      }}
+      className={cn('inline-flex cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 rounded-xl', className)}
     >
       {children}
     </div>
@@ -77,13 +87,32 @@ export function DropdownContent({
   const context = React.useContext(DropdownContext);
   if (!context) throw new Error('DropdownContent must be used within Dropdown');
 
-  if (!context.open) return null;
+  const [mounted, setMounted] = React.useState(context.open);
+  const [isClosing, setIsClosing] = React.useState(false);
+
+  React.useEffect(() => {
+    if (context.open) {
+      setMounted(true);
+      setIsClosing(false);
+    } else if (mounted) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setMounted(false);
+        setIsClosing(false);
+      }, 140);
+      return () => clearTimeout(timer);
+    }
+  }, [context.open, mounted]);
+
+  if (!mounted) return null;
 
   return (
     <div
+      role="menu"
       className={cn(
-        'absolute z-50 mt-2 min-w-48 rounded-xl border border-slate-200/80 bg-white p-1.5 shadow-lg shadow-slate-900/5 focus:outline-none animate-in fade-in-0 zoom-in-95',
+        'absolute z-50 mt-2 min-w-48 rounded-xl border border-slate-200/80 bg-white p-1.5 shadow-lg shadow-slate-900/5 focus:outline-none',
         align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left',
+        isClosing ? 'animate-dropdown-out' : 'animate-dropdown-in',
         className
       )}
     >
@@ -118,14 +147,15 @@ export function DropdownItem({
   return (
     <button
       type="button"
+      role="menuitem"
       disabled={disabled}
       onClick={handleClick}
       className={cn(
-        'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors text-left select-none cursor-pointer',
+        'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors duration-150 text-left select-none cursor-pointer active:scale-[0.98] min-h-[36px] focus-visible:outline-none focus-visible:bg-slate-100',
         destructive
-          ? 'text-red-600 hover:bg-red-50 hover:text-red-700'
-          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',
-        disabled && 'cursor-not-allowed opacity-50 pointer-events-none',
+          ? 'text-red-600 hover:bg-red-50 hover:text-red-700 active:bg-red-100 focus-visible:bg-red-50'
+          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200',
+        disabled && 'cursor-not-allowed opacity-50 pointer-events-none active:scale-100',
         className
       )}
     >

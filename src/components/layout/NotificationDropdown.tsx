@@ -47,11 +47,12 @@ export function NotificationDropdown({ role }: { role?: string }) {
         variant="ghost"
         size="icon"
         onClick={() => setOpen(!open)}
-        className="relative text-slate-600 hover:text-slate-900 rounded-xl cursor-pointer"
+        className="relative text-slate-600 hover:text-slate-900 rounded-xl cursor-pointer min-h-[44px] min-w-[44px]"
         aria-label={`Thông báo (${unreadCount} chưa đọc)`}
         aria-expanded={open}
+        aria-haspopup="true"
       >
-        <Bell className="h-4.5 w-4.5" />
+        <Bell className="h-5 w-5" />
         {notifications.length > 0 && (
           <span className="absolute top-2 right-2 flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>

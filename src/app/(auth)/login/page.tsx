@@ -8,6 +8,7 @@ import { ShieldCheck, Building2, UserCheck, Lock, Mail, ArrowRight } from 'lucid
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
 function LoginForm() {
@@ -141,8 +142,12 @@ function LoginForm() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-10 font-semibold bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20" disabled={isLoading}>
-            {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+          <Button
+            type="submit"
+            className="w-full h-10 font-semibold bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20"
+            isLoading={isLoading}
+          >
+            Đăng nhập
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </form>
@@ -157,32 +162,24 @@ function LoginForm() {
               type="button"
               variant="outline"
               size="sm"
+              leftIcon={<Building2 className="h-3.5 w-3.5" />}
               className="text-xs border-dashed border-blue-300 text-blue-700 bg-blue-50/50 hover:bg-blue-100"
               onClick={() => fillDemoAccount('MANAGER')}
             >
-              BQL (Admin)
+              BQL Demo
             </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
+              leftIcon={<UserCheck className="h-3.5 w-3.5" />}
               className="text-xs border-dashed border-emerald-300 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100"
               onClick={() => fillDemoAccount('RESIDENT')}
             >
-              Cư Dân
+              Cư dân Demo
             </Button>
           </div>
         </div>
-
-        {/* Register Footer */}
-        {activeTab === 'RESIDENT' && (
-          <p className="text-center text-xs text-slate-500 pt-2">
-            Bạn chưa có tài khoản?{' '}
-            <Link href="/register" className="font-semibold text-blue-600 hover:underline">
-              Đăng ký tài khoản cư dân
-            </Link>
-          </p>
-        )}
       </CardContent>
     </Card>
   );
@@ -190,20 +187,29 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 relative overflow-hidden">
-      <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
-      <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
-
-      <div className="w-full max-w-md relative z-10">
-        <div className="text-center mb-6">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold shadow-xl shadow-blue-600/30 mb-3">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-100 via-blue-50/40 to-slate-100 p-4 sm:p-6">
+      <div className="w-full max-w-md space-y-6">
+        {/* Brand Header */}
+        <div className="text-center">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-xl shadow-blue-600/25 mb-4">
             <ShieldCheck className="h-8 w-8" />
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">SMART APARTMENT</h1>
           <p className="text-sm text-slate-500 mt-1">Hệ thống Quản lý Chung cư Thông minh</p>
         </div>
 
-        <Suspense fallback={<div className="p-8 text-center bg-white rounded-xl shadow-md text-sm text-slate-500">Đang tải...</div>}>
+        <Suspense
+          fallback={
+            <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-xl border border-slate-100 space-y-6">
+              <Skeleton className="h-10 w-full rounded-xl" />
+              <div className="space-y-4">
+                <Skeleton className="h-9 w-full rounded-lg" />
+                <Skeleton className="h-9 w-full rounded-lg" />
+              </div>
+              <Skeleton className="h-10 w-full rounded-lg" />
+            </div>
+          }
+        >
           <LoginForm />
         </Suspense>
       </div>

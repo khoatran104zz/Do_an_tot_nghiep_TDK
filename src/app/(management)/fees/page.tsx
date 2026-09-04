@@ -34,7 +34,7 @@ export default function FeeCategoriesPage() {
     description: '',
   });
 
-  const { data: response, isLoading } = useFeeCategories();
+  const { data: response, isLoading, isError, error, refetch } = useFeeCategories();
   const feeCategories = response?.data || [];
 
   const createMutation = useCreateFeeCategory();
@@ -173,7 +173,16 @@ export default function FeeCategoriesPage() {
       </PageHeader>
 
       {/* Data Table */}
-      <DataTable columns={columns} data={feeCategories} isLoading={isLoading} />
+      <DataTable
+        columns={columns}
+        data={feeCategories}
+        isLoading={isLoading}
+        isError={isError}
+        errorMessage={(error as any)?.message}
+        onRetry={() => refetch()}
+        emptyTitle="Chưa có danh mục phí nào"
+        emptyDescription="Bấm nút 'Thêm Danh mục phí' để cấu hình bảng giá thu dịch vụ tòa nhà."
+      />
 
       {/* Create / Edit Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -187,7 +196,9 @@ export default function FeeCategoriesPage() {
         <form onSubmit={handleSubmitForm} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Mã danh mục (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Mã danh mục <span className="text-red-500">*</span>
+              </label>
               <Input
                 placeholder="MGMT, WATER..."
                 value={formData.code}
@@ -197,7 +208,9 @@ export default function FeeCategoriesPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Tên loại phí (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Tên loại phí <span className="text-red-500">*</span>
+              </label>
               <Input
                 placeholder="Phí dịch vụ quản lý..."
                 value={formData.name}
@@ -209,7 +222,9 @@ export default function FeeCategoriesPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Đơn vị tính (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Đơn vị tính <span className="text-red-500">*</span>
+              </label>
               <Select
                 value={formData.unit}
                 onChange={(e) => setFormData({ ...formData, unit: e.target.value as FeeUnit })}
@@ -223,7 +238,9 @@ export default function FeeCategoriesPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Đơn giá áp dụng (VNĐ) (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Đơn giá áp dụng (VNĐ) <span className="text-red-500">*</span>
+              </label>
               <Input
                 type="number"
                 min={0}
@@ -245,13 +262,19 @@ export default function FeeCategoriesPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setIsFormOpen(false)}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
               Hủy bỏ
             </Button>
             <Button
               type="submit"
+              isLoading={createMutation.isPending || updateMutation.isPending}
               disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 font-semibold"
             >
               {createMutation.isPending || updateMutation.isPending
                 ? 'Đang lưu...'

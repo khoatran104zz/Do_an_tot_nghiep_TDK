@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, FileText, Calendar, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Calendar, AlertCircle, RotateCcw } from 'lucide-react';
 import {
   useContracts,
   useCreateContract,
@@ -48,7 +48,7 @@ export default function ContractsPage() {
   });
 
   // Queries
-  const { data: response, isLoading } = useContracts({
+  const { data: response, isLoading, isError, error, refetch } = useContracts({
     search: search || undefined,
     type: (typeFilter as ContractType) || undefined,
     status: (statusFilter as ContractStatus) || undefined,
@@ -69,6 +69,15 @@ export default function ContractsPage() {
 
   const contracts = response?.data || [];
   const meta = response?.meta || { page: 1, totalPages: 1, total: 0 };
+  const hasActiveFilters = Boolean(search || typeFilter || statusFilter || expiringSoonFilter);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setTypeFilter('');
+    setStatusFilter('');
+    setExpiringSoonFilter(false);
+    setPage(1);
+  };
 
   const handleOpenCreate = () => {
     setEditingItem(null);
@@ -210,13 +219,14 @@ export default function ContractsPage() {
     {
       header: 'Thao tác',
       cell: (row) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleOpenEdit(row)}
-            className="h-8 w-8 text-blue-600 hover:bg-blue-50"
-            title="Chỉnh sửa hợp đồng"
+            className="h-9 w-9 min-h-[36px] min-w-[36px] text-blue-600 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-600/30"
+            title={`Chỉnh sửa hợp đồng ${row.contractCode}`}
+            aria-label={`Chỉnh sửa hợp đồng ${row.contractCode}`}
           >
             <Edit className="h-4 w-4" />
           </Button>
@@ -224,8 +234,9 @@ export default function ContractsPage() {
             variant="ghost"
             size="icon"
             onClick={() => setDeletingId(row.id)}
-            className="h-8 w-8 text-red-600 hover:bg-red-50"
-            title="Xóa hợp đồng"
+            className="h-9 w-9 min-h-[36px] min-w-[36px] text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-600/30"
+            title={`Xóa hợp đồng ${row.contractCode}`}
+            aria-label={`Xóa hợp đồng ${row.contractCode}`}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -246,61 +257,73 @@ export default function ContractsPage() {
       </PageHeader>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Loại Hợp đồng</label>
-          <Select
-            value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả loại HĐ</option>
-            <option value="RENT">Hợp đồng thuê</option>
-            <option value="SALE">Hợp đồng mua bán</option>
-          </Select>
-        </div>
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Loại Hợp đồng</label>
+            <Select
+              value={typeFilter}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Tất cả loại HĐ</option>
+              <option value="RENT">Hợp đồng thuê</option>
+              <option value="SALE">Hợp đồng mua bán</option>
+            </Select>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Trạng thái HĐ</label>
-          <Select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="ACTIVE">Đang hiệu lực</option>
-            <option value="EXPIRED">Đã hết hạn</option>
-            <option value="TERMINATED">Đã thanh lý</option>
-          </Select>
-        </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Trạng thái HĐ</label>
+            <Select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="ACTIVE">Đang hiệu lực</option>
+              <option value="EXPIRED">Đã hết hạn</option>
+              <option value="TERMINATED">Đã thanh lý</option>
+            </Select>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Cảnh báo hết hạn</label>
-          <button
-            type="button"
-            onClick={() => {
-              setExpiringSoonFilter(!expiringSoonFilter);
-              setPage(1);
-            }}
-            className={`h-9 w-full flex items-center justify-center gap-2 rounded-md border px-3 text-xs font-semibold transition-all cursor-pointer ${
-              expiringSoonFilter
-                ? 'border-amber-300 bg-amber-50 text-amber-800'
-                : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            Sắp hết hạn (&lt;30 ngày)
-          </button>
-        </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Cảnh báo hết hạn</label>
+            <button
+              type="button"
+              onClick={() => {
+                setExpiringSoonFilter(!expiringSoonFilter);
+                setPage(1);
+              }}
+              className={`h-9 w-full flex items-center justify-center gap-2 rounded-md border px-3 text-xs font-semibold transition-all cursor-pointer ${
+                expiringSoonFilter
+                  ? 'border-amber-300 bg-amber-50 text-amber-800 ring-2 ring-amber-100'
+                  : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              Sắp hết hạn (&lt;30 ngày)
+            </button>
+          </div>
 
-        <div>
-          <label className="text-xs font-semibold text-slate-500 mb-1 block">Tổng số Hợp đồng</label>
-          <div className="h-9 flex items-center px-3 bg-slate-50 border border-slate-200 rounded-md text-sm font-semibold text-slate-700">
-            {meta.total} Hợp đồng
+          <div>
+            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Tổng số Hợp đồng</label>
+            <div className="h-9 flex items-center justify-between px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">
+              <span>{meta.total} Hợp đồng</span>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Đặt lại
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -310,6 +333,9 @@ export default function ContractsPage() {
         columns={columns}
         data={contracts}
         isLoading={isLoading}
+        isError={isError}
+        errorMessage={(error as any)?.message}
+        onRetry={() => refetch()}
         searchPlaceholder="Tìm mã HĐ, tên cư dân, căn hộ..."
         searchValue={search}
         onSearchChange={(val) => {
@@ -333,7 +359,9 @@ export default function ContractsPage() {
 
         <form onSubmit={handleSubmitForm} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Mã hợp đồng (*)</label>
+            <label className="text-xs font-medium text-slate-700">
+              Mã hợp đồng <span className="text-red-500">*</span>
+            </label>
             <Input
               placeholder="HD-2026-001"
               value={formData.contractCode}
@@ -344,7 +372,9 @@ export default function ContractsPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Căn hộ (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Căn hộ <span className="text-red-500">*</span>
+              </label>
               <Select
                 value={formData.apartmentId}
                 onChange={(e) => setFormData({ ...formData, apartmentId: e.target.value })}
@@ -360,7 +390,9 @@ export default function ContractsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Cư dân đại diện (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Cư dân đại diện <span className="text-red-500">*</span>
+              </label>
               <Select
                 value={formData.residentId}
                 onChange={(e) => setFormData({ ...formData, residentId: e.target.value })}
@@ -389,7 +421,9 @@ export default function ContractsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Ngày bắt đầu (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Ngày bắt đầu <span className="text-red-500">*</span>
+              </label>
               <Input
                 type="date"
                 value={formData.startDate}
@@ -399,7 +433,9 @@ export default function ContractsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Ngày kết thúc (*)</label>
+              <label className="text-xs font-medium text-slate-700">
+                Ngày kết thúc <span className="text-red-500">*</span>
+              </label>
               <Input
                 type="date"
                 value={formData.endDate}
@@ -444,13 +480,19 @@ export default function ContractsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setIsFormOpen(false)}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
               Hủy bỏ
             </Button>
             <Button
               type="submit"
+              isLoading={createMutation.isPending || updateMutation.isPending}
               disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 font-semibold"
             >
               {createMutation.isPending || updateMutation.isPending
                 ? 'Đang lưu...'

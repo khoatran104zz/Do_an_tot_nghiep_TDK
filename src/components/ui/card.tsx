@@ -1,17 +1,28 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        'rounded-xl border border-slate-200/80 bg-white text-slate-950 shadow-xs transition-all duration-150',
-        className
-      )}
-      {...props}
-    />
-  )
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  interactive?: boolean;
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, interactive, onClick, ...props }, ref) => {
+    const isInteractive = interactive ?? Boolean(onClick);
+
+    return (
+      <div
+        ref={ref}
+        onClick={onClick}
+        className={cn(
+          'rounded-xl border border-slate-200/80 bg-white text-slate-950 shadow-xs transition-all duration-200 ease-out',
+          isInteractive &&
+            'cursor-pointer hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 active:translate-y-0 active:shadow-xs',
+          className
+        )}
+        {...props}
+      />
+    );
+  }
 );
 Card.displayName = 'Card';
 

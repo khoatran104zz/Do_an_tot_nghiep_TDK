@@ -12,16 +12,37 @@ interface DialogProps {
 }
 
 export function Dialog({ open, onOpenChange, children, className }: DialogProps) {
+  const [mounted, setMounted] = React.useState(open);
+  const [isClosing, setIsClosing] = React.useState(false);
+
+  React.useEffect(() => {
+    if (open) {
+      setMounted(true);
+      setIsClosing(false);
+    } else if (mounted) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setMounted(false);
+        setIsClosing(false);
+      }, 160);
+      return () => clearTimeout(timer);
+    }
+  }, [open, mounted]);
+
+  const handleClose = React.useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
   // Lock body scroll and listen for Escape key
   React.useEffect(() => {
-    if (!open) return;
+    if (!mounted) return;
 
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onOpenChange(false);
+        handleClose();
       }
     };
 
@@ -31,37 +52,41 @@ export function Dialog({ open, onOpenChange, children, className }: DialogProps)
       document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [open, onOpenChange]);
+  }, [mounted, handleClose]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 sm:p-6"
       role="dialog"
       aria-modal="true"
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs transition-opacity duration-200 ease-out"
-        onClick={() => onOpenChange(false)}
+        className={cn(
+          'fixed inset-0 bg-slate-950/40 backdrop-blur-xs',
+          isClosing ? 'animate-backdrop-out' : 'animate-backdrop-in'
+        )}
+        onClick={handleClose}
         aria-hidden="true"
       />
 
       {/* Dialog content box */}
       <div
         className={cn(
-          'relative z-50 w-full max-w-lg rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xl transition-all duration-200 ease-out animate-in fade-in-0 zoom-in-95',
+          'relative z-50 w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xl',
+          isClosing ? 'animate-dialog-out' : 'animate-dialog-in',
           className
         )}
       >
         <button
           type="button"
-          onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600/30 cursor-pointer"
-          aria-label="Đóng"
+          onClick={handleClose}
+          className="absolute right-3 top-3 sm:right-4 sm:top-4 rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label="Đóng hộp thoại"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4.5 w-4.5" />
         </button>
         {children}
       </div>

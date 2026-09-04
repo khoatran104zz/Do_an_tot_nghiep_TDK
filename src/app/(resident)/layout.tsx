@@ -17,7 +17,7 @@ function ResidentShellContent({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <Topbar />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 md:pb-8">
-          <div className="mx-auto max-w-5xl">{children}</div>
+          <div className="mx-auto max-w-5xl animate-in fade-in-50 duration-200">{children}</div>
         </main>
       </div>
 
