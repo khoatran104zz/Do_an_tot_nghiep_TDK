@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, Column } from '@/components/shared/DataTable';
+import { FilterBar } from '@/components/shared/FilterBar';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { DetailDrawer, DetailItem } from '@/components/shared/DetailDrawer';
+import { FormDialog } from '@/components/shared/FormDialog';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Building2, Layers, Users, Home, RotateCcw } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Building2, Users, Layers, Maximize2, BedDouble, Bath, FileText } from 'lucide-react';
 import {
   useApartments,
   useCreateApartment,
@@ -17,6 +19,7 @@ import {
   useDeleteApartment,
 } from '@/hooks/use-apartments';
 import { ApartmentStatus } from '@prisma/client';
+import { toast } from 'sonner';
 
 export default function ApartmentsPage() {
   const [search, setSearch] = useState('');
@@ -24,12 +27,20 @@ export default function ApartmentsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
 
-  // Dialog states
+  // Sorting
+  const [sortKey, setSortKey] = useState<string>('code');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Row selection
+  const [selectedRowIds, setSelectedRowIds] = useState<(string | number)[]>([]);
+
+  // Dialog & Drawer states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [inspectingItem, setInspectingItem] = useState<any>(null);
 
-  // Form State
+  // Form state
   const [formData, setFormData] = useState({
     code: '',
     building: 'Tòa A',
@@ -63,6 +74,7 @@ export default function ApartmentsPage() {
     setBuildingFilter('');
     setStatusFilter('');
     setPage(1);
+    setSelectedRowIds([]);
   };
 
   const handleOpenCreate = () => {
@@ -100,11 +112,19 @@ export default function ApartmentsPage() {
     if (editingItem) {
       updateMutation.mutate(
         { id: editingItem.id, data: formData },
-        { onSuccess: () => setIsFormOpen(false) }
+        {
+          onSuccess: () => {
+            setIsFormOpen(false);
+            toast.success(`Đã cập nhật căn hộ ${formData.code}`);
+          },
+        }
       );
     } else {
       createMutation.mutate(formData, {
-        onSuccess: () => setIsFormOpen(false),
+        onSuccess: () => {
+          setIsFormOpen(false);
+          toast.success(`Đã tạo mới căn hộ ${formData.code}`);
+        },
       });
     }
   };
@@ -112,62 +132,113 @@ export default function ApartmentsPage() {
   const handleDeleteConfirm = () => {
     if (deletingId) {
       deleteMutation.mutate(deletingId, {
-        onSuccess: () => setDeletingId(null),
+        onSuccess: () => {
+          setDeletingId(null);
+          toast.success('Đã xóa căn hộ thành công');
+        },
       });
     }
   };
 
-  const renderStatusBadge = (status: ApartmentStatus) => {
-    switch (status) {
-      case 'OCCUPIED':
-        return <Badge variant="success">Đang ở</Badge>;
-      case 'UNDER_MAINTENANCE':
-        return <Badge variant="warning">Đang sửa chữa</Badge>;
-      case 'VACANT':
-      default:
-        return <Badge variant="secondary">Đang trống</Badge>;
+  // Row selection handler
+  const handleSelectRow = (id: string | number) => {
+    setSelectedRowIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedRowIds.length === apartments.length) {
+      setSelectedRowIds([]);
+    } else {
+      setSelectedRowIds(apartments.map((a: any) => a.id));
     }
   };
+
+  // Active filter tags for FilterBar
+  const activeTags = [];
+  if (buildingFilter) {
+    activeTags.push({
+      key: 'building',
+      label: 'Tòa nhà',
+      valueLabel: buildingFilter,
+      onRemove: () => setBuildingFilter(''),
+    });
+  }
+  if (statusFilter) {
+    activeTags.push({
+      key: 'status',
+      label: 'Trạng thái',
+      valueLabel:
+        statusFilter === 'OCCUPIED'
+          ? 'Đang ở'
+          : statusFilter === 'UNDER_MAINTENANCE'
+          ? 'Đang sửa chữa'
+          : 'Đang trống',
+      onRemove: () => setStatusFilter(''),
+    });
+  }
+
+  // Inspect Drawer detail items
+  const drawerItems: DetailItem[] = inspectingItem
+    ? [
+        { label: 'Mã căn hộ', value: inspectingItem.code, icon: Building2 },
+        { label: 'Tòa nhà & Tầng', value: `${inspectingItem.building} - Tầng ${inspectingItem.floor}`, icon: Layers },
+        { label: 'Diện tích sàn', value: `${inspectingItem.area} m²`, icon: Maximize2 },
+        { label: 'Cấu trúc căn hộ', value: `${inspectingItem.bedrooms} PN, ${inspectingItem.bathrooms} PT`, icon: BedDouble },
+        { label: 'Số cư dân hiện tại', value: `${inspectingItem._count?.residents || 0} người`, icon: Users },
+        { label: 'Ghi chú', value: inspectingItem.note || 'Không có ghi chú thêm', fullWidth: true },
+      ]
+    : [];
 
   const columns: Column<any>[] = [
     {
       header: 'Mã Căn hộ',
       accessorKey: 'code',
+      sortable: true,
       cell: (row) => (
-        <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs">
+        <span className="font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-md text-xs">
           {row.code}
         </span>
       ),
     },
     {
       header: 'Tòa & Tầng',
+      accessorKey: 'building',
+      sortable: true,
       cell: (row) => (
         <div>
-          <span className="font-medium text-slate-800">{row.building}</span>
-          <span className="text-xs text-slate-500 block">Tầng {row.floor}</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-200">{row.building}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 block">Tầng {row.floor}</span>
         </div>
       ),
     },
     {
       header: 'Diện tích',
-      cell: (row) => <span className="font-medium text-slate-700">{row.area} m²</span>,
+      accessorKey: 'area',
+      sortable: true,
+      cell: (row) => (
+        <span className="font-medium text-slate-700 dark:text-slate-300">{row.area} m²</span>
+      ),
     },
     {
       header: 'Cấu trúc',
       cell: (row) => (
-        <span className="text-xs text-slate-600">
+        <span className="text-xs text-slate-600 dark:text-slate-400">
           {row.bedrooms} PN, {row.bathrooms} PT
         </span>
       ),
     },
     {
       header: 'Trạng thái',
-      cell: (row) => renderStatusBadge(row.status),
+      accessorKey: 'status',
+      sortable: true,
+      cell: (row) => <StatusBadge type="apartment" status={row.status} />,
     },
     {
       header: 'Cư dân',
       cell: (row) => (
-        <div className="flex items-center gap-1.5 text-xs text-slate-600">
+        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
           <Users className="h-3.5 w-3.5 text-slate-400" />
           <span>{row._count?.residents || 0} người</span>
         </div>
@@ -175,25 +246,33 @@ export default function ApartmentsPage() {
     },
     {
       header: 'Thao tác',
+      className: 'text-right',
       cell: (row) => (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
+            onClick={() => setInspectingItem(row)}
+            className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800"
+            title="Xem chi tiết"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => handleOpenEdit(row)}
-            className="h-9 w-9 min-h-[36px] min-w-[36px] text-blue-600 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-600/30"
-            title={`Chỉnh sửa căn hộ ${row.code}`}
-            aria-label={`Chỉnh sửa căn hộ ${row.code}`}
+            className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800"
+            title="Chỉnh sửa"
           >
             <Edit className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             onClick={() => setDeletingId(row.id)}
-            className="h-9 w-9 min-h-[36px] min-w-[36px] text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-600/30"
-            title={`Xóa căn hộ ${row.code}`}
-            aria-label={`Xóa căn hộ ${row.code}`}
+            className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800"
+            title="Xóa"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -206,68 +285,53 @@ export default function ApartmentsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Quản lý Căn hộ"
-        description="Quản lý danh sách căn hộ, diện tích, trạng thái ở và cư dân trong tòa nhà."
+        description="Quản lý danh mục căn hộ, cơ cấu phòng, trạng thái ở và theo dõi cư dân từng căn hộ."
       >
-        <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 shadow-md">
-          <Plus className="mr-2 h-4 w-4" /> Thêm Căn hộ mới
+        <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20">
+          <Plus className="mr-1.5 h-4 w-4" /> Thêm Căn hộ mới
         </Button>
       </PageHeader>
 
-      {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Lọc theo Tòa nhà</label>
-            <Select
-              value={buildingFilter}
-              onChange={(e) => {
-                setBuildingFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Tất cả tòa nhà</option>
-              <option value="Tòa A">Tòa A</option>
-              <option value="Tòa B">Tòa B</option>
-              <option value="Tòa C">Tòa C</option>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Lọc theo Trạng thái</label>
-            <Select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="VACANT">Đang trống</option>
-              <option value="OCCUPIED">Đang ở</option>
-              <option value="UNDER_MAINTENANCE">Đang sửa chữa</option>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Tổng số bản ghi</label>
-            <div className="h-9 flex items-center justify-between px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">
-              <span>{meta.total} Căn hộ</span>
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  Đặt lại
-                </button>
-              )}
-            </div>
-          </div>
+      {/* Standard FilterBar */}
+      <FilterBar
+        activeTags={activeTags}
+        hasActiveFilters={hasActiveFilters}
+        onReset={handleResetFilters}
+        totalCount={meta.total}
+        totalCountLabel="Căn hộ"
+      >
+        <div className="w-44">
+          <Select
+            value={buildingFilter}
+            onChange={(e) => {
+              setBuildingFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Tất cả tòa nhà</option>
+            <option value="Tòa A">Tòa A</option>
+            <option value="Tòa B">Tòa B</option>
+            <option value="Tòa C">Tòa C</option>
+          </Select>
         </div>
-      </div>
 
-      {/* Data Table */}
+        <div className="w-44">
+          <Select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="VACANT">Đang trống</option>
+            <option value="OCCUPIED">Đang ở</option>
+            <option value="UNDER_MAINTENANCE">Đang sửa chữa</option>
+          </Select>
+        </div>
+      </FilterBar>
+
+      {/* Enterprise DataTable */}
       <DataTable
         columns={columns}
         data={apartments}
@@ -285,146 +349,173 @@ export default function ApartmentsPage() {
         totalPages={meta.totalPages}
         totalItems={meta.total}
         onPageChange={(p) => setPage(p)}
+        onRowClick={(row) => setInspectingItem(row)}
+        enableRowSelection
+        selectedRowIds={selectedRowIds}
+        onRowSelect={handleSelectRow}
+        onSelectAll={handleSelectAll}
+        enableColumnVisibility
+        sortKey={sortKey}
+        sortOrder={sortOrder}
+        onSortChange={(key, order) => {
+          setSortKey(key);
+          setSortOrder(order);
+        }}
+        bulkActions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              toast.info(`Đã áp dụng thao tác cho ${selectedRowIds.length} căn hộ`);
+              setSelectedRowIds([]);
+            }}
+            className="text-xs h-7"
+          >
+            Bỏ chọn
+          </Button>
+        }
       />
 
-      {/* Create / Edit Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogHeader>
-          <DialogTitle>{editingItem ? 'Chỉnh sửa Căn hộ' : 'Thêm mới Căn hộ'}</DialogTitle>
-          <DialogDescription>
-            Điền đầy đủ thông tin mã căn hộ, tòa nhà, diện tích và cấu trúc phòng.
-          </DialogDescription>
-        </DialogHeader>
+      {/* Slide-over Detail Drawer */}
+      <DetailDrawer
+        open={Boolean(inspectingItem)}
+        onOpenChange={(open) => !open && setInspectingItem(null)}
+        title={inspectingItem ? `Căn hộ ${inspectingItem.code}` : ''}
+        description="Thông tin chi tiết hồ sơ căn hộ, cư dân và trạng thái"
+        badge={inspectingItem && <StatusBadge type="apartment" status={inspectingItem.status} />}
+        items={drawerItems}
+        footerActions={
+          inspectingItem && (
+            <Button
+              size="sm"
+              onClick={() => {
+                const item = inspectingItem;
+                setInspectingItem(null);
+                handleOpenEdit(item);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+            >
+              <Edit className="h-3.5 w-3.5 mr-1.5" /> Chỉnh sửa
+            </Button>
+          )
+        }
+      />
 
-        <form onSubmit={handleSubmitForm} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Mã căn hộ <span className="text-red-500">*</span>
-              </label>
-              <Input
-                placeholder="A-1001"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Tòa nhà <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={formData.building}
-                onChange={(e) => setFormData({ ...formData, building: e.target.value })}
-              >
-                <option value="Tòa A">Tòa A</option>
-                <option value="Tòa B">Tòa B</option>
-                <option value="Tòa C">Tòa C</option>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Tầng <span className="text-red-500">*</span>
-              </label>
-              <Input
-                type="number"
-                min={1}
-                value={formData.floor}
-                onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) || 1 })}
-                required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Diện tích (m²) <span className="text-red-500">*</span>
-              </label>
-              <Input
-                type="number"
-                step="0.1"
-                min={10}
-                value={formData.area}
-                onChange={(e) => setFormData({ ...formData, area: parseFloat(e.target.value) || 0 })}
-                required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Trạng thái</label>
-              <Select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as ApartmentStatus })}
-              >
-                <option value="VACANT">Đang trống</option>
-                <option value="OCCUPIED">Đang ở</option>
-                <option value="UNDER_MAINTENANCE">Đang sửa chữa</option>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Số phòng ngủ</label>
-              <Input
-                type="number"
-                min={1}
-                value={formData.bedrooms}
-                onChange={(e) => setFormData({ ...formData, bedrooms: parseInt(e.target.value) || 1 })}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Số phòng tắm</label>
-              <Input
-                type="number"
-                min={1}
-                value={formData.bathrooms}
-                onChange={(e) => setFormData({ ...formData, bathrooms: parseInt(e.target.value) || 1 })}
-              />
-            </div>
-          </div>
-
+      {/* Form Dialog for Create & Edit */}
+      <FormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        title={editingItem ? `Chỉnh sửa căn hộ ${editingItem.code}` : 'Thêm Căn hộ mới'}
+        description="Điền thông tin mã căn hộ, tòa nhà, tầng, diện tích và cơ cấu phòng"
+        icon={Building2}
+        onSubmit={handleSubmitForm}
+        isLoading={createMutation.isPending || updateMutation.isPending}
+        submitText={editingItem ? 'Lưu thay đổi' : 'Tạo mới căn hộ'}
+      >
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Ghi chú thêm</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Mã căn hộ <span className="text-rose-500">*</span>
+            </label>
             <Input
-              placeholder="Ghi chú thiết bị, ban công..."
-              value={formData.note}
-              onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+              placeholder="VD: A-1001"
+              value={formData.code}
+              onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+              required
             />
           </div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => setIsFormOpen(false)}
-              disabled={createMutation.isPending || updateMutation.isPending}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Tòa nhà <span className="text-rose-500">*</span>
+            </label>
+            <Select
+              value={formData.building}
+              onChange={(e) => setFormData({ ...formData, building: e.target.value })}
             >
-              Hủy bỏ
-            </Button>
-            <Button
-              type="submit"
-              isLoading={createMutation.isPending || updateMutation.isPending}
-              disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700 font-semibold"
+              <option value="Tòa A">Tòa A</option>
+              <option value="Tòa B">Tòa B</option>
+              <option value="Tòa C">Tòa C</option>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Tầng <span className="text-rose-500">*</span>
+            </label>
+            <Input
+              type="number"
+              min={1}
+              value={formData.floor}
+              onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) || 1 })}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Diện tích (m²) <span className="text-rose-500">*</span>
+            </label>
+            <Input
+              type="number"
+              step="0.1"
+              min={10}
+              value={formData.area}
+              onChange={(e) => setFormData({ ...formData, area: parseFloat(e.target.value) || 0 })}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Trạng thái</label>
+            <Select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as ApartmentStatus })}
             >
-              {createMutation.isPending || updateMutation.isPending
-                ? 'Đang lưu...'
-                : editingItem
-                ? 'Cập nhật'
-                : 'Thêm Căn hộ'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </Dialog>
+              <option value="VACANT">Đang trống</option>
+              <option value="OCCUPIED">Đang ở</option>
+              <option value="UNDER_MAINTENANCE">Đang sửa chữa</option>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Số phòng ngủ</label>
+            <Input
+              type="number"
+              min={1}
+              value={formData.bedrooms}
+              onChange={(e) => setFormData({ ...formData, bedrooms: parseInt(e.target.value) || 1 })}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Số phòng tắm</label>
+            <Input
+              type="number"
+              min={1}
+              value={formData.bathrooms}
+              onChange={(e) => setFormData({ ...formData, bathrooms: parseInt(e.target.value) || 1 })}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Ghi chú thêm</label>
+          <Input
+            placeholder="Nội thất bàn giao, hướng ban công..."
+            value={formData.note}
+            onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+          />
+        </div>
+      </FormDialog>
 
       {/* Delete Confirmation */}
       <ConfirmDialog
-        open={!!deletingId}
+        open={Boolean(deletingId)}
         onOpenChange={(open) => !open && setDeletingId(null)}
         title="Xác nhận xóa căn hộ?"
         description="Thao tác này sẽ xóa vĩnh viễn thông tin căn hộ khỏi hệ thống. Thao tác không thể hoàn tác."

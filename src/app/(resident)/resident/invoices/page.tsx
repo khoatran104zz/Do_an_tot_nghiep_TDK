@@ -4,11 +4,11 @@ import React, { useState } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Receipt, CreditCard, Download, CheckCircle2, QrCode, ArrowRight } from 'lucide-react';
+import { Receipt, CreditCard, Download, CheckCircle2, QrCode, ArrowRight, Calendar, Building, DollarSign } from 'lucide-react';
 import { useInvoices, useProcessPayment } from '@/hooks/use-invoices';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { jsPDF } from 'jspdf';
@@ -43,6 +43,7 @@ export default function ResidentInvoicesPage() {
         onSuccess: () => {
           setIsPayModalOpen(false);
           setSelectedInvoice(null);
+          toast.success('Thanh toán thành công! Trạng thái hóa đơn đã được cập nhật.');
         },
       }
     );
@@ -55,7 +56,7 @@ export default function ResidentInvoicesPage() {
       doc.text('HOA DON THANH TOAN DICH VU CHUNG CU', 20, 20);
       doc.setFontSize(12);
       doc.text(`Ma hoa don: ${inv.code}`, 20, 35);
-      doc.text(`Can ho: ${inv.apartment?.code}`, 20, 45);
+      doc.text(`Can ho: ${inv.apartment?.code || 'Can ho'}`, 20, 45);
       doc.text(`Ky thanh toan: ${inv.billingMonth}`, 20, 55);
       doc.text(`Tong tien: ${formatCurrency(inv.totalAmount)}`, 20, 65);
       doc.text(`Trang thai: ${inv.status === 'PAID' ? 'DA THANH TOAN' : 'CHUA THANH TOAN'}`, 20, 75);
@@ -63,7 +64,7 @@ export default function ResidentInvoicesPage() {
       doc.text('----------------------------------------------------', 20, 85);
       let y = 95;
       inv.items?.forEach((item: any) => {
-        doc.text(`${item.title}: ${item.quantity} x ${item.unitPrice} = ${item.amount} VNĐ`, 20, y);
+        doc.text(`${item.title}: ${item.quantity} x ${item.unitPrice} = ${item.amount} VND`, 20, y);
         y += 10;
       });
 
@@ -77,174 +78,188 @@ export default function ResidentInvoicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Hóa đơn & Thanh toán"
-        description="Tra cứu các hóa đơn dịch vụ hàng tháng và thanh toán trực tuyến qua cổng VNPay/MoMo."
+        title="Hóa đơn & Thanh toán Phí"
+        description="Tra cứu lịch sử thu phí dịch vụ căn hộ, chi tiết điện nước và thanh toán trực tuyến qua mã QR."
       />
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="p-5 border-slate-200 space-y-4">
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-5 w-20 rounded-full" />
-              </div>
-              <Skeleton className="h-5 w-36" />
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-              </div>
-            </Card>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-8 w-36" />
+              <Skeleton className="h-4 w-full" />
+            </div>
           ))}
         </div>
       ) : isError ? (
         <Card className="p-8 text-center border-rose-200 bg-rose-50/40">
-          <p className="font-semibold text-slate-800">Không thể tải thông tin hóa đơn</p>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            {(error as any)?.message || 'Vui lòng kiểm tra lại kết nối mạng và thử lại.'}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="mt-4 text-xs text-slate-700 hover:bg-white"
-          >
+          <p className="font-semibold text-slate-800 dark:text-slate-200">Không thể tải danh sách hóa đơn</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3">
             Thử lại
           </Button>
         </Card>
       ) : invoices.length === 0 ? (
-        <EmptyState
-          icon={Receipt}
-          title="Chưa có hóa đơn nào"
-          description="Căn hộ của bạn hiện chưa phát sinh hóa đơn mới."
-        />
+        <Card className="p-8 text-center border-slate-200/80 dark:border-slate-800">
+          <EmptyState
+            icon={Receipt}
+            title="Căn hộ chưa có hóa đơn nào"
+            description="Hiện tại chưa phát sinh hóa đơn phí dịch vụ cho kỳ này."
+          />
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {invoices.map((inv: any) => (
-            <Card
-              key={inv.id}
-              className={`border transition-all hover:shadow-md ${
-                inv.status === 'UNPAID' ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-white'
-              }`}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded">
-                    {inv.code}
-                  </span>
-                  {inv.status === 'PAID' ? (
-                    <Badge variant="success">Đã thanh toán</Badge>
-                  ) : (
-                    <Badge variant="warning">Chưa thanh toán</Badge>
-                  )}
-                </div>
-                <CardTitle className="text-base font-bold text-slate-900 mt-2">
-                  Kỳ hóa đơn: Tháng {inv.billingMonth}
-                </CardTitle>
-                <p className="text-xs text-slate-500">
-                  Hạn thanh toán: <strong className="text-slate-700">{formatDate(inv.dueDate)}</strong>
-                </p>
-              </CardHeader>
-
-              <CardContent className="pb-3">
-                <div className="rounded-lg bg-slate-50 p-3 text-xs space-y-1.5 border border-slate-200">
-                  {inv.items?.map((item: any) => (
-                    <div key={item.id} className="flex justify-between items-center text-slate-600">
-                      <span>{item.title}</span>
-                      <span className="font-semibold text-slate-900">{formatCurrency(item.amount)}</span>
+        <div className="grid grid-cols-1 gap-4">
+          {invoices.map((inv: any) => {
+            const isPaid = inv.status === 'PAID';
+            return (
+              <Card
+                key={inv.id}
+                className="overflow-hidden border-slate-200/80 dark:border-slate-800 hover:shadow-md transition-all duration-200"
+              >
+                <div className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="font-mono font-bold text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 rounded">
+                        {inv.code}
+                      </span>
+                      <StatusBadge type="invoice" status={inv.status} />
+                      <span className="text-xs text-slate-400">
+                        Kỳ tháng {inv.billingMonth}
+                      </span>
                     </div>
-                  ))}
-                  <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-sm font-bold text-blue-900">
-                    <span>TỔNG TIỀN:</span>
-                    <span className="text-base text-blue-700">{formatCurrency(inv.totalAmount)}</span>
+
+                    <div className="flex items-baseline gap-2 pt-1">
+                      <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+                        {formatCurrency(inv.totalAmount)}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        (Hạn nộp: {formatDate(inv.dueDate)})
+                      </span>
+                    </div>
+
+                    {inv.items && inv.items.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {inv.items.map((item: any) => (
+                          <span
+                            key={item.id}
+                            className="text-[11px] font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200/60 dark:border-slate-700"
+                          >
+                            {item.title}: {formatCurrency(item.amount)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleExportPDF(inv)}
+                      className="text-xs font-semibold gap-1.5"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Biên lai PDF
+                    </Button>
+
+                    {!isPaid ? (
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenPay(inv)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20 gap-1.5"
+                      >
+                        <QrCode className="h-3.5 w-3.5" /> Thanh toán QR
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40">
+                        <CheckCircle2 className="h-4 w-4" /> Đã hoàn tất
+                      </div>
+                    )}
                   </div>
                 </div>
-              </CardContent>
-
-              <CardFooter className="pt-2 flex gap-2">
-                {inv.status === 'UNPAID' ? (
-                  <Button
-                    onClick={() => handleOpenPay(inv)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 shadow-md"
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" /> Thanh toán ngay
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleExportPDF(inv)}
-                    className="w-full text-slate-700 border-slate-300"
-                  >
-                    <Download className="mr-2 h-4 w-4" /> Tải biên lai PDF
-                  </Button>
-                )}
-              </CardFooter>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* Payment Sandbox Gateway Modal */}
+      {/* Payment Modal with Sandbox QR Code */}
       <Dialog open={isPayModalOpen} onOpenChange={setIsPayModalOpen}>
+        <DialogHeader>
+          <DialogTitle>Thanh toán Hóa đơn qua Mã QR</DialogTitle>
+          <DialogDescription>
+            Quét mã để thanh toán tức thời phí dịch vụ căn hộ {selectedInvoice?.apartment?.code}
+          </DialogDescription>
+        </DialogHeader>
+
         {selectedInvoice && (
-          <div>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-blue-600" />
-                Cổng thanh toán Sandbox (Giả lập)
-              </DialogTitle>
-              <DialogDescription>
-                Thanh toán hóa đơn <strong>{selectedInvoice.code}</strong> - Số tiền:{' '}
-                <strong className="text-blue-700">{formatCurrency(selectedInvoice.totalAmount)}</strong>
-              </DialogDescription>
-            </DialogHeader>
+          <div className="space-y-4 py-2">
+            {/* Amount Box */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 text-center space-y-1">
+              <span className="text-xs text-slate-500 dark:text-slate-400">Tổng số tiền cần thanh toán</span>
+              <p className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">
+                {formatCurrency(selectedInvoice.totalAmount)}
+              </p>
+              <p className="text-[11px] text-slate-400">Nội dung: {selectedInvoice.code}</p>
+            </div>
 
-            <div className="space-y-4 my-4">
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('VNPAY')}
-                  className={`p-3 rounded-lg border text-center text-xs font-bold transition-all cursor-pointer ${
-                    paymentMethod === 'VNPAY'
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-500/20'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  VNPay Sandbox QR
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('MOMO')}
-                  className={`p-3 rounded-lg border text-center text-xs font-bold transition-all cursor-pointer ${
-                    paymentMethod === 'MOMO'
-                      ? 'border-pink-600 bg-pink-50 text-pink-700 ring-2 ring-pink-500/20'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  MoMo Wallet QR
-                </button>
-              </div>
+            {/* Method switch */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('VNPAY')}
+                className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                  paymentMethod === 'VNPAY'
+                    ? 'border-blue-600 bg-blue-50/50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                <CreditCard className="h-4 w-4" />
+                VietQR / VNPay
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('MOMO')}
+                className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                  paymentMethod === 'MOMO'
+                    ? 'border-pink-600 bg-pink-50/50 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                <QrCode className="h-4 w-4" />
+                Ví MoMo
+              </button>
+            </div>
 
-              <div className="flex flex-col items-center justify-center p-6 border border-slate-200 rounded-xl bg-slate-50 text-center">
-                <div className="h-40 w-40 bg-white p-3 rounded-xl border border-slate-300 shadow-sm flex items-center justify-center mb-3">
-                  <QrCode className="h-32 w-32 text-slate-800" />
-                </div>
-                <p className="text-xs font-semibold text-slate-700">Quét mã QR bằng ứng dụng {paymentMethod}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Hoặc bấm nút "Xác nhận giả lập" để hoàn tất nhanh</p>
+            {/* QR Simulation Box */}
+            <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-center">
+              <div className="p-3 bg-white rounded-xl shadow-xs border border-slate-200 mb-2">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                    `SMART_APT_PAY_${selectedInvoice.code}_${selectedInvoice.totalAmount}`
+                  )}`}
+                  alt="QR Code Payment"
+                  className="w-36 h-36 mx-auto"
+                />
               </div>
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                Mã thanh toán Sandbox tự động khớp lệnh
+              </span>
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsPayModalOpen(false)}>
-                Hủy
+              <Button
+                variant="outline"
+                onClick={() => setIsPayModalOpen(false)}
+                disabled={payMutation.isPending}
+              >
+                Đóng lại
               </Button>
               <Button
                 onClick={handleSimulatePayment}
-                disabled={payMutation.isPending}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                isLoading={payMutation.isPending}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
               >
-                {payMutation.isPending ? 'Đang xử lý...' : 'Xác nhận Đã thanh toán (Giả lập)'}
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <CheckCircle2 className="h-4 w-4 mr-1.5" /> Xác nhận đã quét mã
               </Button>
             </DialogFooter>
           </div>

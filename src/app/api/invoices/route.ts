@@ -4,6 +4,7 @@ import { createInvoiceSchema } from '@/modules/invoice/invoice.schema';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getVerifiedResidentInfo } from '@/lib/authorization';
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,9 +19,18 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
 
-    // If resident user, filter by resident's apartment
-    if (session.user.role === 'RESIDENT' && session.user.apartmentId) {
-      apartmentId = session.user.apartmentId;
+    // IDOR Protection: If resident user, strictly force filter to their verified apartment
+    if (session.user.role === 'RESIDENT') {
+      const residentInfo = await getVerifiedResidentInfo(session.user.id);
+      if (!residentInfo?.apartmentId) {
+        return apiSuccess([], 'Lấy danh sách hóa đơn thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        });
+      }
+      apartmentId = residentInfo.apartmentId;
     }
 
     const result = await invoiceService.getInvoices({
@@ -51,7 +61,14 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validated = createInvoiceSchema.parse(body);
-    const item = await invoiceService.createInvoice(validated);
+
+    const item = await invoiceService.createInvoice(validated, {
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      actorRole: session.user.role,
+      ipAddress: req.headers.get('x-forwarded-for') || '127.0.0.1',
+    });
+
     return apiSuccess(item, 'Tạo hóa đơn thủ công thành công', undefined, 201);
   } catch (error: any) {
     if (error.name === 'ZodError') {
@@ -60,3 +77,4 @@ export async function POST(req: NextRequest) {
     return apiError(error.message || 'Tạo hóa đơn thất bại', 'CREATE_FAILED', 400);
   }
 }
+

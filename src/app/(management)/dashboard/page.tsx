@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import {
   Building2,
@@ -9,36 +10,46 @@ import {
   Receipt,
   MessageSquareWarning,
   TrendingUp,
+  TrendingDown,
   ArrowRight,
   ShieldCheck,
   AlertTriangle,
+  AlertCircle,
   Clock,
   Calendar,
   FileText,
   Plus,
   Send,
-  Sparkles,
+  Zap,
   CheckCircle2,
   HelpCircle,
   ExternalLink,
+  ChevronRight,
+  DollarSign,
+  Activity,
+  Flame,
+  RotateCcw,
+  Bell,
 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs } from '@/components/ui/tabs';
-import { EmptyState } from '@/components/ui/empty-state';
+import { Tooltip } from '@/components/ui/tooltip';
 import { AnimatedNumber } from '@/components/shared/AnimatedNumber';
-import { useDashboardStats } from '@/hooks/use-dashboard';
-import { useFeedbacks } from '@/hooks/use-feedbacks';
-import { useContracts } from '@/hooks/use-contracts';
-import { useInvoices } from '@/hooks/use-invoices';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { useManagementDashboard } from '@/hooks/use-dashboard';
+import { SmartDashboardAlerts, SmartInsightCards } from '@/components/dashboard/smart-operations-cards';
 import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   PieChart,
   Pie,
@@ -46,62 +57,45 @@ import {
 } from 'recharts';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 
-export default function DashboardPage() {
+export default function SmartApartmentOperationsDashboard() {
+  const router = useRouter();
   const { data: session } = useSession();
   const user = session?.user;
 
-  // Real data fetching
-  const { data: statsRes, isLoading: isLoadingStats } = useDashboardStats();
-  const { data: urgentFeedbacksRes } = useFeedbacks({ status: 'NEW' as any, limit: 5 });
-  const { data: expiringContractsRes } = useContracts({ expiringSoon: true, limit: 5 });
-  const { data: overdueInvoicesRes } = useInvoices({ status: 'OVERDUE' as any, limit: 5 });
+  // Selected duration for Revenue Analytics: 6 or 12 months
+  const [revenueMonths, setRevenueMonths] = useState<6 | 12>(6);
 
-  const stats = statsRes?.data;
-  const overview = stats?.overview || {
-    totalApartments: 0,
-    occupiedApartments: 0,
-    occupancyRate: 0,
-    totalResidents: 0,
-    activeContracts: 0,
-    collectionRate: 0,
-    pendingTickets: 0,
+  // Fetch real aggregated dashboard data from API
+  const {
+    data: response,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useManagementDashboard(revenueMonths);
+
+  const dashboardData = response?.data;
+  const kpis = dashboardData?.kpis;
+  const revenueAnalytics = dashboardData?.revenueAnalytics || [];
+  const occupancy = dashboardData?.occupancy || {
+    total: 0,
+    occupied: 0,
+    occupiedPercent: 0,
+    vacant: 0,
+    vacantPercent: 0,
+    maintenance: 0,
+    maintenancePercent: 0,
   };
+  const maintenance = dashboardData?.maintenance || {
+    statusDistribution: { NEW: 0, PROCESSING: 0, RESOLVED: 0, REJECTED: 0 },
+    priorityDistribution: { URGENT: 0, HIGH: 0, MEDIUM: 0, LOW: 0 },
+    criticalTickets: [],
+  };
+  const activityFeed = dashboardData?.activityFeed || [];
+  const alerts = dashboardData?.alerts;
 
-  const revenueTrend = stats?.charts?.revenueTrend || [];
-  const apartmentStatusChart = stats?.charts?.apartmentStatusChart || [];
-  const ticketCategoryChart = stats?.charts?.ticketCategoryChart || [];
-
-  const urgentFeedbacks = urgentFeedbacksRes?.data || [];
-  const expiringContracts = expiringContractsRes?.data || [];
-  const overdueInvoices = overdueInvoicesRes?.data || [];
-
-  const [activeActionTab, setActiveActionTab] = useState('tickets');
-
-  const actionTabItems = useMemo(
-    () => [
-      {
-        id: 'tickets',
-        label: 'Sự cố mới',
-        icon: <MessageSquareWarning className="h-3.5 w-3.5" />,
-        count: urgentFeedbacks.length,
-      },
-      {
-        id: 'contracts',
-        label: 'Hợp đồng hết hạn',
-        icon: <FileText className="h-3.5 w-3.5" />,
-        count: expiringContracts.length,
-      },
-      {
-        id: 'overdue',
-        label: 'Hóa đơn quá hạn',
-        icon: <Receipt className="h-3.5 w-3.5" />,
-        count: overdueInvoices.length,
-      },
-    ],
-    [urgentFeedbacks.length, expiringContracts.length, overdueInvoices.length]
-  );
-
-  // Greeting helper based on time
+  // Time-based Vietnamese greeting
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Chào buổi sáng';
@@ -112,665 +106,764 @@ export default function DashboardPage() {
   const todayFormatted = useMemo(() => {
     const d = new Date();
     const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-    return `${days[d.getDay()]}, ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+    return `${days[d.getDay()]}, ngày ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
   }, []);
 
+  // Occupancy Donut chart data
+  const occupancyChartData = useMemo(() => {
+    return [
+      { name: 'Đang ở', value: occupancy.occupied, fill: '#2563EB', statusKey: 'OCCUPIED' },
+      { name: 'Đang trống', value: occupancy.vacant, fill: '#94A3B8', statusKey: 'VACANT' },
+      { name: 'Đang sửa chữa', value: occupancy.maintenance, fill: '#F59E0B', statusKey: 'UNDER_MAINTENANCE' },
+    ];
+  }, [occupancy]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-24 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-32 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 h-96 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+          <div className="h-96 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="py-12">
+        <ErrorState
+          title="Không thể tải dữ liệu Operations Dashboard"
+          message={(error as any)?.message}
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 animate-in fade-in-50 duration-200">
-      {/* Smart Operational Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl shadow-slate-900/10">
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                Hệ thống trực tuyến
-              </span>
-              <span className="text-xs text-slate-400 flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" />
-                {todayFormatted}
-              </span>
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              {greeting}, {user?.name || 'Ban Quản Lý'} 👋
+    <div className="space-y-6">
+      {/* ===================================================================
+          SECTION 1 — Welcome & Context
+          =================================================================== */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              {greeting}, {user?.name || 'Trưởng Ban Quản Lý'} 👋
             </h1>
-            <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Trung tâm điều hành & giám sát vận hành tòa nhà. Theo dõi tức thời tỷ lệ lấp đầy, dòng tiền phí dịch vụ và điều phối xử lý phản ánh cư dân.
-            </p>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Live System
+            </span>
           </div>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <Calendar className="h-3.5 w-3.5" />
+            <span>{todayFormatted}</span>
+            <span>•</span>
+            <span>Hệ thống giám sát vận hành thông minh theo thời gian thực</span>
+          </p>
+        </div>
 
-          {/* Quick Primary Actions */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            <Link href="/invoices">
-              <Button variant="secondary" size="sm" className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-xs">
-                <Receipt className="h-4 w-4 mr-1.5" />
-                Lập hóa đơn
-              </Button>
-            </Link>
-            <Link href="/notifications">
-              <Button variant="secondary" size="sm" className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-xs">
-                <Send className="h-4 w-4 mr-1.5" />
-                Đăng thông báo
-              </Button>
-            </Link>
-            <Link href="/feedbacks">
-              <Button size="sm" className="bg-primary-600 hover:bg-primary-500 text-white shadow-md shadow-primary-600/30">
-                <MessageSquareWarning className="h-4 w-4 mr-1.5" />
-                Xử lý sự cố
-              </Button>
-            </Link>
-          </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="text-xs font-semibold gap-1.5 h-9"
+          >
+            <RotateCcw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin text-blue-600' : ''}`} />
+            {isFetching ? 'Đang đồng bộ...' : 'Làm mới'}
+          </Button>
         </div>
       </div>
 
-      {/* 4 Primary Key Performance Indicator Cards with Animated Counter & Progress */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Occupancy Rate */}
-        <Card className="border-slate-200 shadow-2xs hover:shadow-md transition-all duration-200">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Tỷ lệ lấp đầy
-                </p>
-                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-baseline gap-1">
-                  <AnimatedNumber value={overview.occupancyRate} decimals={1} />
-                  <span className="text-lg font-bold text-slate-500">%</span>
-                </div>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-xl text-blue-600 border border-blue-100">
-                <Building2 className="h-6 w-6" />
-              </div>
-            </div>
+      {/* Quick Action Management Bar */}
+      <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 shadow-2xs backdrop-blur-xs">
+        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-2">
+          Thao tác nhanh:
+        </span>
+        <Link href="/apartments">
+          <Button variant="outline" size="sm" className="rounded-xl text-xs font-semibold gap-1.5 h-8 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <Building2 className="h-3.5 w-3.5 text-blue-600" />
+            Căn hộ
+          </Button>
+        </Link>
+        <Link href="/residents">
+          <Button variant="outline" size="sm" className="rounded-xl text-xs font-semibold gap-1.5 h-8 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <Users className="h-3.5 w-3.5 text-emerald-600" />
+            Cư dân
+          </Button>
+        </Link>
+        <Link href="/invoices">
+          <Button variant="outline" size="sm" className="rounded-xl text-xs font-semibold gap-1.5 h-8 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <Receipt className="h-3.5 w-3.5 text-amber-600" />
+            Phát sinh Hóa đơn
+          </Button>
+        </Link>
+        <Link href="/feedbacks">
+          <Button variant="outline" size="sm" className="rounded-xl text-xs font-semibold gap-1.5 h-8 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <MessageSquareWarning className="h-3.5 w-3.5 text-red-600" />
+            Xử lý Sự cố
+          </Button>
+        </Link>
+        <Link href="/notifications">
+          <Button variant="outline" size="sm" className="rounded-xl text-xs font-semibold gap-1.5 h-8 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700">
+            <Bell className="h-3.5 w-3.5 text-purple-600" />
+            Gửi Thông báo
+          </Button>
+        </Link>
+      </div>
 
-            <div className="mt-4 space-y-1.5">
-              <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
-                <span>{overview.occupiedApartments} đang ở</span>
-                <span>{overview.totalApartments} tổng căn</span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: `${Math.min(overview.occupancyRate, 100)}%` }}
-                />
-              </div>
-            </div>
+      {/* ===================================================================
+          SMART OPERATIONS — 5 VIỆC CẦN CHÚ Ý HÔM NAY (Top 5 Prioritized)
+          =================================================================== */}
+      <SmartDashboardAlerts />
 
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-500">Tình trạng quỹ phòng</span>
-              <Badge variant={overview.occupancyRate >= 80 ? 'success' : 'secondary'} size="sm">
-                {overview.occupancyRate >= 80 ? 'Tốt (>80%)' : 'Còn trống'}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Card 2: Total Residents & Contracts */}
-        <Card className="border-slate-200 shadow-2xs hover:shadow-md transition-all duration-200">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Cư dân đang sinh sống
-                </p>
-                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-baseline gap-1">
-                  <AnimatedNumber value={overview.totalResidents} />
-                  <span className="text-sm font-semibold text-slate-500">người</span>
-                </div>
-              </div>
-              <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 border border-emerald-100">
-                <Users className="h-6 w-6" />
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-1 text-xs text-slate-600">
-              <p className="flex items-center justify-between">
-                <span>Hợp đồng có hiệu lực:</span>
-                <span className="font-bold text-slate-900">{overview.activeContracts} HĐ</span>
-              </p>
-              <p className="flex items-center justify-between">
-                <span>Căn hộ trung bình:</span>
-                <span className="font-bold text-slate-900">
-                  {overview.occupiedApartments > 0
-                    ? (overview.totalResidents / overview.occupiedApartments).toFixed(1)
-                    : 0}{' '}
-                  người/căn
-                </span>
-              </p>
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-500">Quy mô cư dân</span>
-              <span className="text-emerald-600 font-semibold flex items-center gap-0.5">
-                <TrendingUp className="h-3 w-3" />
-                Ổn định
+      {/* ===================================================================
+          SECTION 2 — Key Performance Indicators (6 Cards)
+          =================================================================== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+        {/* KPI 1: Total Apartments */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Tổng căn hộ
               </span>
+              <Tooltip content={kpis?.totalApartments.description || 'Tổng số căn hộ toàn tòa nhà'}>
+                <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+              </Tooltip>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Card 3: Collection Rate */}
-        <Card className="border-slate-200 shadow-2xs hover:shadow-md transition-all duration-200">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Tỷ lệ thu phí kỳ này
-                </p>
-                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-baseline gap-1">
-                  <AnimatedNumber value={overview.collectionRate} decimals={1} />
-                  <span className="text-lg font-bold text-slate-500">%</span>
-                </div>
-              </div>
-              <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 border border-indigo-100">
-                <Receipt className="h-6 w-6" />
-              </div>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+              <AnimatedNumber value={kpis?.totalApartments.value || 0} />
             </div>
-
-            <div className="mt-4 space-y-1.5">
-              <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
-                <span>Tiến độ thanh toán</span>
-                <span>{overview.collectionRate}%</span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-indigo-600 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: `${Math.min(overview.collectionRate, 100)}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-500">Chỉ tiêu tháng</span>
-              <Badge variant={overview.collectionRate >= 90 ? 'success' : 'warning'} size="sm">
-                {overview.collectionRate >= 90 ? 'Đạt mục tiêu' : 'Đang thu gom'}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Card 4: Pending Tickets */}
-        <Card className="border-slate-200 shadow-2xs hover:shadow-md transition-all duration-200">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Sự cố & Yêu cầu hỗ trợ
-                </p>
-                <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-baseline gap-1">
-                  <AnimatedNumber value={overview.pendingTickets} />
-                  <span className="text-sm font-semibold text-slate-500">chờ xử lý</span>
-                </div>
-              </div>
-              <div
-                className={`p-3 rounded-xl border ${
-                  overview.pendingTickets > 0
-                    ? 'bg-amber-50 text-amber-600 border-amber-100'
-                    : 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                }`}
-              >
-                {overview.pendingTickets > 0 ? (
-                  <MessageSquareWarning className="h-6 w-6" />
+            <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800">
+              <span className={kpis?.totalApartments.isPositive ? 'text-emerald-600 font-semibold flex items-center' : 'text-slate-500'}>
+                {kpis?.totalApartments.changePercent ? (
+                  <>
+                    <TrendingUp className="h-3 w-3 mr-0.5 inline" />
+                    +{kpis.totalApartments.changePercent}%
+                  </>
                 ) : (
-                  <CheckCircle2 className="h-6 w-6" />
+                  'Ổn định'
                 )}
-              </div>
+              </span>
+              <span className="text-slate-400">vs tháng trước</span>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="mt-4 space-y-1 text-xs text-slate-600">
-              <p className="flex items-center justify-between">
-                <span>Tình trạng phân công:</span>
-                <span className="font-bold text-slate-900">
-                  {overview.pendingTickets > 0 ? 'Cần kỹ thuật tiếp nhận' : 'Đã hoàn tất'}
-                </span>
-              </p>
-              <p className="flex items-center justify-between">
-                <span>Độ ưu tiên:</span>
-                <span className={overview.pendingTickets > 0 ? 'text-amber-600 font-bold' : 'text-slate-500'}>
-                  {overview.pendingTickets > 0 ? 'Yêu cầu hành động' : 'Bình thường'}
-                </span>
-              </p>
+        {/* KPI 2: Occupancy Rate */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Tỷ lệ lấp đầy
+              </span>
+              <Tooltip content={kpis?.occupancyRate.description || 'Tỷ lệ căn hộ đang có cư dân ở'}>
+                <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+              </Tooltip>
             </div>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-baseline gap-0.5">
+              <AnimatedNumber value={kpis?.occupancyRate.value || 0} decimals={1} />
+              <span className="text-sm font-bold text-slate-500">%</span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800">
+              <span className="font-semibold text-blue-600 dark:text-blue-400">
+                {kpis?.occupancyRate.occupiedCount}/{kpis?.occupancyRate.totalApartments} căn
+              </span>
+              <span className="text-slate-400">đang ở</span>
+            </div>
+          </CardContent>
+        </Card>
 
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-500">Hành động</span>
-              <Link
-                href="/feedbacks"
-                className="text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1"
-              >
-                Xem danh sách <ArrowRight className="h-3 w-3" />
-              </Link>
+        {/* KPI 3: Total Residents */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Tổng cư dân
+              </span>
+              <Tooltip content={kpis?.totalResidents.description || 'Số lượng cư dân đang cư trú'}>
+                <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+              </Tooltip>
+            </div>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-baseline gap-1">
+              <AnimatedNumber value={kpis?.totalResidents.value || 0} />
+              <span className="text-xs font-normal text-slate-500">người</span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800">
+              <span className={kpis?.totalResidents.changePercent >= 0 ? 'text-emerald-600 font-semibold flex items-center' : 'text-rose-600 font-semibold flex items-center'}>
+                {kpis?.totalResidents.changePercent >= 0 ? (
+                  <TrendingUp className="h-3 w-3 mr-0.5" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 mr-0.5" />
+                )}
+                {kpis?.totalResidents.changePercent > 0 ? '+' : ''}
+                {kpis?.totalResidents.changePercent}%
+              </span>
+              <span className="text-slate-400">vs kỳ trước</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* KPI 4: Monthly Revenue */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Doanh thu tháng
+              </span>
+              <Tooltip content={kpis?.monthlyRevenue.description || 'Doanh thu phát hành trong tháng'}>
+                <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+              </Tooltip>
+            </div>
+            <div className="text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight truncate">
+              {formatCurrency(kpis?.monthlyRevenue.value || 0)}
+            </div>
+            <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800">
+              <span className={kpis?.monthlyRevenue.isPositive ? 'text-emerald-600 font-semibold flex items-center' : 'text-rose-600 font-semibold flex items-center'}>
+                {kpis?.monthlyRevenue.isPositive ? (
+                  <TrendingUp className="h-3 w-3 mr-0.5" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 mr-0.5" />
+                )}
+                {kpis?.monthlyRevenue.changePercent > 0 ? '+' : ''}
+                {kpis?.monthlyRevenue.changePercent}%
+              </span>
+              <span className="text-slate-400">vs tháng trước</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* KPI 5: Outstanding Debt */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Công nợ tồn đọng
+              </span>
+              <Tooltip content={kpis?.outstandingDebt.description || 'Các hóa đơn chưa thu hoặc quá hạn'}>
+                <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+              </Tooltip>
+            </div>
+            <div className="text-xl font-extrabold text-amber-600 dark:text-amber-400 tracking-tight truncate">
+              {formatCurrency(kpis?.outstandingDebt.value || 0)}
+            </div>
+            <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800">
+              <span className={kpis?.outstandingDebt.isPositive ? 'text-emerald-600 font-semibold flex items-center' : 'text-rose-600 font-semibold flex items-center'}>
+                {kpis?.outstandingDebt.changePercent > 0 ? '+' : ''}
+                {kpis?.outstandingDebt.changePercent}%
+              </span>
+              <span className="text-slate-400">vs kỳ trước</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* KPI 6: Active Tickets */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Ticket đang xử lý
+              </span>
+              <Tooltip content={kpis?.activeTickets.description || 'Phản ánh mới hoặc đang xử lý'}>
+                <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+              </Tooltip>
+            </div>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-baseline gap-1">
+              <AnimatedNumber value={kpis?.activeTickets.value || 0} />
+              <span className="text-xs font-normal text-slate-500">yêu cầu</span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800">
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                {kpis?.activeTickets.resolvedValue || 0} đã xong
+              </span>
+              <span className="text-slate-400">tổng kỳ</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Operational Action Center (Priority Tasks & Alerts) */}
-      <Card className="border-slate-200 shadow-2xs">
-        <CardHeader className="pb-3 border-b border-slate-100">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      {/* ===================================================================
+          SMART INSIGHTS — Collection, Occupancy & Ticket Performance
+          =================================================================== */}
+      <SmartInsightCards />
+
+      {/* ===================================================================
+          SECTION 6 — QUICK ACTIONS (RBAC-aware)
+          =================================================================== */}
+      <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs bg-slate-50/50 dark:bg-slate-900/40">
+        <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+              <Zap className="h-4 w-4" />
+            </span>
             <div>
-              <CardTitle className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
-                Trung tâm Xử lý Khẩn & Tồn đọng
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-500">
-                Các sự cố kỹ thuật, hợp đồng sắp hết hạn và hóa đơn quá hạn cần ban quản lý lưu ý
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">
-                Cập nhật tự động
-              </Badge>
+              <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Thao tác nhanh vận hành</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Lối tắt tạo nhanh các đối tượng nghiệp vụ</p>
             </div>
           </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/apartments">
+              <Button size="sm" variant="outline" className="text-xs h-8 gap-1.5 hover:border-blue-500">
+                <Plus className="h-3.5 w-3.5" /> Thêm Căn hộ
+              </Button>
+            </Link>
+
+            <Link href="/residents">
+              <Button size="sm" variant="outline" className="text-xs h-8 gap-1.5 hover:border-blue-500">
+                <Users className="h-3.5 w-3.5" /> Thêm Cư dân
+              </Button>
+            </Link>
+
+            <Link href="/invoices">
+              <Button size="sm" variant="outline" className="text-xs h-8 gap-1.5 hover:border-blue-500">
+                <Receipt className="h-3.5 w-3.5" /> Phát hành Hóa đơn
+              </Button>
+            </Link>
+
+            <Link href="/notifications">
+              <Button size="sm" variant="outline" className="text-xs h-8 gap-1.5 hover:border-blue-500">
+                <Send className="h-3.5 w-3.5" /> Đăng Thông báo
+              </Button>
+            </Link>
+
+            <Link href="/feedbacks">
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8 gap-1.5">
+                <MessageSquareWarning className="h-3.5 w-3.5" /> Xử lý Sự cố
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ===================================================================
+          SECTION 3 & SECTION 4: REVENUE ANALYTICS & OCCUPANCY DONUT
+          =================================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* SECTION 3 — REVENUE ANALYTICS (Revenue vs Collection) */}
+        <Card className="lg:col-span-2 border-slate-200/80 dark:border-slate-800 shadow-2xs">
+          <CardHeader className="pb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-blue-600" />
+                  Doanh thu & Tiến độ Thu phí (Revenue vs Collection)
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  So sánh dòng tiền tổng phát hành hóa đơn và số tiền thực thu về tài khoản
+                </CardDescription>
+              </div>
+
+              {/* 6 vs 12 months toggle */}
+              <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setRevenueMonths(6)}
+                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                    revenueMonths === 6
+                      ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-300 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'
+                  }`}
+                >
+                  6 Tháng
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRevenueMonths(12)}
+                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                    revenueMonths === 12
+                      ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-300 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-100'
+                  }`}
+                >
+                  12 Tháng
+                </button>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="pt-4">
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={revenueAnalytics} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <XAxis
+                    dataKey="monthLabel"
+                    tick={{ fontSize: 11, fill: '#64748B' }}
+                    axisLine={{ stroke: '#E2E8F0' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#64748B' }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(val) => `${(val / 1000000).toFixed(0)}Tr`}
+                  />
+                  <RechartsTooltip
+                    formatter={(val: any, name: any) => [
+                      formatCurrency(Number(val)),
+                      name === 'billed' ? 'Tổng phát hành' : name === 'collected' ? 'Thực thu' : 'Công nợ',
+                    ]}
+                    contentStyle={{
+                      backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                      borderRadius: '12px',
+                      border: 'none',
+                      color: '#F8FAFC',
+                      fontSize: '12px',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
+                    }}
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    wrapperStyle={{ paddingBottom: '12px', fontSize: '11px' }}
+                    formatter={(value) =>
+                      value === 'billed' ? 'Tổng phát hành' : value === 'collected' ? 'Thực thu' : 'Công nợ'
+                    }
+                  />
+                  <Bar dataKey="billed" fill="#3B82F6" radius={[6, 6, 0, 0]} maxBarSize={32} />
+                  <Bar dataKey="collected" fill="#10B981" radius={[6, 6, 0, 0]} maxBarSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SECTION 4 — OCCUPANCY DONUT CHART */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-blue-600" />
+              Tỷ lệ Lấp đầy Căn hộ
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Nhấp vào từng nhóm để điều hướng tới danh sách căn hộ
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="pt-2 flex-1 flex flex-col justify-center">
+            <div className="h-48 relative flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={occupancyChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={75}
+                    paddingAngle={3}
+                    dataKey="value"
+                    cursor="pointer"
+                    onClick={(entry: any) => {
+                      if (entry?.statusKey) {
+                        router.push(`/apartments?status=${entry.statusKey}`);
+                      }
+                    }}
+                  >
+                    {occupancyChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip
+                    formatter={(val: any) => [`${val} căn`, 'Số lượng']}
+                    contentStyle={{
+                      backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      fontSize: '11px',
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+
+              {/* Center percentage label */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">
+                  {occupancy.occupiedPercent}%
+                </span>
+                <span className="text-[10px] font-semibold text-slate-400 uppercase">Đang ở</span>
+              </div>
+            </div>
+
+            {/* Interactive Status List */}
+            <div className="space-y-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => router.push('/apartments?status=OCCUPIED')}
+                className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors text-left group cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-blue-600">
+                    Đang ở (Occupied)
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                  {occupancy.occupied} căn ({occupancy.occupiedPercent}%)
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push('/apartments?status=VACANT')}
+                className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors text-left group cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-blue-600">
+                    Đang trống (Vacant)
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                  {occupancy.vacant} căn ({occupancy.vacantPercent}%)
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push('/apartments?status=UNDER_MAINTENANCE')}
+                className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors text-left group cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-amber-600">
+                    Bảo dưỡng (Maintenance)
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                  {occupancy.maintenance} căn ({occupancy.maintenancePercent}%)
+                </div>
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ===================================================================
+          SECTION 5: MAINTENANCE OPERATIONS & CRITICAL TICKETS
+          =================================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Ticket Lifecycle & Priority Status Breakdown */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Activity className="h-4 w-4 text-blue-600" />
+              Phân loại Vận hành Sự cố
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Trạng thái tiếp nhận và mức độ khẩn cấp của các phản ánh
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            {/* Status Breakdown Pills */}
+            <div className="space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                Tiến trình xử lý
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900">
+                  <span className="text-xs font-semibold text-rose-700 dark:text-rose-400 block">Mới gửi</span>
+                  <span className="text-xl font-bold text-rose-900 dark:text-rose-100">
+                    {maintenance.statusDistribution.NEW}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900">
+                  <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 block">Đang xử lý</span>
+                  <span className="text-xl font-bold text-amber-900 dark:text-amber-100">
+                    {maintenance.statusDistribution.PROCESSING}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900">
+                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 block">Hoàn thành</span>
+                  <span className="text-xl font-bold text-emerald-900 dark:text-emerald-100">
+                    {maintenance.statusDistribution.RESOLVED}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 block">Từ chối</span>
+                  <span className="text-xl font-bold text-slate-800 dark:text-slate-200">
+                    {maintenance.statusDistribution.REJECTED}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Priority Distribution */}
+            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                Phân bố mức độ ưu tiên
+              </span>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 font-bold text-rose-600">
+                    <Flame className="h-3.5 w-3.5" /> Khẩn cấp (Urgent)
+                  </span>
+                  <span className="font-bold">{maintenance.priorityDistribution.URGENT}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 font-semibold text-amber-600">
+                    <AlertCircle className="h-3.5 w-3.5" /> Cao (High)
+                  </span>
+                  <span className="font-bold">{maintenance.priorityDistribution.HIGH}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                  <span>Trung bình (Medium)</span>
+                  <span className="font-bold">{maintenance.priorityDistribution.MEDIUM}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                  <span>Thấp (Low)</span>
+                  <span className="font-bold">{maintenance.priorityDistribution.LOW}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Critical Tickets Action List */}
+        <Card className="lg:col-span-2 border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Flame className="h-4 w-4 text-rose-600" />
+                  Sự cố Khẩn cấp & Cần Ưu tiên (Critical Tickets)
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Các phản ánh sự cố kỹ thuật có độ ưu tiên cao cần xử lý ngay
+                </CardDescription>
+              </div>
+
+              <Link href="/feedbacks">
+                <Button variant="ghost" size="sm" className="text-xs text-blue-600 hover:underline gap-1">
+                  Xem tất cả <ArrowRight className="h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+
+          <CardContent className="flex-1">
+            {maintenance.criticalTickets.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center text-slate-400">
+                <CheckCircle2 className="h-10 w-10 text-emerald-500 mb-2" />
+                <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                  Tuyệt vời! Không có sự cố khẩn cấp nào tồn đọng
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">Tất cả yêu cầu cấp thiết đã được giải quyết</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {maintenance.criticalTickets.map((t: any) => (
+                  <div
+                    key={t.id}
+                    className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 p-2 rounded-xl transition-colors"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950 px-2 py-0.5 rounded">
+                          {t.code}
+                        </span>
+                        <StatusBadge type="ticketPriority" status={t.priority} />
+                        <StatusBadge type="ticketStatus" status={t.status} />
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          {t.apartment?.code} ({t.apartment?.building})
+                        </span>
+                      </div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{t.title}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Người gửi: {t.resident?.fullName} • SĐT: {t.resident?.phone}
+                      </p>
+                    </div>
+
+                    <Link href="/feedbacks">
+                      <Button size="sm" variant="outline" className="text-xs h-8 font-semibold shrink-0 gap-1">
+                        Xử lý <ChevronRight className="h-3 w-3" />
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ===================================================================
+          SECTION 7: ACTIVITY FEED (Real-time events from DB)
+          =================================================================== */}
+      <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Activity className="h-4 w-4 text-blue-600" />
+            Nhật ký Hoạt động Vận hành (Live Operations Feed)
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Dòng sự kiện ghi nhận giao dịch thanh toán, cập nhật sự cố và thông báo tòa nhà
+          </CardDescription>
         </CardHeader>
 
-        <CardContent className="p-4 sm:p-6">
-          <Tabs
-            items={actionTabItems}
-            activeId={activeActionTab}
-            onChange={setActiveActionTab}
-            className="mb-5 max-w-xl"
-          />
-
-          {/* Tab 1: New Urgent Tickets */}
-          {activeActionTab === 'tickets' && (
-            <div>
-              {urgentFeedbacks.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {urgentFeedbacks.map((ticket: any) => (
+        <CardContent>
+          {activityFeed.length === 0 ? (
+            <p className="text-xs text-slate-400 text-center py-6">Chưa có sự kiện nào gần đây</p>
+          ) : (
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              {activityFeed.map((act: any) => {
+                const isPayment = act.type === 'PAYMENT';
+                const isTicket = act.type === 'TICKET';
+                return (
+                  <div key={act.id} className="py-3 flex items-start gap-3.5">
                     <div
-                      key={ticket.id}
-                      className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300 transition-all flex flex-col justify-between"
+                      className={`p-2 rounded-xl mt-0.5 shrink-0 ${
+                        isPayment
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+                          : isTicket
+                          ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400'
+                          : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'
+                      }`}
                     >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge
-                              variant={
-                                ticket.priority === 'URGENT'
-                                  ? 'destructive'
-                                  : ticket.priority === 'HIGH'
-                                  ? 'warning'
-                                  : 'info'
-                              }
-                              size="sm"
-                            >
-                              {ticket.priority === 'URGENT'
-                                ? 'Khẩn cấp'
-                                : ticket.priority === 'HIGH'
-                                ? 'Ưu tiên cao'
-                                : 'Bình thường'}
-                            </Badge>
-                            <span className="text-xs font-semibold text-slate-700">
-                              {ticket.apartment?.apartmentNumber
-                                ? `Phòng ${ticket.apartment.apartmentNumber}`
-                                : 'Toàn khu'}
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-slate-400">
-                            {formatDate(ticket.createdAt)}
-                          </span>
-                        </div>
+                      {isPayment ? (
+                        <Receipt className="h-4 w-4" />
+                      ) : isTicket ? (
+                        <MessageSquareWarning className="h-4 w-4" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </div>
 
-                        <h4 className="font-semibold text-sm text-slate-900 line-clamp-1">
-                          {ticket.title}
-                        </h4>
-                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                          {ticket.content}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                          {act.title}
                         </p>
-                      </div>
-
-                      <div className="mt-3 pt-3 border-t border-slate-200/60 flex items-center justify-between">
-                        <span className="text-xs text-slate-500">
-                          Người gửi: <strong className="text-slate-800">{ticket.resident?.fullName || 'Cư dân'}</strong>
+                        <span className="text-[11px] text-slate-400 shrink-0">
+                          {formatDateTime(act.timestamp)}
                         </span>
-                        <Link href={`/feedbacks?id=${ticket.id}`}>
-                          <Button variant="ghost" size="xs" className="text-primary-600 hover:text-primary-700">
-                            Tiếp nhận & xử lý <ArrowRight className="h-3 w-3 ml-1" />
-                          </Button>
-                        </Link>
                       </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {act.description}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={CheckCircle2}
-                  title="Không có sự cố mới cần duyệt"
-                  description="Toàn bộ yêu cầu và phản ánh của cư dân đã được tiếp nhận và xử lý kịp thời."
-                />
-              )}
-            </div>
-          )}
-
-          {/* Tab 2: Expiring Contracts (<30 days) */}
-          {activeActionTab === 'contracts' && (
-            <div>
-              {expiringContracts.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {expiringContracts.map((contract: any) => (
-                    <div
-                      key={contract.id}
-                      className="p-4 rounded-xl border border-amber-200/70 bg-amber-50/20 hover:bg-amber-50/40 transition-all flex flex-col justify-between"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-xs font-bold text-amber-900 bg-amber-100/70 px-2 py-0.5 rounded">
-                            {contract.contractCode}
-                          </span>
-                          <Badge variant="warning" size="sm">
-                            Sắp hết hạn
-                          </Badge>
-                        </div>
-
-                        <div>
-                          <p className="text-sm font-bold text-slate-900">
-                            Căn {contract.apartment?.apartmentNumber} •{' '}
-                            {contract.resident?.fullName || 'Khách thuê'}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Ngày kết thúc: <strong className="text-rose-600">{formatDate(contract.endDate)}</strong>
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 pt-3 border-t border-amber-200/50 flex items-center justify-between">
-                        <span className="text-xs text-slate-600">
-                          Giá thuê: {formatCurrency(contract.monthlyRent)}
-                        </span>
-                        <Link href="/contracts">
-                          <Button variant="ghost" size="xs" className="text-amber-800 hover:text-amber-900">
-                            Gia hạn hợp đồng <ArrowRight className="h-3 w-3 ml-1" />
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={ShieldCheck}
-                  title="Hợp đồng đang ổn định"
-                  description="Không có hợp đồng thuê hoặc bàn giao nào sắp đến hạn trong vòng 30 ngày tới."
-                />
-              )}
-            </div>
-          )}
-
-          {/* Tab 3: Overdue Invoices */}
-          {activeActionTab === 'overdue' && (
-            <div>
-              {overdueInvoices.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {overdueInvoices.map((inv: any) => (
-                    <div
-                      key={inv.id}
-                      className="p-4 rounded-xl border border-rose-200/70 bg-rose-50/20 hover:bg-rose-50/40 transition-all flex flex-col justify-between"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-xs font-bold text-slate-800">
-                            {inv.invoiceCode || `INV-${inv.id.slice(0, 6)}`}
-                          </span>
-                          <Badge variant="destructive" size="sm">
-                            Quá hạn thanh toán
-                          </Badge>
-                        </div>
-
-                        <div>
-                          <p className="text-sm font-bold text-slate-900">
-                            Căn {inv.apartment?.apartmentNumber} • Kỳ {inv.billingMonth}
-                          </p>
-                          <p className="text-xs text-rose-600 font-semibold mt-0.5">
-                            Hạn cuối: {formatDate(inv.dueDate)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 pt-3 border-t border-rose-200/50 flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-900">
-                          Số tiền: {formatCurrency(inv.totalAmount)}
-                        </span>
-                        <Link href="/invoices">
-                          <Button variant="ghost" size="xs" className="text-rose-700 hover:text-rose-800">
-                            Đôn đốc thanh toán <ArrowRight className="h-3 w-3 ml-1" />
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={Receipt}
-                  title="Không có nợ quá hạn"
-                  description="Các hộ gia đình và căn hộ đều tuân thủ kỳ hạn thanh toán phí dịch vụ."
-                />
-              )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Analytics Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Monthly Revenue Trend Bar Chart */}
-        <Card className="lg:col-span-2 border-slate-200 shadow-2xs">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-100">
-            <div>
-              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
-                Doanh thu & Phí dịch vụ (6 tháng gần nhất)
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-500 mt-0.5">
-                Đối chiếu kế hoạch phát hành hóa đơn và số tiền thực tế đã quyết toán
-              </CardDescription>
-            </div>
-            <Link href="/invoices">
-              <Button variant="outline" size="xs" className="hidden sm:inline-flex">
-                Chi tiết thu phí <ExternalLink className="h-3 w-3 ml-1" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {revenueTrend.length > 0 ? (
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={revenueTrend} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                    <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} />
-                    <YAxis
-                      stroke="#64748b"
-                      fontSize={11}
-                      tickLine={false}
-                      tickFormatter={(val) => `${(val / 1000000).toFixed(0)}tr`}
-                    />
-                    <Tooltip
-                      formatter={(value: any) => [formatCurrency(Number(value)), '']}
-                      contentStyle={{
-                        backgroundColor: '#ffffff',
-                        borderRadius: '10px',
-                        borderColor: '#e2e8f0',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '12px' }} />
-                    <Bar
-                      dataKey="revenue"
-                      name="Doanh thu dự kiến"
-                      fill="#2563eb"
-                      radius={[6, 6, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="collected"
-                      name="Số tiền thực thu"
-                      fill="#10b981"
-                      radius={[6, 6, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyState
-                icon={TrendingUp}
-                title="Chưa có dữ liệu doanh thu"
-                description="Biểu đồ sẽ tự động kết xuất khi các hóa đơn hàng tháng được tạo và thanh toán."
-              />
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Apartment Status Distribution Donut Chart */}
-        <Card className="border-slate-200 shadow-2xs">
-          <CardHeader className="pb-2 border-b border-slate-100">
-            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-indigo-600" />
-              Trạng thái Căn hộ
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500 mt-0.5">
-              Phân bổ hiện trạng sử dụng các căn hộ
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            {apartmentStatusChart.length > 0 ? (
-              <div className="h-68 w-full flex flex-col items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={apartmentStatusChart}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={82}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {apartmentStatusChart.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill || '#3b82f6'} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(val: any) => [`${val} Căn hộ`, '']} />
-                    <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyState
-                icon={Building2}
-                title="Chưa có dữ liệu căn hộ"
-                description="Hệ thống chưa ghi nhận thông tin căn hộ trong cơ sở dữ liệu."
-              />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Incident Categories & Operational Highlights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Incident Categories Breakdown */}
-        <Card className="border-slate-200 shadow-2xs">
-          <CardHeader className="border-b border-slate-100">
-            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <MessageSquareWarning className="h-5 w-5 text-amber-600" />
-              Phân loại Phản ánh & Sự cố Kỹ thuật
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500">
-              Số lượng sự cố theo từng nhóm dịch vụ tiện ích
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            {ticketCategoryChart.length > 0 ? (
-              <div className="h-60 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={ticketCategoryChart} margin={{ left: 10, right: 20 }}>
-                    <XAxis type="number" stroke="#64748b" fontSize={12} />
-                    <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={12} width={100} />
-                    <Tooltip />
-                    <Bar
-                      dataKey="value"
-                      name="Số lượt yêu cầu"
-                      fill="#3b82f6"
-                      radius={[0, 6, 6, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyState
-                icon={CheckCircle2}
-                title="Không có sự cố nào được ghi nhận"
-                description="Hệ thống kỹ thuật và dịch vụ tòa nhà đang vận hành hoàn hảo."
-              />
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Operational Highlights & SLA */}
-        <Card className="border-slate-200 shadow-2xs bg-linear-to-br from-slate-50 to-indigo-50/20">
-          <CardHeader className="border-b border-slate-100">
-            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary-600" />
-              Chất lượng Dịch vụ & SLA Vận hành
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500">
-              Đánh giá hiệu suất phục vụ và phản hồi của đội ngũ quản lý
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-5 space-y-3.5">
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
-              <div>
-                <p className="font-bold text-slate-900 text-sm">Thời gian xử lý sự cố trung bình</p>
-                <p className="text-xs text-slate-500">Cam kết hoàn thành trong vòng &lt; 4 giờ</p>
-              </div>
-              <Badge variant="success" size="default">
-                3.5 giờ (Tốt)
-              </Badge>
-            </div>
-
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
-              <div>
-                <p className="font-bold text-slate-900 text-sm">Chỉ số hài lòng của cư dân (CSAT)</p>
-                <p className="text-xs text-slate-500">Dựa trên các lượt đánh giá sau khi hoàn thành yêu cầu</p>
-              </div>
-              <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 text-amber-700 font-bold text-xs">
-                <span>★</span>
-                <span>4.8 / 5.0</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
-              <div>
-                <p className="font-bold text-slate-900 text-sm">Tỷ lệ giải quyết sự cố lần đầu</p>
-                <p className="text-xs text-slate-500">Xử lý dứt điểm không cần hỗ trợ lại</p>
-              </div>
-              <Badge variant="info" size="default">
-                94.2%
-              </Badge>
-            </div>
-
-            {/* Direct Quick Shortcuts */}
-            <div className="pt-2 grid grid-cols-2 gap-2">
-              <Link href="/apartments">
-                <Button variant="outline" size="sm" className="w-full text-xs justify-start">
-                  <Building2 className="h-3.5 w-3.5 mr-1.5 text-blue-600" />
-                  Sơ đồ căn hộ
-                </Button>
-              </Link>
-              <Link href="/residents">
-                <Button variant="outline" size="sm" className="w-full text-xs justify-start">
-                  <Users className="h-3.5 w-3.5 mr-1.5 text-emerald-600" />
-                  Sổ bộ cư dân
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

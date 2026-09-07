@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, Column } from '@/components/shared/DataTable';
+import { FilterBar } from '@/components/shared/FilterBar';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { DetailDrawer, DetailItem } from '@/components/shared/DetailDrawer';
+import { FormDialog } from '@/components/shared/FormDialog';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, FileText, Calendar, AlertCircle, RotateCcw } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, FileText, Calendar, Building, User, DollarSign, Clock, AlertTriangle } from 'lucide-react';
 import {
   useContracts,
   useCreateContract,
@@ -20,6 +22,7 @@ import { useApartments } from '@/hooks/use-apartments';
 import { useResidents } from '@/hooks/use-residents';
 import { ContractStatus, ContractType } from '@prisma/client';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function ContractsPage() {
   const [search, setSearch] = useState('');
@@ -28,10 +31,16 @@ export default function ContractsPage() {
   const [expiringSoonFilter, setExpiringSoonFilter] = useState(false);
   const [page, setPage] = useState(1);
 
-  // Dialog states
+  // Sorting & Selection
+  const [sortKey, setSortKey] = useState<string>('contractCode');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [selectedRowIds, setSelectedRowIds] = useState<(string | number)[]>([]);
+
+  // Dialog & Drawer states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [inspectingItem, setInspectingItem] = useState<any>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -77,6 +86,7 @@ export default function ContractsPage() {
     setStatusFilter('');
     setExpiringSoonFilter(false);
     setPage(1);
+    setSelectedRowIds([]);
   };
 
   const handleOpenCreate = () => {
@@ -103,8 +113,8 @@ export default function ContractsPage() {
       apartmentId: item.apartmentId,
       residentId: item.residentId,
       type: item.type,
-      startDate: item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : '',
-      endDate: item.endDate ? new Date(item.endDate).toISOString().split('T')[0] : '',
+      startDate: new Date(item.startDate).toISOString().split('T')[0],
+      endDate: new Date(item.endDate).toISOString().split('T')[0],
       monthlyRent: item.monthlyRent || 0,
       deposit: item.deposit || 0,
       status: item.status,
@@ -118,11 +128,19 @@ export default function ContractsPage() {
     if (editingItem) {
       updateMutation.mutate(
         { id: editingItem.id, data: formData },
-        { onSuccess: () => setIsFormOpen(false) }
+        {
+          onSuccess: () => {
+            setIsFormOpen(false);
+            toast.success(`Đã cập nhật hợp đồng ${formData.contractCode}`);
+          },
+        }
       );
     } else {
       createMutation.mutate(formData, {
-        onSuccess: () => setIsFormOpen(false),
+        onSuccess: () => {
+          setIsFormOpen(false);
+          toast.success(`Đã tạo mới hợp đồng ${formData.contractCode}`);
+        },
       });
     }
   };
@@ -130,39 +148,81 @@ export default function ContractsPage() {
   const handleDeleteConfirm = () => {
     if (deletingId) {
       deleteMutation.mutate(deletingId, {
-        onSuccess: () => setDeletingId(null),
+        onSuccess: () => {
+          setDeletingId(null);
+          toast.success('Đã xóa hợp đồng thành công');
+        },
       });
     }
   };
 
-  const isExpiringSoon = (endDateStr: string) => {
-    const end = new Date(endDateStr);
-    const now = new Date();
-    const diffDays = Math.ceil((end.getTime() - now.getTime()) / (1000 * 3600 * 24));
-    return diffDays >= 0 && diffDays <= 30;
+  const handleSelectRow = (id: string | number) => {
+    setSelectedRowIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
   };
 
-  const renderStatusBadge = (status: ContractStatus, endDateStr: string) => {
-    if (status === 'ACTIVE' && isExpiringSoon(endDateStr)) {
-      return <Badge variant="warning">Sắp hết hạn (&lt;30 ngày)</Badge>;
-    }
-    switch (status) {
-      case 'ACTIVE':
-        return <Badge variant="success">Đang hiệu lực</Badge>;
-      case 'EXPIRED':
-        return <Badge variant="secondary">Đã hết hạn</Badge>;
-      case 'TERMINATED':
-      default:
-        return <Badge variant="destructive">Đã thanh lý</Badge>;
+  const handleSelectAll = () => {
+    if (selectedRowIds.length === contracts.length) {
+      setSelectedRowIds([]);
+    } else {
+      setSelectedRowIds(contracts.map((c: any) => c.id));
     }
   };
+
+  // Active filter tags for FilterBar
+  const activeTags = [];
+  if (typeFilter) {
+    activeTags.push({
+      key: 'type',
+      label: 'Loại HĐ',
+      valueLabel: typeFilter === 'SALE' ? 'Mua bán' : 'Cho thuê',
+      onRemove: () => setTypeFilter(''),
+    });
+  }
+  if (statusFilter) {
+    activeTags.push({
+      key: 'status',
+      label: 'Trạng thái',
+      valueLabel:
+        statusFilter === 'ACTIVE'
+          ? 'Đang hiệu lực'
+          : statusFilter === 'EXPIRED'
+          ? 'Hết hạn'
+          : 'Đã thanh lý',
+      onRemove: () => setStatusFilter(''),
+    });
+  }
+  if (expiringSoonFilter) {
+    activeTags.push({
+      key: 'expiringSoon',
+      label: 'Thời hạn',
+      valueLabel: 'Sắp hết hạn (<30 ngày)',
+      onRemove: () => setExpiringSoonFilter(false),
+    });
+  }
+
+  // Drawer detail items
+  const drawerItems: DetailItem[] = inspectingItem
+    ? [
+        { label: 'Số hợp đồng', value: inspectingItem.contractCode, icon: FileText },
+        { label: 'Căn hộ áp dụng', value: inspectingItem.apartment?.code || '—', icon: Building },
+        { label: 'Chủ thể hợp đồng', value: inspectingItem.resident?.fullName || '—', icon: User },
+        { label: 'Loại hợp đồng', value: inspectingItem.type === 'SALE' ? 'Mua bán vĩnh viễn' : 'Thuê căn hộ' },
+        { label: 'Thời gian hiệu lực', value: `${formatDate(inspectingItem.startDate)} → ${formatDate(inspectingItem.endDate)}`, icon: Calendar },
+        { label: 'Tiền thuê hàng tháng', value: inspectingItem.monthlyRent ? formatCurrency(inspectingItem.monthlyRent) : '—', icon: DollarSign },
+        { label: 'Tiền đặt cọc', value: inspectingItem.deposit ? formatCurrency(inspectingItem.deposit) : '—', icon: DollarSign },
+        { label: 'Ghi chú điều khoản', value: inspectingItem.note || 'Không có ghi chú thêm', fullWidth: true },
+      ]
+    : [];
 
   const columns: Column<any>[] = [
     {
-      header: 'Mã Hợp đồng',
+      header: 'Số Hợp đồng',
       accessorKey: 'contractCode',
+      sortable: true,
       cell: (row) => (
-        <span className="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded text-xs">
+        <span className="font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded text-xs">
           {row.contractCode}
         </span>
       ),
@@ -170,73 +230,93 @@ export default function ContractsPage() {
     {
       header: 'Căn hộ',
       cell: (row) => (
-        <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs">
-          {row.apartment?.code || '-'}
+        <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
+          {row.apartment?.code || '—'}
         </span>
       ),
     },
     {
-      header: 'Cư dân đại diện',
+      header: 'Cư dân ký kết',
       cell: (row) => (
         <div>
-          <span className="font-semibold text-slate-900 block">{row.resident?.fullName || '-'}</span>
-          <span className="text-xs text-slate-500">{row.resident?.phone}</span>
+          <span className="font-medium text-slate-900 dark:text-slate-100 block text-xs">
+            {row.resident?.fullName || '—'}
+          </span>
+          <span className="text-[11px] text-slate-400 block font-mono">
+            {row.resident?.phone}
+          </span>
         </div>
       ),
     },
     {
       header: 'Loại HĐ',
-      cell: (row) =>
-        row.type === 'RENT' ? (
-          <Badge variant="default">Cho thuê</Badge>
-        ) : (
-          <Badge variant="success">Mua bán</Badge>
-        ),
+      accessorKey: 'type',
+      cell: (row) => <StatusBadge type="contractType" status={row.type} />,
     },
     {
       header: 'Thời hạn',
-      cell: (row) => (
-        <div className="text-xs text-slate-700 space-y-0.5">
-          <div>{formatDate(row.startDate)} ➔ {formatDate(row.endDate)}</div>
-        </div>
-      ),
+      cell: (row) => {
+        const isExpiring =
+          row.status === 'ACTIVE' &&
+          new Date(row.endDate).getTime() - new Date().getTime() < 30 * 24 * 60 * 60 * 1000 &&
+          new Date(row.endDate).getTime() - new Date().getTime() > 0;
+        return (
+          <div className="space-y-0.5">
+            <span className="text-xs text-slate-700 dark:text-slate-300 block">
+              {formatDate(row.startDate)} - {formatDate(row.endDate)}
+            </span>
+            {isExpiring && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="h-3 w-3" /> Sắp hết hạn (&lt;30 ngày)
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
-      header: 'Giá thuê / Tiền cọc',
+      header: 'Giá trị thuê',
       cell: (row) => (
-        <div className="text-xs">
-          <span className="font-semibold text-emerald-700 block">
-            {formatCurrency(row.monthlyRent)}/tháng
-          </span>
-          <span className="text-slate-400">Cọc: {formatCurrency(row.deposit)}</span>
-        </div>
+        <span className="font-semibold text-xs text-slate-800 dark:text-slate-200">
+          {row.monthlyRent ? formatCurrency(row.monthlyRent) : '—'}
+        </span>
       ),
     },
     {
       header: 'Trạng thái',
-      cell: (row) => renderStatusBadge(row.status, row.endDate),
+      accessorKey: 'status',
+      sortable: true,
+      cell: (row) => <StatusBadge type="contractStatus" status={row.status} />,
     },
     {
       header: 'Thao tác',
+      className: 'text-right',
       cell: (row) => (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
+            onClick={() => setInspectingItem(row)}
+            className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800"
+            title="Xem chi tiết"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => handleOpenEdit(row)}
-            className="h-9 w-9 min-h-[36px] min-w-[36px] text-blue-600 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-600/30"
-            title={`Chỉnh sửa hợp đồng ${row.contractCode}`}
-            aria-label={`Chỉnh sửa hợp đồng ${row.contractCode}`}
+            className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800"
+            title="Chỉnh sửa"
           >
             <Edit className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             onClick={() => setDeletingId(row.id)}
-            className="h-9 w-9 min-h-[36px] min-w-[36px] text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-600/30"
-            title={`Xóa hợp đồng ${row.contractCode}`}
-            aria-label={`Xóa hợp đồng ${row.contractCode}`}
+            className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800"
+            title="Xóa"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -249,86 +329,64 @@ export default function ContractsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Quản lý Hợp đồng"
-        description="Quản lý hợp đồng cho thuê/mua bán căn hộ, cảnh báo hợp đồng sắp hết hạn."
+        description="Theo dõi hợp đồng thuê và mua bán căn hộ, thời hạn hiệu lực, tiền cọc và cảnh báo hết hạn."
       >
-        <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 shadow-md">
-          <Plus className="mr-2 h-4 w-4" /> Tạo Hợp đồng mới
+        <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20">
+          <Plus className="mr-1.5 h-4 w-4" /> Tạo Hợp đồng mới
         </Button>
       </PageHeader>
 
-      {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-          <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Loại Hợp đồng</label>
-            <Select
-              value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Tất cả loại HĐ</option>
-              <option value="RENT">Hợp đồng thuê</option>
-              <option value="SALE">Hợp đồng mua bán</option>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Trạng thái HĐ</label>
-            <Select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="ACTIVE">Đang hiệu lực</option>
-              <option value="EXPIRED">Đã hết hạn</option>
-              <option value="TERMINATED">Đã thanh lý</option>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Cảnh báo hết hạn</label>
-            <button
-              type="button"
-              onClick={() => {
-                setExpiringSoonFilter(!expiringSoonFilter);
-                setPage(1);
-              }}
-              className={`h-9 w-full flex items-center justify-center gap-2 rounded-md border px-3 text-xs font-semibold transition-all cursor-pointer ${
-                expiringSoonFilter
-                  ? 'border-amber-300 bg-amber-50 text-amber-800 ring-2 ring-amber-100'
-                  : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              Sắp hết hạn (&lt;30 ngày)
-            </button>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Tổng số Hợp đồng</label>
-            <div className="h-9 flex items-center justify-between px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">
-              <span>{meta.total} Hợp đồng</span>
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  Đặt lại
-                </button>
-              )}
-            </div>
-          </div>
+      {/* FilterBar */}
+      <FilterBar
+        activeTags={activeTags}
+        hasActiveFilters={hasActiveFilters}
+        onReset={handleResetFilters}
+        totalCount={meta.total}
+        totalCountLabel="Hợp đồng"
+      >
+        <div className="w-44">
+          <Select
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Tất cả loại HĐ</option>
+            <option value="RENT">Cho thuê (RENT)</option>
+            <option value="SALE">Mua bán (SALE)</option>
+          </Select>
         </div>
-      </div>
 
-      {/* Data Table */}
+        <div className="w-44">
+          <Select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="ACTIVE">Đang hiệu lực</option>
+            <option value="EXPIRED">Đã hết hạn</option>
+            <option value="TERMINATED">Đã thanh lý</option>
+          </Select>
+        </div>
+
+        <Button
+          variant={expiringSoonFilter ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => {
+            setExpiringSoonFilter(!expiringSoonFilter);
+            setPage(1);
+          }}
+          className="text-xs h-9 gap-1"
+        >
+          <Clock className="h-3.5 w-3.5" /> Sắp hết hạn (&lt;30 ngày)
+        </Button>
+      </FilterBar>
+
+      {/* Enterprise DataTable */}
       <DataTable
         columns={columns}
         data={contracts}
@@ -336,7 +394,7 @@ export default function ContractsPage() {
         isError={isError}
         errorMessage={(error as any)?.message}
         onRetry={() => refetch()}
-        searchPlaceholder="Tìm mã HĐ, tên cư dân, căn hộ..."
+        searchPlaceholder="Tìm mã hợp đồng..."
         searchValue={search}
         onSearchChange={(val) => {
           setSearch(val);
@@ -346,170 +404,181 @@ export default function ContractsPage() {
         totalPages={meta.totalPages}
         totalItems={meta.total}
         onPageChange={(p) => setPage(p)}
+        onRowClick={(row) => setInspectingItem(row)}
+        enableRowSelection
+        selectedRowIds={selectedRowIds}
+        onRowSelect={handleSelectRow}
+        onSelectAll={handleSelectAll}
+        enableColumnVisibility
+        sortKey={sortKey}
+        sortOrder={sortOrder}
+        onSortChange={(key, order) => {
+          setSortKey(key);
+          setSortOrder(order);
+        }}
       />
 
-      {/* Form Modal */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogHeader>
-          <DialogTitle>{editingItem ? 'Chỉnh sửa Hợp đồng' : 'Tạo Hợp đồng mới'}</DialogTitle>
-          <DialogDescription>
-            Thiết lập thông tin thời hạn hợp đồng, giá thuê/mua và gán cư dân đại diện.
-          </DialogDescription>
-        </DialogHeader>
+      {/* Slide-over Detail Drawer */}
+      <DetailDrawer
+        open={Boolean(inspectingItem)}
+        onOpenChange={(open) => !open && setInspectingItem(null)}
+        title={inspectingItem?.contractCode || 'Chi tiết Hợp đồng'}
+        description="Thông tin chi tiết thời hạn, điều khoản tài chính và chủ thể hợp đồng"
+        badge={inspectingItem && <StatusBadge type="contractStatus" status={inspectingItem.status} />}
+        items={drawerItems}
+        footerActions={
+          inspectingItem && (
+            <Button
+              size="sm"
+              onClick={() => {
+                const item = inspectingItem;
+                setInspectingItem(null);
+                handleOpenEdit(item);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+            >
+              <Edit className="h-3.5 w-3.5 mr-1.5" /> Chỉnh sửa
+            </Button>
+          )
+        }
+      />
 
-        <form onSubmit={handleSubmitForm} className="space-y-4">
+      {/* Form Dialog */}
+      <FormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        title={editingItem ? `Chỉnh sửa: ${editingItem.contractCode}` : 'Tạo Hợp đồng mới'}
+        description="Điền thông tin căn hộ, cư dân ký kết, thời hạn hợp đồng và mức phí"
+        icon={FileText}
+        onSubmit={handleSubmitForm}
+        isLoading={createMutation.isPending || updateMutation.isPending}
+        submitText={editingItem ? 'Lưu thay đổi' : 'Tạo hợp đồng'}
+      >
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">
-              Mã hợp đồng <span className="text-red-500">*</span>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Số hợp đồng <span className="text-rose-500">*</span>
             </label>
             <Input
-              placeholder="HD-2026-001"
               value={formData.contractCode}
               onChange={(e) => setFormData({ ...formData, contractCode: e.target.value })}
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Căn hộ <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={formData.apartmentId}
-                onChange={(e) => setFormData({ ...formData, apartmentId: e.target.value })}
-                required
-              >
-                <option value="">-- Chọn Căn hộ --</option>
-                {apartments.map((apt: any) => (
-                  <option key={apt.id} value={apt.id}>
-                    {apt.code} ({apt.building})
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Cư dân đại diện <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={formData.residentId}
-                onChange={(e) => setFormData({ ...formData, residentId: e.target.value })}
-                required
-              >
-                <option value="">-- Chọn Cư dân --</option>
-                {residents.map((res: any) => (
-                  <option key={res.id} value={res.id}>
-                    {res.fullName} ({res.phone})
-                  </option>
-                ))}
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Loại Hợp đồng</label>
-              <Select
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as ContractType })}
-              >
-                <option value="RENT">Cho thuê</option>
-                <option value="SALE">Mua bán</option>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Ngày bắt đầu <span className="text-red-500">*</span>
-              </label>
-              <Input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Ngày kết thúc <span className="text-red-500">*</span>
-              </label>
-              <Input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Giá thuê hàng tháng (VNĐ)</label>
-              <Input
-                type="number"
-                step="100000"
-                value={formData.monthlyRent}
-                onChange={(e) => setFormData({ ...formData, monthlyRent: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Tiền đặt cọc (VNĐ)</label>
-              <Input
-                type="number"
-                step="100000"
-                value={formData.deposit}
-                onChange={(e) => setFormData({ ...formData, deposit: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-          </div>
-
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Trạng thái Hợp đồng</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Loại hợp đồng</label>
             <Select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as ContractStatus })}
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as ContractType })}
             >
-              <option value="ACTIVE">Đang hiệu lực</option>
-              <option value="EXPIRED">Đã hết hạn</option>
-              <option value="TERMINATED">Đã thanh lý</option>
+              <option value="RENT">Cho thuê (RENT)</option>
+              <option value="SALE">Mua bán (SALE)</option>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Căn hộ áp dụng <span className="text-rose-500">*</span>
+            </label>
+            <Select
+              value={formData.apartmentId}
+              onChange={(e) => setFormData({ ...formData, apartmentId: e.target.value })}
+            >
+              <option value="">Chọn căn hộ...</option>
+              {apartments.map((apt: any) => (
+                <option key={apt.id} value={apt.id}>
+                  {apt.code} ({apt.building})
+                </option>
+              ))}
             </Select>
           </div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => setIsFormOpen(false)}
-              disabled={createMutation.isPending || updateMutation.isPending}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Cư dân ký kết <span className="text-rose-500">*</span>
+            </label>
+            <Select
+              value={formData.residentId}
+              onChange={(e) => setFormData({ ...formData, residentId: e.target.value })}
             >
-              Hủy bỏ
-            </Button>
-            <Button
-              type="submit"
-              isLoading={createMutation.isPending || updateMutation.isPending}
-              disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700 font-semibold"
-            >
-              {createMutation.isPending || updateMutation.isPending
-                ? 'Đang lưu...'
-                : editingItem
-                ? 'Cập nhật'
-                : 'Tạo Hợp đồng'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </Dialog>
+              <option value="">Chọn cư dân...</option>
+              {residents.map((r: any) => (
+                <option key={r.id} value={r.id}>
+                  {r.fullName} ({r.phone})
+                </option>
+              ))}
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Ngày bắt đầu <span className="text-rose-500">*</span>
+            </label>
+            <Input
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Ngày kết thúc <span className="text-rose-500">*</span>
+            </label>
+            <Input
+              type="date"
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tiền thuê/tháng (VNĐ)</label>
+            <Input
+              type="number"
+              value={formData.monthlyRent}
+              onChange={(e) => setFormData({ ...formData, monthlyRent: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tiền đặt cọc (VNĐ)</label>
+            <Input
+              type="number"
+              value={formData.deposit}
+              onChange={(e) => setFormData({ ...formData, deposit: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Trạng thái hợp đồng</label>
+          <Select
+            value={formData.status}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value as ContractStatus })}
+          >
+            <option value="ACTIVE">Đang hiệu lực</option>
+            <option value="EXPIRED">Đã hết hạn</option>
+            <option value="TERMINATED">Đã thanh lý</option>
+          </Select>
+        </div>
+      </FormDialog>
 
       {/* Delete Confirmation */}
       <ConfirmDialog
-        open={!!deletingId}
+        open={Boolean(deletingId)}
         onOpenChange={(open) => !open && setDeletingId(null)}
         title="Xác nhận xóa hợp đồng?"
-        description="Thao tác này sẽ xóa hợp đồng khỏi hệ thống. Thao tác không thể hoàn tác."
+        description="Thao tác này sẽ xóa vĩnh viễn hợp đồng khỏi hệ thống dữ liệu tòa nhà. Không thể hoàn tác."
         isLoading={deleteMutation.isPending}
         onConfirm={handleDeleteConfirm}
       />

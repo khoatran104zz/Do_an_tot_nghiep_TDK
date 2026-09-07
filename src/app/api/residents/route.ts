@@ -4,6 +4,7 @@ import { residentSchema } from '@/modules/resident/resident.schema';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getVerifiedResidentInfo } from '@/lib/authorization';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,11 +13,25 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || undefined;
-    const apartmentId = searchParams.get('apartmentId') || undefined;
+    let apartmentId = searchParams.get('apartmentId') || undefined;
     const relationshipToOwner = (searchParams.get('relationshipToOwner') as any) || undefined;
     const status = (searchParams.get('status') as any) || undefined;
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
+
+    // IDOR Protection: If resident user, restrict to residents belonging to their own apartment
+    if (session.user.role === 'RESIDENT') {
+      const residentInfo = await getVerifiedResidentInfo(session.user.id);
+      if (!residentInfo?.apartmentId) {
+        return apiSuccess([], 'Lấy danh sách cư dân thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        });
+      }
+      apartmentId = residentInfo.apartmentId;
+    }
 
     const result = await residentService.getResidents({
       search,
@@ -37,6 +52,7 @@ export async function GET(req: NextRequest) {
     return apiError(error.message || 'Lỗi lấy danh sách cư dân', 'FETCH_FAILED', 500);
   }
 }
+
 
 export async function POST(req: NextRequest) {
   try {

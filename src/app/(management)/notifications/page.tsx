@@ -2,16 +2,23 @@
 
 import React, { useState } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { SearchInput } from '@/components/shared/SearchInput';
+import { FormDialog } from '@/components/shared/FormDialog';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { Bell, Plus, Trash2, Megaphone, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Bell, Plus, Trash2, Megaphone, Calendar, Users, Eye } from 'lucide-react';
 import { useNotifications, useCreateNotification, useDeleteNotification } from '@/hooks/use-notifications';
 import { formatDateTime } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function NotificationsManagementPage() {
+  const [search, setSearch] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -25,6 +32,13 @@ export default function NotificationsManagementPage() {
   const createMutation = useCreateNotification();
   const deleteMutation = useDeleteNotification();
 
+  const filteredNotifications = notifications.filter((n: any) =>
+    search
+      ? n.title.toLowerCase().includes(search.toLowerCase()) ||
+        n.content.toLowerCase().includes(search.toLowerCase())
+      : true
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate(
@@ -37,6 +51,7 @@ export default function NotificationsManagementPage() {
         onSuccess: () => {
           setIsFormOpen(false);
           setFormData({ title: '', content: '' });
+          toast.success('Đã đăng phát thông báo tới toàn thể cư dân');
         },
       }
     );
@@ -45,7 +60,10 @@ export default function NotificationsManagementPage() {
   const handleDeleteConfirm = () => {
     if (deletingId) {
       deleteMutation.mutate(deletingId, {
-        onSuccess: () => setDeletingId(null),
+        onSuccess: () => {
+          setDeletingId(null);
+          toast.success('Đã gỡ thông báo thành công');
+        },
       });
     }
   };
@@ -53,97 +71,136 @@ export default function NotificationsManagementPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Quản lý Thông báo"
-        description="Đăng thông báo chung về bảo trì, họp cư dân, thu phí hoặc lịch cắt điện nước tới toàn thể cư dân."
+        title="Quản lý Thông báo Tòa nhà"
+        description="Đăng phát các thông báo định kỳ, lịch bảo trì hệ thống, kiểm tra PCCC hoặc tin tức quan trọng tới cư dân."
       >
-        <Button onClick={() => setIsFormOpen(true)} className="bg-blue-600 hover:bg-blue-700 shadow-md">
-          <Plus className="mr-2 h-4 w-4" /> Đăng Thông báo mới
+        <Button
+          onClick={() => setIsFormOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20"
+        >
+          <Plus className="mr-1.5 h-4 w-4" /> Đăng Thông báo mới
         </Button>
       </PageHeader>
 
+      {/* Search toolbar */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="w-full sm:w-80">
+          <SearchInput
+            placeholder="Tìm kiếm thông báo..."
+            value={search}
+            onChange={(val) => setSearch(val)}
+          />
+        </div>
+        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+          {filteredNotifications.length} thông báo
+        </div>
+      </div>
+
+      {/* Notifications List */}
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-28 rounded-xl bg-slate-200 animate-pulse" />
+            <div key={i} className="h-28 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 space-y-2">
+              <Skeleton className="h-5 w-60" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-3 w-32" />
+            </div>
           ))}
         </div>
       ) : isError ? (
-        <Card className="p-8 text-center border-rose-200 bg-rose-50/40">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 mx-auto mb-3">
-            <AlertTriangle className="h-6 w-6" />
-          </div>
-          <p className="font-semibold text-slate-800">Không thể tải danh sách thông báo</p>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            {(error as any)?.message || 'Đã có lỗi xảy ra khi kết nối tới máy chủ.'}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="mt-4 gap-1.5 text-xs text-slate-700 hover:bg-white"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Thử lại
-          </Button>
-        </Card>
-      ) : notifications.length === 0 ? (
-        <Card className="p-8 text-center">
-          <Bell className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-          <p className="font-semibold text-slate-700">Chưa có thông báo nào được đăng</p>
-          <p className="text-xs text-slate-400 mt-1">Bấm "Đăng Thông báo mới" để gửi tin nhắn đến cư dân.</p>
+        <ErrorState
+          title="Không thể tải danh sách thông báo"
+          message={(error as any)?.message}
+          onRetry={() => refetch()}
+        />
+      ) : filteredNotifications.length === 0 ? (
+        <Card className="p-8 text-center border-slate-200/80 dark:border-slate-800">
+          <EmptyState
+            icon={Bell}
+            title={search ? 'Không tìm thấy thông báo phù hợp' : 'Chưa có thông báo nào'}
+            description="Tạo thông báo mới để gửi tin nhắn đến các cư dân trong tòa nhà."
+            actionLabel={search ? 'Xóa bộ lọc' : 'Tạo thông báo ngay'}
+            onAction={search ? () => setSearch('') : () => setIsFormOpen(true)}
+          />
         </Card>
       ) : (
-        <div className="space-y-4">
-          {notifications.map((item: any) => (
-            <Card key={item.id} className="border-slate-200 hover:shadow-xs transition-shadow">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Megaphone className="h-4 w-4 text-blue-600" />
-                    <span className="font-bold text-slate-900 text-base">{item.title}</span>
+        <div className="grid grid-cols-1 gap-3.5">
+          {filteredNotifications.map((item: any) => {
+            const readsCount = item.reads?.length || 0;
+            return (
+              <Card
+                key={item.id}
+                className="overflow-hidden border-slate-200/80 dark:border-slate-800 hover:shadow-md transition-all duration-200"
+              >
+                <div className="p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex items-start gap-3.5">
+                    <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0">
+                      <Megaphone className="h-5 w-5" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                          {item.title}
+                        </h3>
+                        <Badge variant="secondary" size="sm">
+                          Toàn tòa nhà
+                        </Badge>
+                      </div>
+                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                        {item.content}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-4 pt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {formatDateTime(item.createdAt)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {readsCount} lượt đọc
+                        </span>
+                        {item.sender?.fullName && (
+                          <span>Người gửi: {item.sender.fullName}</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setDeletingId(item.id)}
-                    className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
-                    title="Xóa thông báo"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+
+                  <div className="flex items-center justify-end shrink-0 pt-2 sm:pt-0">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setDeletingId(item.id)}
+                      className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg"
+                      title="Gỡ bỏ thông báo"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-400">
-                  <span>Người đăng: {item.sender?.fullName || 'Ban Quản Lý'}</span>
-                  <span>•</span>
-                  <span>{formatDateTime(item.createdAt)}</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  {item.content}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* Form Modal */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogHeader>
-          <DialogTitle>Đăng Thông báo mới</DialogTitle>
-          <DialogDescription>
-            Thông báo này sẽ hiển thị trên trang chủ của toàn bộ cư dân trong hệ thống.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Create Announcement Form Dialog */}
+      <FormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        title="Đăng Thông báo mới tới cư dân"
+        description="Thông báo sẽ được gửi tức thì đến trang chủ và hòm thư thông báo của cư dân."
+        icon={Megaphone}
+        onSubmit={handleSubmit}
+        isLoading={createMutation.isPending}
+        submitText="Phát thông báo"
+      >
+        <div className="space-y-3">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">
-              Tiêu đề thông báo <span className="text-red-500">*</span>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Tiêu đề thông báo <span className="text-rose-500">*</span>
             </label>
             <Input
-              placeholder="VD: Thông báo bảo trì thang máy Tòa A ngày 25/08..."
+              placeholder="VD: Thông báo lịch bảo trì hệ thống PCCC tầng 1-15"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
@@ -151,46 +208,26 @@ export default function NotificationsManagementPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">
-              Nội dung chi tiết <span className="text-red-500">*</span>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Nội dung chi tiết <span className="text-rose-500">*</span>
             </label>
             <textarea
-              className="w-full rounded-md border border-slate-300 p-2.5 text-xs focus:ring-1 focus:ring-blue-600 outline-none"
-              rows={5}
-              placeholder="Nhập chi tiết lịch bảo trì, hướng dẫn cho cư dân..."
+              className="w-full min-h-[120px] p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 leading-relaxed"
+              placeholder="Nhập nội dung thông báo, thời gian diễn ra và các lưu ý cho cư dân..."
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               required
             />
           </div>
+        </div>
+      </FormDialog>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => setIsFormOpen(false)}
-              disabled={createMutation.isPending}
-            >
-              Hủy
-            </Button>
-            <Button
-              type="submit"
-              isLoading={createMutation.isPending}
-              disabled={createMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700 font-semibold"
-            >
-              {createMutation.isPending ? 'Đang đăng...' : 'Đăng Thông báo'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </Dialog>
-
-      {/* Delete Confirm */}
+      {/* Delete Confirmation */}
       <ConfirmDialog
-        open={!!deletingId}
+        open={Boolean(deletingId)}
         onOpenChange={(open) => !open && setDeletingId(null)}
-        title="Xác nhận xóa thông báo?"
-        description="Thông báo này sẽ bị gỡ bỏ khỏi bảng tin của toàn bộ cư dân. Thao tác không thể hoàn tác."
+        title="Xác nhận gỡ bỏ thông báo?"
+        description="Thông báo này sẽ không còn hiển thị trên bảng tin của cư dân."
         isLoading={deleteMutation.isPending}
         onConfirm={handleDeleteConfirm}
       />

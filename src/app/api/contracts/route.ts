@@ -4,6 +4,7 @@ import { contractSchema } from '@/modules/contract/contract.schema';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getVerifiedResidentInfo } from '@/lib/authorization';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,12 +13,26 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || undefined;
-    const apartmentId = searchParams.get('apartmentId') || undefined;
+    let apartmentId = searchParams.get('apartmentId') || undefined;
     const type = (searchParams.get('type') as any) || undefined;
     const status = (searchParams.get('status') as any) || undefined;
     const expiringSoon = searchParams.get('expiringSoon') === 'true';
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
+
+    // IDOR Protection: If resident user, strictly force filter to their verified apartment
+    if (session.user.role === 'RESIDENT') {
+      const residentInfo = await getVerifiedResidentInfo(session.user.id);
+      if (!residentInfo?.apartmentId) {
+        return apiSuccess([], 'Lấy danh sách hợp đồng thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        });
+      }
+      apartmentId = residentInfo.apartmentId;
+    }
 
     const result = await contractService.getContracts({
       search,
@@ -57,3 +72,4 @@ export async function POST(req: NextRequest) {
     return apiError(error.message || 'Thêm mới hợp đồng thất bại', 'CREATE_FAILED', 400);
   }
 }
+

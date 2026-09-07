@@ -2,6 +2,7 @@ import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { rateLimiter } from '@/lib/rate-limiter';
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -24,8 +25,17 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Vui lòng nhập đầy đủ email và mật khẩu');
         }
 
+        const normalizedEmail = credentials.email.toLowerCase().trim();
+
+        // Rate limiting: max 5 login attempts per minute per email
+        const rateLimitResult = rateLimiter.check(`login:${normalizedEmail}`, 5, 60 * 1000);
+        if (!rateLimitResult.allowed) {
+          throw new Error('Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau 1 phút.');
+        }
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email.toLowerCase().trim() },
+          where: { email: normalizedEmail },
+
           include: {
             residentProfile: true,
           },

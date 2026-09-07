@@ -14,9 +14,9 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         ref={ref}
         onClick={onClick}
         className={cn(
-          'rounded-xl border border-slate-200/80 bg-white text-slate-950 shadow-xs transition-all duration-200 ease-out',
+          'rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-950 dark:text-slate-100 shadow-xs transition-all duration-200 ease-out',
           isInteractive &&
-            'cursor-pointer hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 active:translate-y-0 active:shadow-xs',
+            'cursor-pointer hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-xs',
           className
         )}
         {...props}
@@ -37,7 +37,7 @@ const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HT
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('font-semibold leading-tight tracking-tight text-slate-900 text-base sm:text-lg', className)}
+      className={cn('font-semibold leading-tight tracking-tight text-slate-900 dark:text-slate-100 text-base sm:text-lg', className)}
       {...props}
     />
   )
@@ -46,7 +46,7 @@ CardTitle.displayName = 'CardTitle';
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn('text-xs sm:text-sm text-slate-500 leading-normal', className)} {...props} />
+    <p ref={ref} className={cn('text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-normal', className)} {...props} />
   )
 );
 CardDescription.displayName = 'CardDescription';
@@ -60,9 +60,10 @@ CardContent.displayName = 'CardContent';
 
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex items-center p-5 sm:p-6 pt-0 border-t border-slate-100 mt-4', className)} {...props} />
+    <div ref={ref} className={cn('flex items-center p-5 sm:p-6 pt-0 border-t border-slate-100 dark:border-slate-800 mt-4', className)} {...props} />
   )
 );
 CardFooter.displayName = 'CardFooter';
+
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };

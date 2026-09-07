@@ -29,4 +29,9 @@ export const residentClientService = {
       method: 'DELETE',
     });
   },
+
+  async getResidentDashboard() {
+    return apiClient('/resident/dashboard');
+  },
 };
+

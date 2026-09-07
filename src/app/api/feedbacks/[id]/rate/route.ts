@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { feedbackService } from '@/modules/feedback/feedback.service';
+import { ticketWorkflowService } from '@/modules/feedback/ticket-workflow.service';
 import { rateFeedbackSchema } from '@/modules/feedback/feedback.schema';
 import { apiSuccess, apiError, apiUnauthorized } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
@@ -17,7 +18,12 @@ export async function POST(
     const body = await req.json();
     const validated = rateFeedbackSchema.parse(body);
 
-    const updated = await feedbackService.rateFeedback(id, validated);
+    const updated = await ticketWorkflowService.rateTicket({
+      ticketId: id,
+      rating: validated.rating,
+      comment: validated.ratingComment,
+      residentUserId: session.user.id,
+    });
     return apiSuccess(updated, 'Đánh giá mức độ hài lòng thành công. Cảm ơn bạn!');
   } catch (error: any) {
     if (error.name === 'ZodError') {

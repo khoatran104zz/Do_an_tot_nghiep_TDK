@@ -82,12 +82,15 @@ enum TicketPriority {
   MEDIUM
   HIGH
   URGENT
+  CRITICAL
 }
 
 enum TicketStatus {
   NEW
+  ASSIGNED
   PROCESSING
   RESOLVED
+  CLOSED
   REJECTED
 }
 
@@ -104,9 +107,12 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  residentProfile   Resident?
-  sentNotifications Notification[]     @relation("SentNotifications")
-  readNotifications NotificationRead[]
+  residentProfile       Resident?
+  sentNotifications     Notification[]        @relation("SentNotifications")
+  readNotifications     NotificationRead[]
+  assignedTickets       Feedback[]            @relation("AssignedStaff")
+  ticketStatusChanges   TicketStatusHistory[]
+  ticketComments        TicketComment[]
 
   @@map("users")
 }
@@ -131,6 +137,8 @@ model Apartment {
   feedbacks     Feedback[]
   notifications NotificationApartment[]
 
+  @@index([building])
+  @@index([status])
   @@map("apartments")
 }
 
@@ -156,6 +164,9 @@ model Resident {
   contracts Contract[]
   feedbacks Feedback[]
 
+  @@index([apartmentId])
+  @@index([status])
+  @@index([phone])
   @@map("residents")
 }
 
@@ -178,6 +189,10 @@ model Contract {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
+  @@index([apartmentId])
+  @@index([residentId])
+  @@index([status])
+  @@index([endDate])
   @@map("contracts")
 }
 
@@ -217,6 +232,10 @@ model Invoice {
 
   items InvoiceItem[]
 
+  @@index([apartmentId])
+  @@index([status])
+  @@index([billingMonth])
+  @@index([dueDate])
   @@map("invoices")
 }
 
@@ -251,12 +270,58 @@ model Feedback {
   priority        TicketPriority @default(MEDIUM)
   status          TicketStatus   @default(NEW)
   responseContent String?
+
+  // SLA & Workflow fields
+  assignedStaffId String?
+  assignedStaff   User?          @relation("AssignedStaff", fields: [assignedStaffId], references: [id], onDelete: SetNull)
+  slaDueAt        DateTime?
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+  rejectedAt      DateTime?
+  rejectReason    String?
+  internalNote    String?
+
   rating          Int? // 1 to 5 stars
   ratingComment   String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
+  statusHistory   TicketStatusHistory[]
+  comments        TicketComment[]
+
+  @@index([apartmentId])
+  @@index([residentId])
+  @@index([status])
+  @@index([priority])
+  @@index([slaDueAt])
   @@map("feedbacks")
+}
+
+model TicketStatusHistory {
+  id          String       @id @default(cuid())
+  feedbackId  String
+  feedback    Feedback     @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  fromStatus  TicketStatus?
+  toStatus    TicketStatus
+  changedById String
+  changedBy   User         @relation(fields: [changedById], references: [id], onDelete: Cascade)
+  changedAt   DateTime     @default(now())
+  note        String?
+
+  @@map("ticket_status_histories")
+}
+
+model TicketComment {
+  id          String   @id @default(cuid())
+  feedbackId  String
+  feedback    Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content     String
+  isInternal  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@map("ticket_comments")
 }
 
 // 8. Notifications
@@ -273,6 +338,8 @@ model Notification {
   apartments NotificationApartment[]
   reads      NotificationRead[]
 
+  @@index([targetRole])
+  @@index([createdAt])
   @@map("notifications")
 }
 
@@ -283,6 +350,7 @@ model NotificationApartment {
   apartment      Apartment    @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
 
   @@id([notificationId, apartmentId])
+  @@index([apartmentId])
   @@map("notification_apartments")
 }
 
@@ -296,4 +364,23 @@ model NotificationRead {
 
   @@unique([notificationId, userId])
   @@map("notification_reads")
+}
+
+// 9. Audit Logs
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  actorRole  String?
+  action     String   // e.g. GENERATE_INVOICES, PROCESS_PAYMENT, UPDATE_RESIDENT, CANCEL_INVOICE, CHANGE_TICKET_STATUS
+  entity     String   // e.g. INVOICE, PAYMENT, RESIDENT, TICKET, CONTRACT, APARTMENT
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

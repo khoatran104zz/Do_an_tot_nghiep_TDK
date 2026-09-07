@@ -4,6 +4,7 @@ import { apartmentSchema } from '@/modules/apartment/apartment.schema';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getVerifiedResidentInfo } from '@/lib/authorization';
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,6 +17,26 @@ export async function GET(req: NextRequest) {
     const status = (searchParams.get('status') as any) || undefined;
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
+
+    // IDOR Protection: Residents can only see their own assigned apartment
+    if (session.user.role === 'RESIDENT') {
+      const residentInfo = await getVerifiedResidentInfo(session.user.id);
+      if (!residentInfo?.apartmentId) {
+        return apiSuccess([], 'Lấy danh sách căn hộ thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        });
+      }
+      const myApartment = await apartmentService.getApartmentById(residentInfo.apartmentId);
+      return apiSuccess([myApartment], 'Lấy danh sách căn hộ thành công', {
+        page: 1,
+        limit,
+        total: 1,
+        totalPages: 1,
+      });
+    }
 
     const result = await apartmentService.getApartments({
       search,
@@ -35,6 +56,7 @@ export async function GET(req: NextRequest) {
     return apiError(error.message || 'Lỗi lấy danh sách căn hộ', 'FETCH_FAILED', 500);
   }
 }
+
 
 export async function POST(req: NextRequest) {
   try {

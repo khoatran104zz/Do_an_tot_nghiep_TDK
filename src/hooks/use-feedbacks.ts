@@ -18,16 +18,56 @@ export function useFeedback(id: string) {
   });
 }
 
+export function useStaffList() {
+  return useQuery({
+    queryKey: ['staff-list'],
+    queryFn: () => feedbackClientService.getStaffList(),
+  });
+}
+
 export function useCreateFeedback() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateFeedbackDto) => feedbackClientService.createFeedback(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feedbacks'] });
-      toast.success('Gửi phản ánh thành công! Ban quản lý sẽ sớm phản hồi.');
+      queryClient.invalidateQueries({ queryKey: ['resident-dashboard'] });
+      toast.success('Gửi phản ánh thành công! Ban quản lý sẽ sớm tiếp nhận và phân công.');
     },
     onError: (error: any) => {
       toast.error(error.message || 'Gửi phản ánh thất bại!');
+    },
+  });
+}
+
+export function useWorkflowAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, action, payload }: { id: string; action: string; payload?: any }) =>
+      feedbackClientService.triggerWorkflowAction(id, action, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['feedbacks'] });
+      queryClient.invalidateQueries({ queryKey: ['feedback', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['resident-dashboard'] });
+      toast.success('Cập nhật tiến trình thành công!');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Thao tác thất bại!');
+    },
+  });
+}
+
+export function useAddComment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, content, isInternal }: { id: string; content: string; isInternal?: boolean }) =>
+      feedbackClientService.addComment(id, { content, isInternal }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['feedback', variables.id] });
+      toast.success('Đã gửi trao đổi thành công');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Lỗi gửi trao đổi');
     },
   });
 }
@@ -37,8 +77,9 @@ export function useRespondFeedback() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: RespondFeedbackDto }) =>
       feedbackClientService.respondFeedback(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['feedbacks'] });
+      queryClient.invalidateQueries({ queryKey: ['feedback', variables.id] });
       toast.success('Cập nhật phản hồi thành công!');
     },
     onError: (error: any) => {
@@ -52,9 +93,11 @@ export function useRateFeedback() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: RateFeedbackDto }) =>
       feedbackClientService.rateFeedback(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['feedbacks'] });
-      toast.success('Cảm ơn bạn đã gửi đánh giá!');
+      queryClient.invalidateQueries({ queryKey: ['feedback', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['resident-dashboard'] });
+      toast.success('Cảm ơn bạn đã gửi đánh giá dịch vụ!');
     },
     onError: (error: any) => {
       toast.error(error.message || 'Đánh giá thất bại!');

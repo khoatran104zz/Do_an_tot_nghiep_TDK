@@ -1,9 +1,12 @@
 import { NextRequest } from 'next/server';
 import { feedbackService } from '@/modules/feedback/feedback.service';
+import { ticketWorkflowService } from '@/modules/feedback/ticket-workflow.service';
 import { createFeedbackSchema } from '@/modules/feedback/feedback.schema';
 import { apiSuccess, apiError, apiUnauthorized } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getVerifiedResidentInfo } from '@/lib/authorization';
+import { rateLimiter } from '@/lib/rate-limiter';
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,10 +23,19 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
 
-    // If resident user, limit to their own residentId / apartmentId
+    // IDOR Protection: If resident user, strictly enforce resident's own tickets / apartment
     if (session.user.role === 'RESIDENT') {
-      if (session.user.residentId) residentId = session.user.residentId;
-      if (session.user.apartmentId) apartmentId = session.user.apartmentId;
+      const residentInfo = await getVerifiedResidentInfo(session.user.id);
+      if (!residentInfo) {
+        return apiSuccess([], 'Lấy danh sách phản ánh thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        });
+      }
+      residentId = residentInfo.id;
+      apartmentId = residentInfo.apartmentId || undefined;
     }
 
     const result = await feedbackService.getFeedbacks({
@@ -50,23 +62,46 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit ticket submission (max 10 tickets per minute)
+    const rateLimitResult = rateLimiter.apply(req, {
+      maxRequests: 10,
+      windowMs: 60 * 1000,
+      keyPrefix: 'create_ticket',
+    });
+    if (!rateLimitResult.allowed) {
+      return apiError('Quá nhiều yêu cầu tạo phản ánh. Vui lòng thử lại sau 1 phút.', 'RATE_LIMIT_EXCEEDED', 429);
+    }
+
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
 
     const body = await req.json();
     const validated = createFeedbackSchema.parse(body);
 
-    const apartmentId = validated.apartmentId || session.user.apartmentId;
-    const residentId = session.user.residentId;
+    let apartmentId = validated.apartmentId;
+    let residentId: string | undefined = undefined;
 
-    if (!apartmentId || !residentId) {
-      return apiError('Tài khoản cư dân chưa gắn thông tin căn hộ hợp lệ', 'MISSING_RESIDENT_PROFILE', 400);
+    if (session.user.role === 'RESIDENT') {
+      const resident = await getVerifiedResidentInfo(session.user.id);
+      if (!resident || !resident.apartmentId) {
+        return apiError('Tài khoản chưa gắn thông tin căn hộ hợp lệ', 'MISSING_RESIDENT_PROFILE', 400);
+      }
+      residentId = resident.id;
+      apartmentId = resident.apartmentId;
+    } else {
+      // Staff/Manager creating on behalf of resident
+      residentId = session.user.id;
     }
 
-    const item = await feedbackService.createFeedback({
+    if (!apartmentId || !residentId) {
+      return apiError('Tài khoản chưa gắn thông tin căn hộ hợp lệ', 'MISSING_RESIDENT_PROFILE', 400);
+    }
+
+    const item = await ticketWorkflowService.createTicket({
       ...validated,
       apartmentId,
       residentId,
+      creatorUserId: session.user.id,
     });
 
     return apiSuccess(item, 'Gửi phản ánh sự cố thành công', undefined, 201);
@@ -77,3 +112,4 @@ export async function POST(req: NextRequest) {
     return apiError(error.message || 'Gửi phản ánh thất bại', 'CREATE_FAILED', 400);
   }
 }
+

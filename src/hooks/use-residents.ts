@@ -61,3 +61,13 @@ export function useDeleteResident() {
     },
   });
 }
+
+export function useResidentDashboard() {
+  return useQuery({
+    queryKey: ['resident-dashboard'],
+    queryFn: () => residentClientService.getResidentDashboard(),
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+

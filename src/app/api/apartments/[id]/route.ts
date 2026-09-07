@@ -5,6 +5,9 @@ import { apiSuccess, apiError, apiUnauthorized, apiForbidden, apiNotFound } from
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+import { prisma } from '@/lib/prisma';
+import { authorizeApartmentAccess } from '@/lib/authorization';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,6 +17,13 @@ export async function GET(
     if (!session) return apiUnauthorized();
 
     const { id } = await params;
+
+    // Check ownership for Resident
+    const authCheck = await authorizeApartmentAccess(session.user, id);
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error);
+    }
+
     const item = await apartmentService.getApartmentById(id);
     return apiSuccess(item, 'Chi tiết căn hộ');
   } catch (error: any) {

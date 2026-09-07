@@ -21,16 +21,17 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           type={type}
           className={cn(
-            'flex h-9 w-full rounded-lg border bg-white px-3 py-1.5 text-sm text-slate-900 shadow-2xs transition-all duration-200 ease-out',
-            'placeholder:text-slate-400',
+            'flex h-9 w-full rounded-lg border bg-white dark:bg-slate-900 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 shadow-2xs transition-all duration-200 ease-out',
+            'placeholder:text-slate-400 dark:placeholder:text-slate-500',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0',
             hasError
               ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20 animate-error-shake'
-              : 'border-slate-200 hover:border-slate-300 focus-visible:border-blue-600 focus-visible:ring-blue-600/15',
-            'disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200',
+              : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 focus-visible:border-blue-600 focus-visible:ring-blue-600/15',
+            'disabled:cursor-not-allowed disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-400 disabled:border-slate-200 dark:disabled:border-slate-800',
             leftIcon && 'pl-9',
             rightIcon && 'pr-9',
             className
+
           )}
           ref={ref}
           aria-invalid={hasError}

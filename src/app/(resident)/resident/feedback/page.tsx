@@ -1,19 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { FormDialog } from '@/components/shared/FormDialog';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { MessageSquareWarning, Plus, Star, Wrench } from 'lucide-react';
+import { MessageSquareWarning, Plus, Star, Wrench, Calendar, CheckCircle2, Clock } from 'lucide-react';
 import { useFeedbacks, useCreateFeedback, useRateFeedback } from '@/hooks/use-feedbacks';
 import { TicketCategory, TicketPriority } from '@prisma/client';
 import { formatDateTime } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function ResidentFeedbackPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -48,6 +51,7 @@ export default function ResidentFeedbackPage() {
           content: '',
           priority: 'MEDIUM',
         });
+        toast.success('Đã gửi phản ánh tới BQL tòa nhà!');
       },
     });
   };
@@ -58,7 +62,10 @@ export default function ResidentFeedbackPage() {
     rateMutation.mutate(
       { id: ratingItem.id, data: ratingForm },
       {
-        onSuccess: () => setRatingItem(null),
+        onSuccess: () => {
+          setRatingItem(null);
+          toast.success('Cảm ơn bạn đã đánh giá chất lượng phục vụ!');
+        },
       }
     );
   };
@@ -66,125 +73,158 @@ export default function ResidentFeedbackPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Báo cáo Sự cố & Yêu cầu Hỗ trợ"
-        description="Gửi phản ánh tới Ban Quản Lý tòa nhà về hỏng hóc điện, nước, thang máy hoặc vấn đề an ninh."
+        title="Báo cáo Sự cố & Phản ánh"
+        description="Gửi yêu cầu hỗ trợ sửa chữa điện, nước, thang máy hoặc đóng góp ý kiến tới Ban Quản Lý."
       >
-        <Button onClick={() => setIsFormOpen(true)} className="bg-blue-600 hover:bg-blue-700 shadow-md">
-          <Plus className="mr-2 h-4 w-4" /> Gửi Phản ánh mới
+        <Button
+          onClick={() => setIsFormOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20"
+        >
+          <Plus className="mr-1.5 h-4 w-4" /> Báo sự cố mới
         </Button>
       </PageHeader>
 
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="p-5 border-slate-200 space-y-3">
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-5 w-24 rounded-full" />
-              </div>
-              <Skeleton className="h-5 w-56" />
+            <div key={i} className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
+              <Skeleton className="h-5 w-48" />
               <Skeleton className="h-4 w-full" />
-            </Card>
+              <Skeleton className="h-3 w-32" />
+            </div>
           ))}
         </div>
       ) : isError ? (
-        <Card className="p-8 text-center border-rose-200 bg-rose-50/40">
-          <p className="font-semibold text-slate-800">Không thể tải danh sách phản ánh</p>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            {(error as any)?.message || 'Vui lòng kiểm tra lại kết nối mạng và thử lại.'}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="mt-4 text-xs text-slate-700 hover:bg-white"
-          >
-            Thử lại
-          </Button>
-        </Card>
-      ) : feedbacks.length === 0 ? (
-        <EmptyState
-          icon={MessageSquareWarning}
-          title="Chưa có phản ánh nào"
-          description="Bấm 'Gửi Phản ánh mới' để gửi yêu cầu hỗ trợ tới Ban Quản Lý."
-          actionLabel="Gửi Phản ánh mới"
-          onAction={() => setIsFormOpen(true)}
+        <ErrorState
+          title="Không thể tải danh sách phản ánh"
+          message={(error as any)?.message}
+          onRetry={() => refetch()}
         />
+      ) : feedbacks.length === 0 ? (
+        <Card className="p-8 text-center border-slate-200/80 dark:border-slate-800">
+          <EmptyState
+            icon={MessageSquareWarning}
+            title="Chưa có phản ánh sự cố nào"
+            description="Nếu gặp bất kỳ vấn đề nào về điện, nước, thiết bị hoặc an ninh, hãy gửi yêu cầu cho chúng tôi."
+            actionLabel="Báo sự cố ngay"
+            onAction={() => setIsFormOpen(true)}
+          />
+        </Card>
       ) : (
-        <div className="space-y-4">
-          {feedbacks.map((item: any) => (
-            <Card key={item.id} className="border-slate-200">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-                      {item.code}
-                    </span>
-                    <Badge variant="outline">{item.category}</Badge>
-                  </div>
-                  {item.status === 'NEW' && <Badge variant="destructive">Mới tiếp nhận</Badge>}
-                  {item.status === 'PROCESSING' && <Badge variant="warning">Đang xử lý</Badge>}
-                  {item.status === 'RESOLVED' && <Badge variant="success">Hoàn thành</Badge>}
-                </div>
-                <CardTitle className="text-base font-bold text-slate-900 mt-2">{item.title}</CardTitle>
-                <p className="text-xs text-slate-400">{formatDateTime(item.createdAt)}</p>
-              </CardHeader>
-
-              <CardContent className="pb-3 text-xs text-slate-700 space-y-2">
-                <p className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">{item.content}</p>
-
-                {item.responseContent && (
-                  <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-lg text-blue-900">
-                    <p className="font-bold flex items-center gap-1 text-[11px] uppercase tracking-wider text-blue-700 mb-0.5">
-                      <Wrench className="h-3.5 w-3.5" /> Phản hồi từ Ban Quản Lý:
-                    </p>
-                    <p>{item.responseContent}</p>
-                  </div>
-                )}
-              </CardContent>
-
-              {item.status === 'RESOLVED' && (
-                <CardFooter className="pt-0 flex justify-between items-center border-t border-slate-100 pt-3">
-                  {item.rating ? (
-                    <div className="flex items-center gap-1 text-amber-500 text-xs">
-                      <span className="font-semibold text-slate-600 mr-1">Đánh giá của bạn:</span>
-                      {Array.from({ length: item.rating }).map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      ))}
+        <div className="grid grid-cols-1 gap-4">
+          {feedbacks.map((item: any) => {
+            const isResolved = item.status === 'RESOLVED';
+            const hasRated = Boolean(item.rating);
+            return (
+              <Card
+                key={item.id}
+                className="overflow-hidden border-slate-200/80 dark:border-slate-800 hover:shadow-md transition-all duration-200"
+              >
+                <div className="p-5 sm:p-6 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono font-bold text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded">
+                        {item.code}
+                      </span>
+                      <StatusBadge type="ticketCategory" status={item.category} />
+                      <StatusBadge type="ticketPriority" status={item.priority} />
+                      <StatusBadge type="ticketStatus" status={item.status} />
                     </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setRatingItem(item);
-                        setRatingForm({ rating: 5, ratingComment: '' });
-                      }}
-                      className="text-xs text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100"
-                    >
-                      <Star className="mr-1 h-3.5 w-3.5 fill-amber-400" /> Đánh giá độ hài lòng
-                    </Button>
+
+                    <span className="text-xs text-slate-400 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {formatDateTime(item.createdAt)}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1.5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                      {item.content}
+                    </p>
+                  </div>
+
+                  {/* BQL response if present */}
+                  {item.responseContent && (
+                    <div className="p-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900 space-y-1">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-blue-800 dark:text-blue-300">
+                        <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                        Ban Quản Lý phản hồi:
+                      </div>
+                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                        {item.responseContent}
+                      </p>
+                    </div>
                   )}
-                </CardFooter>
-              )}
-            </Card>
-          ))}
+
+                  {/* Rating widget / Rating status */}
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div className="text-xs text-slate-500">
+                      {isResolved && !hasRated ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                          Sự cố đã xử lý. Vui lòng đánh giá mức độ hài lòng!
+                        </span>
+                      ) : hasRated ? (
+                        <div className="flex items-center gap-1 text-amber-500 font-bold">
+                          <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                          <span>Bạn đã đánh giá {item.rating}/5 sao</span>
+                        </div>
+                      ) : (
+                        <span>Tiến trình xử lý được cập nhật tự động</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Link href={`/resident/feedback/${item.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                        >
+                          Xem tiến trình & Trao đổi ➔
+                        </Button>
+                      </Link>
+                      {isResolved && !hasRated && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setRatingItem(item);
+                            setRatingForm({ rating: 5, ratingComment: '' });
+                          }}
+                          className="text-xs font-semibold gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                        >
+                          <Star className="h-3.5 w-3.5" /> Đánh giá 1-5 sao
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* Create Ticket Modal */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogHeader>
-          <DialogTitle>Gửi Phản ánh / Báo sự cố</DialogTitle>
-          <DialogDescription>
-            Gửi chi tiết sự cố hỏng hóc để kỹ thuật viên BQL kiểm tra và khắc phục.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmitCreate} className="space-y-4">
+      {/* Create Feedback Form Dialog */}
+      <FormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        title="Gửi Báo cáo Sự cố & Phản ánh"
+        description="Điền thông tin mô tả chi tiết sự cố để đội ngũ kỹ thuật tiếp nhận và xử lý nhanh chóng."
+        icon={MessageSquareWarning}
+        onSubmit={handleSubmitCreate}
+        isLoading={createMutation.isPending}
+        submitText="Gửi báo cáo"
+      >
+        <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Phân loại sự cố (*)</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Danh mục sự cố <span className="text-rose-500">*</span>
+              </label>
               <Select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value as TicketCategory })}
@@ -192,30 +232,34 @@ export default function ResidentFeedbackPage() {
                 <option value="ELECTRIC">Điện sinh hoạt</option>
                 <option value="WATER">Nước & Đường ống</option>
                 <option value="ELEVATOR">Thang máy</option>
-                <option value="SECURITY">An ninh / Tiếng ồn</option>
-                <option value="CLEANLINESS">Vệ sinh rác thải</option>
+                <option value="SECURITY">An ninh trật tự</option>
+                <option value="CLEANLINESS">Vệ sinh môi trường</option>
                 <option value="OTHER">Vấn đề khác</option>
               </Select>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Mức độ ưu tiên</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Mức độ cấp thiết <span className="text-rose-500">*</span>
+              </label>
               <Select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value as TicketPriority })}
               >
-                <option value="LOW">Thấp</option>
-                <option value="MEDIUM">Trung bình</option>
-                <option value="HIGH">Cao</option>
-                <option value="URGENT">Khẩn cấp</option>
+                <option value="LOW">Thấp (Có thể xử lý trong 2-3 ngày)</option>
+                <option value="MEDIUM">Trung bình (Trong 24h)</option>
+                <option value="HIGH">Cao (Cần hỗ trợ sớm)</option>
+                <option value="URGENT">Khẩn cấp (Cần xử lý ngay)</option>
               </Select>
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Tiêu đề sự cố (*)</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Tiêu đề vắn tắt <span className="text-rose-500">*</span>
+            </label>
             <Input
-              placeholder="VD: Mất nước sinh hoạt tại phòng tắm..."
+              placeholder="VD: Rò rỉ van nước bồn rửa chén tại phòng bếp"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
@@ -223,82 +267,63 @@ export default function ResidentFeedbackPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Mô tả chi tiết (*)</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Mô tả chi tiết sự cố <span className="text-rose-500">*</span>
+            </label>
             <textarea
-              className="w-full rounded-md border border-slate-300 p-2.5 text-xs focus:ring-1 focus:ring-blue-600 outline-none"
-              rows={4}
-              placeholder="Vui lòng mô tả chi tiết vị trí hỏng hóc, biểu hiện..."
+              className="w-full min-h-[100px] p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+              placeholder="Mô tả hiện trạng, thời điểm phát sinh hoặc vị trí sự cố..."
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               required
             />
           </div>
+        </div>
+      </FormDialog>
 
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setIsFormOpen(false)}>
-              Hủy
-            </Button>
-            <Button type="submit" disabled={createMutation.isPending} className="bg-blue-600 hover:bg-blue-700">
-              {createMutation.isPending ? 'Đang gửi...' : 'Gửi Yêu cầu'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </Dialog>
-
-      {/* 5-Star Rating Modal */}
-      <Dialog open={!!ratingItem} onOpenChange={(open) => !open && setRatingItem(null)}>
-        {ratingItem && (
-          <div>
-            <DialogHeader>
-              <DialogTitle>Đánh giá Mức độ Hài lòng</DialogTitle>
-              <DialogDescription>
-                Bạn đánh giá thế nào về chất lượng hỗ trợ xử lý cho sự cố <strong>{ratingItem.code}</strong>?
-              </DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={handleSubmitRating} className="space-y-4 my-4">
-              <div className="flex justify-center items-center gap-2 py-3">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setRatingForm({ ...ratingForm, rating: star })}
-                    className="p-1 cursor-pointer hover:scale-110 transition-transform"
-                  >
-                    <Star
-                      className={`h-8 w-8 ${
-                        star <= ratingForm.rating
-                          ? 'fill-amber-400 text-amber-400'
-                          : 'text-slate-300'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700">Ý kiến đóng góp thêm (không bắt buộc)</label>
-                <textarea
-                  className="w-full rounded-md border border-slate-300 p-2.5 text-xs outline-none"
-                  rows={2}
-                  placeholder="Nhập cảm nhận của bạn về thái độ phục vụ và kết quả..."
-                  value={ratingForm.ratingComment}
-                  onChange={(e) => setRatingForm({ ...ratingForm, ratingComment: e.target.value })}
+      {/* Rating Form Dialog */}
+      <FormDialog
+        open={Boolean(ratingItem)}
+        onOpenChange={(open) => !open && setRatingItem(null)}
+        title="Đánh giá Mức độ Hài lòng"
+        description={`Đánh giá chất lượng xử lý của Ban Quản Lý cho sự cố ${ratingItem?.code}`}
+        icon={Star}
+        onSubmit={handleSubmitRating}
+        isLoading={rateMutation.isPending}
+        submitText="Gửi đánh giá"
+      >
+        <div className="space-y-4 text-center py-2">
+          <div className="flex items-center justify-center gap-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRatingForm({ ...ratingForm, rating: star })}
+                className="p-1 text-2xl cursor-pointer hover:scale-110 transition-transform"
+              >
+                <Star
+                  className={`h-8 w-8 ${
+                    star <= ratingForm.rating
+                      ? 'fill-amber-400 text-amber-400'
+                      : 'text-slate-300 dark:text-slate-600'
+                  }`}
                 />
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setRatingItem(null)}>
-                  Bỏ qua
-                </Button>
-                <Button type="submit" disabled={rateMutation.isPending} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
-                  {rateMutation.isPending ? 'Đang gửi...' : 'Gửi Đánh giá'}
-                </Button>
-              </DialogFooter>
-            </form>
+              </button>
+            ))}
           </div>
-        )}
-      </Dialog>
+
+          <div className="space-y-1 text-left">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Nhận xét thêm (tùy chọn)
+            </label>
+            <Input
+              placeholder="Nhân viên kỹ thuật xử lý nhanh, nhiệt tình..."
+              value={ratingForm.ratingComment}
+              onChange={(e) => setRatingForm({ ...ratingForm, ratingComment: e.target.value })}
+            />
+          </div>
+        </div>
+      </FormDialog>
     </div>
   );
 }

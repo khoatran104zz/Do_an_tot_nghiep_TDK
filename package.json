@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx --test tests/**/*.test.ts",
+    "test:auth": "tsx --test tests/resident-authorization.test.ts",
+    "test:workflow": "tsx --test tests/ticket-workflow.test.ts",
+    "test:smart": "tsx --test tests/smart-operations.test.ts",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed"
   },

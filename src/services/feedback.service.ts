@@ -17,6 +17,20 @@ export const feedbackClientService = {
     });
   },
 
+  async triggerWorkflowAction(id: string, action: string, payload?: any) {
+    return apiClient(`/feedbacks/${id}/workflow`, {
+      method: 'POST',
+      body: JSON.stringify({ action, payload }),
+    });
+  },
+
+  async addComment(id: string, data: { content: string; isInternal?: boolean }) {
+    return apiClient(`/feedbacks/${id}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   async respondFeedback(id: string, data: RespondFeedbackDto) {
     return apiClient(`/feedbacks/${id}/respond`, {
       method: 'POST',
@@ -35,5 +49,9 @@ export const feedbackClientService = {
     return apiClient(`/feedbacks/${id}`, {
       method: 'DELETE',
     });
+  },
+
+  async getStaffList() {
+    return apiClient('/staff');
   },
 };

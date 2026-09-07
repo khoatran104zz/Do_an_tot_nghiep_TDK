@@ -75,14 +75,14 @@ export class InvoiceRepository {
     });
   }
 
-  async findByApartmentAndMonth(apartmentId: string, billingMonth: string) {
-    return prisma.invoice.findFirst({
+  async findByApartmentAndMonth(apartmentId: string, billingMonth: string, tx: Prisma.TransactionClient = prisma) {
+    return tx.invoice.findFirst({
       where: { apartmentId, billingMonth },
     });
   }
 
-  async create(data: CreateInvoiceDto, invoiceCode: string, totalAmount: number) {
-    return prisma.invoice.create({
+  async create(data: CreateInvoiceDto, invoiceCode: string, totalAmount: number, tx: Prisma.TransactionClient = prisma) {
+    return tx.invoice.create({
       data: {
         code: invoiceCode,
         apartmentId: data.apartmentId,
@@ -106,9 +106,12 @@ export class InvoiceRepository {
     });
   }
 
-  async processPayment(id: string, data: ProcessPaymentDto) {
-    return prisma.invoice.update({
-      where: { id },
+  async processPayment(id: string, data: ProcessPaymentDto, tx: Prisma.TransactionClient = prisma) {
+    const updated = await tx.invoice.updateMany({
+      where: {
+        id,
+        status: { not: InvoiceStatus.PAID },
+      },
       data: {
         status: InvoiceStatus.PAID,
         paidAt: new Date(),
@@ -116,20 +119,27 @@ export class InvoiceRepository {
         transactionId: data.transactionId || `PAY-${Date.now()}`,
       },
     });
+
+    if (updated.count === 0) {
+      throw new Error('Hóa đơn không tồn tại hoặc đã được thanh toán trước đó');
+    }
+
+    return this.findById(id);
   }
 
-  async updateStatus(id: string, status: InvoiceStatus) {
-    return prisma.invoice.update({
+  async updateStatus(id: string, status: InvoiceStatus, tx: Prisma.TransactionClient = prisma) {
+    return tx.invoice.update({
       where: { id },
       data: { status },
     });
   }
 
-  async delete(id: string) {
-    return prisma.invoice.delete({
+  async delete(id: string, tx: Prisma.TransactionClient = prisma) {
+    return tx.invoice.delete({
       where: { id },
     });
   }
 }
 
 export const invoiceRepository = new InvoiceRepository();
+

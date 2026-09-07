@@ -46,9 +46,9 @@ export async function apiClient<T = any>(endpoint: string, options: FetchOptions
 
   if (!response.ok || data.success === false) {
     throw new ApiError(
-      data.message || 'Đã có lỗi xảy ra. Vui lòng thử lại!',
+      data.error?.message || data.message || 'Đã có lỗi xảy ra. Vui lòng thử lại!',
       response.status,
-      data.errorCode
+      data.error?.code || data.errorCode
     );
   }
 

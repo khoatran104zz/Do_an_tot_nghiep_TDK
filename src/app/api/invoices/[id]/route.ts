@@ -4,6 +4,9 @@ import { apiSuccess, apiError, apiUnauthorized, apiForbidden, apiNotFound } from
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+import { prisma } from '@/lib/prisma';
+import { authorizeInvoiceAccess } from '@/lib/authorization';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,6 +17,13 @@ export async function GET(
 
     const { id } = await params;
     const item = await invoiceService.getInvoiceById(id);
+
+    // Verify ownership for Resident
+    const authCheck = await authorizeInvoiceAccess(session.user, item.apartmentId);
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error);
+    }
+
     return apiSuccess(item, 'Chi tiết hóa đơn');
   } catch (error: any) {
     return apiNotFound(error.message || 'Không tìm thấy hóa đơn');

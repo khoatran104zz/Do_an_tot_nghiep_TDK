@@ -4,6 +4,7 @@ import { residentSchema } from '@/modules/resident/resident.schema';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden, apiNotFound } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { authorizeResidentProfileAccess } from '@/lib/authorization';
 
 export async function GET(
   req: NextRequest,
@@ -15,11 +16,22 @@ export async function GET(
 
     const { id } = await params;
     const item = await residentService.getResidentById(id);
+
+    // IDOR Protection: Verify resident can only view self or co-residents
+    const authCheck = await authorizeResidentProfileAccess(session.user, {
+      id: item.id,
+      apartmentId: item.apartmentId,
+    });
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error);
+    }
+
     return apiSuccess(item, 'Chi tiết hồ sơ cư dân');
   } catch (error: any) {
     return apiNotFound(error.message || 'Không tìm thấy cư dân');
   }
 }
+
 
 export async function PUT(
   req: NextRequest,

@@ -3,13 +3,16 @@
 import React, { useState } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, Column } from '@/components/shared/DataTable';
+import { FilterBar } from '@/components/shared/FilterBar';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { DetailDrawer, DetailItem } from '@/components/shared/DetailDrawer';
+import { FormDialog } from '@/components/shared/FormDialog';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, User, Phone, Mail, Home, CreditCard, RotateCcw } from 'lucide-react';
+import { Avatar } from '@/components/ui/avatar';
+import { Plus, Edit, Trash2, Eye, User, Phone, Mail, Home, CreditCard, Calendar } from 'lucide-react';
 import {
   useResidents,
   useCreateResident,
@@ -18,6 +21,7 @@ import {
 } from '@/hooks/use-residents';
 import { useApartments } from '@/hooks/use-apartments';
 import { ResidentRelationship, ResidentStatus } from '@prisma/client';
+import { toast } from 'sonner';
 
 export default function ResidentsPage() {
   const [search, setSearch] = useState('');
@@ -25,10 +29,16 @@ export default function ResidentsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
 
-  // Dialog states
+  // Sorting & Selection
+  const [sortKey, setSortKey] = useState<string>('fullName');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [selectedRowIds, setSelectedRowIds] = useState<(string | number)[]>([]);
+
+  // Dialog & Drawer states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [inspectingItem, setInspectingItem] = useState<any>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -67,6 +77,7 @@ export default function ResidentsPage() {
     setRelationshipFilter('');
     setStatusFilter('');
     setPage(1);
+    setSelectedRowIds([]);
   };
 
   const handleOpenCreate = () => {
@@ -104,11 +115,19 @@ export default function ResidentsPage() {
     if (editingItem) {
       updateMutation.mutate(
         { id: editingItem.id, data: formData },
-        { onSuccess: () => setIsFormOpen(false) }
+        {
+          onSuccess: () => {
+            setIsFormOpen(false);
+            toast.success(`Đã cập nhật cư dân ${formData.fullName}`);
+          },
+        }
       );
     } else {
       createMutation.mutate(formData, {
-        onSuccess: () => setIsFormOpen(false),
+        onSuccess: () => {
+          setIsFormOpen(false);
+          toast.success(`Đã thêm cư dân ${formData.fullName}`);
+        },
       });
     }
   };
@@ -116,116 +135,157 @@ export default function ResidentsPage() {
   const handleDeleteConfirm = () => {
     if (deletingId) {
       deleteMutation.mutate(deletingId, {
-        onSuccess: () => setDeletingId(null),
+        onSuccess: () => {
+          setDeletingId(null);
+          toast.success('Đã xóa hồ sơ cư dân thành công');
+        },
       });
     }
   };
 
-  const renderRelationshipBadge = (rel: ResidentRelationship) => {
-    switch (rel) {
-      case 'OWNER':
-        return <Badge variant="default">Chủ hộ</Badge>;
-      case 'FAMILY':
-        return <Badge variant="secondary">Thân nhân</Badge>;
-      case 'TENANT':
-      default:
-        return <Badge variant="outline">Khách thuê</Badge>;
+  const handleSelectRow = (id: string | number) => {
+    setSelectedRowIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedRowIds.length === residents.length) {
+      setSelectedRowIds([]);
+    } else {
+      setSelectedRowIds(residents.map((r: any) => r.id));
     }
   };
 
-  const renderStatusBadge = (status: ResidentStatus) => {
-    switch (status) {
-      case 'RESIDING':
-        return <Badge variant="success">Đang cư trú</Badge>;
-      case 'TEMPORARY_ABSENT':
-        return <Badge variant="warning">Tạm vắng</Badge>;
-      case 'MOVED_OUT':
-      default:
-        return <Badge variant="destructive">Đã chuyển đi</Badge>;
-    }
-  };
+  // Active filter tags for FilterBar
+  const activeTags = [];
+  if (relationshipFilter) {
+    activeTags.push({
+      key: 'relationship',
+      label: 'Quan hệ',
+      valueLabel:
+        relationshipFilter === 'OWNER'
+          ? 'Chủ hộ'
+          : relationshipFilter === 'FAMILY'
+          ? 'Thân nhân'
+          : 'Khách thuê',
+      onRemove: () => setRelationshipFilter(''),
+    });
+  }
+  if (statusFilter) {
+    activeTags.push({
+      key: 'status',
+      label: 'Cư trú',
+      valueLabel:
+        statusFilter === 'RESIDING'
+          ? 'Đang cư trú'
+          : statusFilter === 'TEMPORARY_ABSENT'
+          ? 'Tạm vắng'
+          : 'Đã chuyển đi',
+      onRemove: () => setStatusFilter(''),
+    });
+  }
+
+  // Drawer detail items
+  const drawerItems: DetailItem[] = inspectingItem
+    ? [
+        { label: 'Họ và tên', value: inspectingItem.fullName, icon: User },
+        { label: 'Số CCCD / Hộ chiếu', value: inspectingItem.identityCard, icon: CreditCard },
+        { label: 'Số điện thoại', value: inspectingItem.phone, icon: Phone },
+        { label: 'Địa chỉ Email', value: inspectingItem.email || 'Chưa cung cấp', icon: Mail },
+        { label: 'Căn hộ gắn kèm', value: inspectingItem.apartment?.code || 'Chưa gán', icon: Home },
+        { label: 'Giới tính', value: inspectingItem.gender || 'Chưa xác định' },
+      ]
+    : [];
 
   const columns: Column<any>[] = [
     {
-      header: 'Họ và Tên',
+      header: 'Họ & Tên',
+      accessorKey: 'fullName',
+      sortable: true,
       cell: (row) => (
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700 text-xs">
-            {row.fullName.charAt(0).toUpperCase()}
-          </div>
+        <div className="flex items-center gap-2.5">
+          <Avatar name={row.fullName} size="default" />
           <div>
-            <span className="font-semibold text-slate-900 block">{row.fullName}</span>
-            <span className="text-xs text-slate-400">{row.gender || 'Chưa cập nhật'}</span>
+            <span className="font-semibold text-slate-900 dark:text-slate-100 block text-xs sm:text-sm">
+              {row.fullName}
+            </span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-mono">
+              {row.identityCard}
+            </span>
           </div>
         </div>
       ),
     },
     {
-      header: 'Số CCCD/CMND',
-      accessorKey: 'identityCard',
+      header: 'Căn hộ',
       cell: (row) => (
-        <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-          {row.identityCard}
-        </span>
+        row.apartment ? (
+          <span className="font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded text-xs">
+            {row.apartment.code}
+          </span>
+        ) : (
+          <span className="text-slate-400 text-xs italic">Chưa gắn</span>
+        )
       ),
     },
     {
       header: 'Liên hệ',
       cell: (row) => (
-        <div className="space-y-0.5 text-xs text-slate-600">
-          <div className="flex items-center gap-1">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
             <Phone className="h-3 w-3 text-slate-400" />
             <span>{row.phone}</span>
           </div>
           {row.email && (
-            <div className="flex items-center gap-1 text-slate-400">
-              <Mail className="h-3 w-3" />
-              <span>{row.email}</span>
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+              <Mail className="h-3 w-3 text-slate-400" />
+              <span className="truncate max-w-[140px]">{row.email}</span>
             </div>
           )}
         </div>
       ),
     },
     {
-      header: 'Căn hộ',
-      cell: (row) =>
-        row.apartment ? (
-          <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs">
-            {row.apartment.code}
-          </span>
-        ) : (
-          <span className="text-xs text-slate-400 italic">Chưa gắn</span>
-        ),
-    },
-    {
       header: 'Quan hệ',
-      cell: (row) => renderRelationshipBadge(row.relationshipToOwner),
+      accessorKey: 'relationshipToOwner',
+      cell: (row) => <StatusBadge type="relationship" status={row.relationshipToOwner} />,
     },
     {
       header: 'Trạng thái',
-      cell: (row) => renderStatusBadge(row.status),
+      accessorKey: 'status',
+      sortable: true,
+      cell: (row) => <StatusBadge type="resident" status={row.status} />,
     },
     {
       header: 'Thao tác',
+      className: 'text-right',
       cell: (row) => (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
+            onClick={() => setInspectingItem(row)}
+            className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800"
+            title="Xem hồ sơ"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => handleOpenEdit(row)}
-            className="h-9 w-9 min-h-[36px] min-w-[36px] text-blue-600 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-600/30"
-            title={`Chỉnh sửa hồ sơ ${row.fullName}`}
-            aria-label={`Chỉnh sửa hồ sơ ${row.fullName}`}
+            className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800"
+            title="Chỉnh sửa"
           >
             <Edit className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             onClick={() => setDeletingId(row.id)}
-            className="h-9 w-9 min-h-[36px] min-w-[36px] text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-600/30"
-            title={`Xóa cư dân ${row.fullName}`}
-            aria-label={`Xóa cư dân ${row.fullName}`}
+            className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800"
+            title="Xóa"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -237,69 +297,54 @@ export default function ResidentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Quản lý Cư dân"
-        description="Quản lý hồ sơ cư dân, CCCD, thông tin liên hệ và phân quyền cư trú."
+        title="Hồ sơ Cư dân"
+        description="Quản lý định danh CCCD/Passport, thông tin liên lạc và mối quan hệ cư trú tại từng căn hộ."
       >
-        <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 shadow-md">
-          <Plus className="mr-2 h-4 w-4" /> Thêm Cư dân mới
+        <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20">
+          <Plus className="mr-1.5 h-4 w-4" /> Thêm Cư dân mới
         </Button>
       </PageHeader>
 
-      {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Lọc Quan hệ Chủ hộ</label>
-            <Select
-              value={relationshipFilter}
-              onChange={(e) => {
-                setRelationshipFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Tất cả vai trò</option>
-              <option value="OWNER">Chủ hộ</option>
-              <option value="FAMILY">Thân nhân gia đình</option>
-              <option value="TENANT">Người thuê nhà</option>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Trạng thái Cư trú</label>
-            <Select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="RESIDING">Đang cư trú</option>
-              <option value="TEMPORARY_ABSENT">Tạm vắng</option>
-              <option value="MOVED_OUT">Đã chuyển đi</option>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Tổng số cư dân</label>
-            <div className="h-9 flex items-center justify-between px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">
-              <span>{meta.total} Cư dân</span>
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  Đặt lại
-                </button>
-              )}
-            </div>
-          </div>
+      {/* FilterBar */}
+      <FilterBar
+        activeTags={activeTags}
+        hasActiveFilters={hasActiveFilters}
+        onReset={handleResetFilters}
+        totalCount={meta.total}
+        totalCountLabel="Cư dân"
+      >
+        <div className="w-44">
+          <Select
+            value={relationshipFilter}
+            onChange={(e) => {
+              setRelationshipFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Tất cả quan hệ</option>
+            <option value="OWNER">Chủ hộ</option>
+            <option value="FAMILY">Thân nhân</option>
+            <option value="TENANT">Khách thuê</option>
+          </Select>
         </div>
-      </div>
 
-      {/* Data Table */}
+        <div className="w-44">
+          <Select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="RESIDING">Đang cư trú</option>
+            <option value="TEMPORARY_ABSENT">Tạm vắng</option>
+            <option value="MOVED_OUT">Đã chuyển đi</option>
+          </Select>
+        </div>
+      </FilterBar>
+
+      {/* Enterprise DataTable */}
       <DataTable
         columns={columns}
         data={residents}
@@ -307,7 +352,7 @@ export default function ResidentsPage() {
         isError={isError}
         errorMessage={(error as any)?.message}
         onRetry={() => refetch()}
-        searchPlaceholder="Tìm theo tên, SĐT, CCCD..."
+        searchPlaceholder="Tìm theo tên, SĐT hoặc CCCD..."
         searchValue={search}
         onSearchChange={(val) => {
           setSearch(val);
@@ -317,155 +362,174 @@ export default function ResidentsPage() {
         totalPages={meta.totalPages}
         totalItems={meta.total}
         onPageChange={(p) => setPage(p)}
+        onRowClick={(row) => setInspectingItem(row)}
+        enableRowSelection
+        selectedRowIds={selectedRowIds}
+        onRowSelect={handleSelectRow}
+        onSelectAll={handleSelectAll}
+        enableColumnVisibility
+        sortKey={sortKey}
+        sortOrder={sortOrder}
+        onSortChange={(key, order) => {
+          setSortKey(key);
+          setSortOrder(order);
+        }}
       />
 
-      {/* Create / Edit Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogHeader>
-          <DialogTitle>{editingItem ? 'Chỉnh sửa Hồ sơ Cư dân' : 'Thêm mới Hồ sơ Cư dân'}</DialogTitle>
-          <DialogDescription>
-            Nhập đầy đủ thông tin định danh cá nhân và gán vào căn hộ tương ứng.
-          </DialogDescription>
-        </DialogHeader>
+      {/* Slide-over Detail Drawer */}
+      <DetailDrawer
+        open={Boolean(inspectingItem)}
+        onOpenChange={(open) => !open && setInspectingItem(null)}
+        title={inspectingItem?.fullName || 'Hồ sơ Cư dân'}
+        description="Chi tiết thông tin định danh cá nhân và căn hộ cư trú"
+        badge={inspectingItem && <StatusBadge type="resident" status={inspectingItem.status} />}
+        items={drawerItems}
+        footerActions={
+          inspectingItem && (
+            <Button
+              size="sm"
+              onClick={() => {
+                const item = inspectingItem;
+                setInspectingItem(null);
+                handleOpenEdit(item);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+            >
+              <Edit className="h-3.5 w-3.5 mr-1.5" /> Chỉnh sửa
+            </Button>
+          )
+        }
+      />
 
-        <form onSubmit={handleSubmitForm} className="space-y-4">
+      {/* Form Dialog */}
+      <FormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        title={editingItem ? `Chỉnh sửa: ${editingItem.fullName}` : 'Thêm Cư dân mới'}
+        description="Điền thông tin định danh, liên lạc và gán căn hộ cho cư dân"
+        icon={User}
+        onSubmit={handleSubmitForm}
+        isLoading={createMutation.isPending || updateMutation.isPending}
+        submitText={editingItem ? 'Lưu thay đổi' : 'Tạo hồ sơ cư dân'}
+      >
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">
-              Họ và Tên <span className="text-red-500">*</span>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Họ và tên <span className="text-rose-500">*</span>
             </label>
             <Input
-              placeholder="Nguyễn Văn A"
+              placeholder="VD: Nguyễn Văn An"
               value={formData.fullName}
               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Số CCCD/CMND <span className="text-red-500">*</span>
-              </label>
-              <Input
-                placeholder="012345678901"
-                value={formData.identityCard}
-                onChange={(e) => setFormData({ ...formData, identityCard: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Số điện thoại <span className="text-red-500">*</span>
-              </label>
-              <Input
-                placeholder="0987654321"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                required
-              />
-            </div>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Số CCCD / Hộ chiếu <span className="text-rose-500">*</span>
+            </label>
+            <Input
+              placeholder="VD: 001201012345"
+              value={formData.identityCard}
+              onChange={(e) => setFormData({ ...formData, identityCard: e.target.value })}
+              required
+            />
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Địa chỉ Email</label>
-              <Input
-                type="email"
-                placeholder="email@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Giới tính</label>
-              <Select
-                value={formData.gender}
-                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-              >
-                <option value="Nam">Nam</option>
-                <option value="Nữ">Nữ</option>
-                <option value="Khác">Khác</option>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">
-                Gán Căn hộ <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={formData.apartmentId}
-                onChange={(e) => setFormData({ ...formData, apartmentId: e.target.value })}
-                required
-              >
-                <option value="">-- Chọn căn hộ --</option>
-                {apartmentOptions.map((apt: any) => (
-                  <option key={apt.id} value={apt.id}>
-                    {apt.code} ({apt.building} - Tầng {apt.floor})
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-700">Quan hệ với Chủ hộ</label>
-              <Select
-                value={formData.relationshipToOwner}
-                onChange={(e) => setFormData({ ...formData, relationshipToOwner: e.target.value as ResidentRelationship })}
-              >
-                <option value="OWNER">Chủ hộ</option>
-                <option value="FAMILY">Thân nhân</option>
-                <option value="TENANT">Người thuê nhà</option>
-              </Select>
-            </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Số điện thoại <span className="text-rose-500">*</span>
+            </label>
+            <Input
+              placeholder="0912345678"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              required
+            />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-700">Trạng thái Cư trú</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Email liên lạc</label>
+            <Input
+              type="email"
+              placeholder="email@example.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Gán vào Căn hộ <span className="text-rose-500">*</span>
+            </label>
+            <Select
+              value={formData.apartmentId}
+              onChange={(e) => setFormData({ ...formData, apartmentId: e.target.value })}
+            >
+              <option value="">Chọn căn hộ...</option>
+              {apartmentOptions.map((apt: any) => (
+                <option key={apt.id} value={apt.id}>
+                  {apt.code} ({apt.building} - Tầng {apt.floor})
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Giới tính</label>
+            <Select
+              value={formData.gender}
+              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+            >
+              <option value="Nam">Nam</option>
+              <option value="Nữ">Nữ</option>
+              <option value="Khác">Khác</option>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Quan hệ với chủ hộ</label>
+            <Select
+              value={formData.relationshipToOwner}
+              onChange={(e) =>
+                setFormData({ ...formData, relationshipToOwner: e.target.value as ResidentRelationship })
+              }
+            >
+              <option value="OWNER">Chủ hộ</option>
+              <option value="FAMILY">Thân nhân</option>
+              <option value="TENANT">Khách thuê</option>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Trạng thái cư trú</label>
             <Select
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as ResidentStatus })}
+              onChange={(e) =>
+                setFormData({ ...formData, status: e.target.value as ResidentStatus })
+              }
             >
               <option value="RESIDING">Đang cư trú</option>
               <option value="TEMPORARY_ABSENT">Tạm vắng</option>
               <option value="MOVED_OUT">Đã chuyển đi</option>
             </Select>
           </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => setIsFormOpen(false)}
-              disabled={createMutation.isPending || updateMutation.isPending}
-            >
-              Hủy bỏ
-            </Button>
-            <Button
-              type="submit"
-              isLoading={createMutation.isPending || updateMutation.isPending}
-              disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700 font-semibold"
-            >
-              {createMutation.isPending || updateMutation.isPending
-                ? 'Đang lưu...'
-                : editingItem
-                ? 'Cập nhật'
-                : 'Thêm Cư dân'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </Dialog>
+        </div>
+      </FormDialog>
 
       {/* Delete Confirmation */}
       <ConfirmDialog
-        open={!!deletingId}
+        open={Boolean(deletingId)}
         onOpenChange={(open) => !open && setDeletingId(null)}
-        title="Xác nhận xóa cư dân?"
-        description="Xóa thông tin cư dân khỏi danh sách tòa nhà. Thao tác không thể hoàn tác."
+        title="Xác nhận xóa hồ sơ cư dân?"
+        description="Thao tác này sẽ xóa thông tin cư dân khỏi căn hộ và hệ thống quản lý. Không thể hoàn tác."
         isLoading={deleteMutation.isPending}
         onConfirm={handleDeleteConfirm}
       />

@@ -4,6 +4,7 @@ import { contractSchema } from '@/modules/contract/contract.schema';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden, apiNotFound } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { authorizeContractAccess } from '@/lib/authorization';
 
 export async function GET(
   req: NextRequest,
@@ -15,11 +16,19 @@ export async function GET(
 
     const { id } = await params;
     const item = await contractService.getContractById(id);
+
+    // IDOR Protection: Verify ownership for Resident
+    const authCheck = await authorizeContractAccess(session.user, item.apartmentId);
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error);
+    }
+
     return apiSuccess(item, 'Chi tiết hợp đồng');
   } catch (error: any) {
     return apiNotFound(error.message || 'Không tìm thấy hợp đồng');
   }
 }
+
 
 export async function PUT(
   req: NextRequest,
