@@ -198,3 +198,30 @@ export async function authorizeResidentProfileAccess(
 
   return { allowed: true };
 }
+
+/**
+ * Authorize vehicle & parking card resource access.
+ * Resident can ONLY view/manage vehicles and parking cards belonging to their own apartment.
+ * Admin/Manager have full access.
+ */
+export async function authorizeVehicleAccess(
+  user: SessionUser,
+  vehicleApartmentId: string,
+  prismaClient: any = prisma
+): Promise<AuthorizationResult> {
+  if (user.role !== 'RESIDENT') {
+    return { allowed: true };
+  }
+
+  const resident = await getVerifiedResidentInfo(user.id, prismaClient);
+
+  if (!resident || !resident.apartmentId || resident.apartmentId !== vehicleApartmentId) {
+    return {
+      allowed: false,
+      statusCode: 403,
+      error: 'Bạn không có quyền truy cập phương tiện của căn hộ khác',
+    };
+  }
+
+  return { allowed: true };
+}

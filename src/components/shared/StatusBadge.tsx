@@ -30,6 +30,9 @@ import {
   CreditCard,
   Banknote,
   QrCode,
+  Car,
+  Bike,
+  KeyRound,
 } from 'lucide-react';
 
 type StatusType =
@@ -43,7 +46,10 @@ type StatusType =
   | { type: 'ticketPriority'; status: TicketPriority | string }
   | { type: 'ticketCategory'; status: TicketCategory | string }
   | { type: 'role'; status: Role | string }
-  | { type: 'paymentMethod'; status: PaymentMethod | string };
+  | { type: 'paymentMethod'; status: PaymentMethod | string }
+  | { type: 'vehicleStatus'; status: string }
+  | { type: 'vehicleType'; status: string }
+  | { type: 'parkingCardStatus'; status: string };
 
 interface StatusBadgeProps {
   type: StatusType['type'];
@@ -334,6 +340,123 @@ export function StatusBadge({
           <span className={cn('inline-flex items-center gap-1 font-medium text-xs text-slate-700 dark:text-slate-300', className)}>
             <Banknote className="h-3.5 w-3.5 text-emerald-600" /> Tiền mặt
           </span>
+        );
+    }
+  }
+
+  // 12. Vehicle Status
+  if (type === 'vehicleStatus') {
+    switch (status) {
+      case 'ACTIVE':
+        return (
+          <Badge variant="success" size={size} dot className={className}>
+            Đang hoạt động
+          </Badge>
+        );
+      case 'PENDING_APPROVAL':
+        return (
+          <span
+            className={cn(
+              'inline-flex items-center gap-1.5 font-bold text-amber-700 bg-amber-100/90 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 px-2.5 py-0.5 rounded-full text-xs shadow-xs animate-pulse',
+              className
+            )}
+          >
+            <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+            Chờ phê duyệt
+          </span>
+        );
+      case 'REJECTED':
+        return (
+          <Badge variant="destructive" size={size} dot className={className}>
+            Từ chối duyệt
+          </Badge>
+        );
+      case 'INACTIVE':
+      default:
+        return (
+          <Badge variant="secondary" size={size} dot className={className}>
+            Ngưng hoạt động
+          </Badge>
+        );
+    }
+  }
+
+  // 13. Vehicle Type
+  if (type === 'vehicleType') {
+    switch (status) {
+      case 'CAR':
+        return (
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200/80 px-2 py-0.5 rounded',
+              className
+            )}
+          >
+            {showIcon && <Car className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />}
+            Ô tô
+          </span>
+        );
+      case 'MOTORBIKE':
+        return (
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200/80 px-2 py-0.5 rounded',
+              className
+            )}
+          >
+            {showIcon && <Bike className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />}
+            Xe máy
+          </span>
+        );
+      case 'BICYCLE':
+        return (
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 text-xs font-medium text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded',
+              className
+            )}
+          >
+            {showIcon && <Bike className="h-3.5 w-3.5 text-slate-500" />}
+            Xe đạp
+          </span>
+        );
+      case 'ELECTRIC_BIKE':
+      default:
+        return (
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 bg-cyan-50 dark:bg-cyan-950/50 dark:text-cyan-300 border border-cyan-200/80 px-2 py-0.5 rounded',
+              className
+            )}
+          >
+            {showIcon && <Bike className="h-3.5 w-3.5 text-cyan-600" />}
+            Xe điện
+          </span>
+        );
+    }
+  }
+
+  // 14. Parking Card Status
+  if (type === 'parkingCardStatus') {
+    switch (status) {
+      case 'ACTIVE':
+        return (
+          <Badge variant="success" size={size} dot className={className}>
+            Hoạt động
+          </Badge>
+        );
+      case 'LOCKED':
+        return (
+          <Badge variant="destructive" size={size} dot className={className}>
+            Đang khóa
+          </Badge>
+        );
+      case 'EXPIRED':
+      default:
+        return (
+          <Badge variant="warning" size={size} dot className={className}>
+            Đã hết hạn
+          </Badge>
         );
     }
   }

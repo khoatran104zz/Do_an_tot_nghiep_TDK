@@ -13,6 +13,8 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/residents') ||
     pathname.startsWith('/contracts') ||
     pathname.startsWith('/fees') ||
+    pathname.startsWith('/vehicles') ||
+    pathname.startsWith('/parking-cards') ||
     (pathname.startsWith('/invoices') && !pathname.startsWith('/resident')) ||
     (pathname.startsWith('/feedbacks') && !pathname.startsWith('/resident')) ||
     (pathname.startsWith('/notifications') && !pathname.startsWith('/resident'));
@@ -54,6 +56,8 @@ export const config = {
     '/invoices/:path*',
     '/feedbacks/:path*',
     '/notifications/:path*',
+    '/vehicles/:path*',
+    '/parking-cards/:path*',
     '/home/:path*',
     '/resident/:path*',
   ],

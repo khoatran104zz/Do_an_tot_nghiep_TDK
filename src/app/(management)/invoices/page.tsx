@@ -365,10 +365,17 @@ export default function InvoicesPage() {
                   {inspectingItem.items.map((item: any) => (
                     <TableRow key={item.id}>
                       <TableCell className="text-xs font-medium text-slate-800 dark:text-slate-200">
-                        {item.title}
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">{item.title}</div>
+                        {item.note && (
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+                            {item.note}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs text-center text-slate-600 dark:text-slate-400">
-                        {item.quantity}
+                        <span className="font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                          {item.quantity}
+                        </span>
                       </TableCell>
                       <TableCell className="text-xs text-right text-slate-600 dark:text-slate-400">
                         {formatCurrency(item.unitPrice)}

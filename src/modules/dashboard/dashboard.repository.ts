@@ -136,6 +136,14 @@ export class DashboardRepository {
       overdueInvoicesAgg,
       urgentPendingTicketsCount,
       expiringContractsCount,
+
+      // SECTION 9: Parking & Vehicle Operations
+      totalVehiclesCount,
+      activeCarsCount,
+      activeMotorbikesCount,
+      activeParkingCardsCount,
+      pendingApprovalsCount,
+      parkingFeeCategories,
     ] = await Promise.all([
       // 1. Total apartments & previous month count
       prisma.apartment.count(),
@@ -270,6 +278,17 @@ export class DashboardRepository {
             lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           },
         },
+      }),
+
+      // Section 9: Parking & Vehicle Operations
+      prisma.vehicle.count(),
+      prisma.vehicle.count({ where: { type: 'CAR', status: 'ACTIVE' } }),
+      prisma.vehicle.count({ where: { type: 'MOTORBIKE', status: 'ACTIVE' } }),
+      prisma.parkingCard.count({ where: { status: 'ACTIVE' } }),
+      prisma.vehicle.count({ where: { status: 'PENDING_APPROVAL' } }),
+      prisma.feeCategory.findMany({
+        where: { code: { in: ['PARKING_CAR', 'PARKING_MOTO'] } },
+        select: { code: true, unitPrice: true },
       }),
     ]);
 
@@ -408,6 +427,11 @@ export class DashboardRepository {
     const currentMonthCollectedAmount = currentMonthCollected._sum.totalAmount || 0;
     const currentCollectionRate = currentRev > 0 ? (currentMonthCollectedAmount / currentRev) * 100 : 0;
 
+    // 9. Parking & Vehicle metrics calculation
+    const carFeePrice = parkingFeeCategories.find((f) => f.code === 'PARKING_CAR')?.unitPrice || 1200000;
+    const motoFeePrice = parkingFeeCategories.find((f) => f.code === 'PARKING_MOTO')?.unitPrice || 100000;
+    const estimatedParkingRevenue = (activeCarsCount * carFeePrice) + (activeMotorbikesCount * motoFeePrice);
+
     return {
       timeContext: {
         anchorMonth: currentMonthKey,
@@ -478,6 +502,14 @@ export class DashboardRepository {
         statusDistribution: ticketStatusMap,
         priorityDistribution: ticketPriorityMap,
         criticalTickets,
+      },
+      parking: {
+        totalVehicles: totalVehiclesCount,
+        cars: activeCarsCount,
+        motorbikes: activeMotorbikesCount,
+        activeParkingCards: activeParkingCardsCount,
+        pendingApprovals: pendingApprovalsCount,
+        estimatedRevenue: estimatedParkingRevenue,
       },
       activityFeed,
       alerts: {

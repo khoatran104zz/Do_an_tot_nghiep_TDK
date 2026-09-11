@@ -19,6 +19,8 @@ import {
   X,
   BarChart3,
   Settings,
+  Car,
+  KeyRound,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -67,6 +69,8 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     {
       groupName: 'Vận hành & Hỗ trợ',
       items: [
+        { name: 'Quản lý Phương tiện', href: '/vehicles', icon: Car },
+        { name: 'Thẻ gửi xe RFID', href: '/parking-cards', icon: KeyRound },
         { name: 'Phản ánh & Sự cố', href: '/feedbacks', icon: MessageSquareWarning },
         { name: 'Thông báo Tòa nhà', href: '/notifications', icon: Bell },
       ],
@@ -99,6 +103,8 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     {
       groupName: 'Vận hành',
       items: [
+        { name: 'Quản lý Phương tiện', href: '/vehicles', icon: Car },
+        { name: 'Thẻ gửi xe RFID', href: '/parking-cards', icon: KeyRound },
         { name: 'Phản ánh & Sự cố', href: '/feedbacks', icon: MessageSquareWarning },
         { name: 'Thông báo', href: '/notifications', icon: Bell },
       ],
@@ -122,6 +128,7 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     {
       groupName: 'Dịch vụ & Tiện ích',
       items: [
+        { name: 'Phương tiện & Thẻ xe', href: '/resident/vehicles', icon: Car },
         { name: 'Báo sự cố & Đánh giá', href: '/resident/feedback', icon: MessageSquareWarning },
         { name: 'Hộp thư Thông báo', href: '/resident/notifications', icon: Bell },
       ],

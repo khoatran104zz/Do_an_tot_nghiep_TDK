@@ -142,9 +142,16 @@ export default function ResidentInvoicesPage() {
                         {inv.items.map((item: any) => (
                           <span
                             key={item.id}
-                            className="text-[11px] font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200/60 dark:border-slate-700"
+                            title={item.note || undefined}
+                            className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/60 dark:border-slate-700"
                           >
-                            {item.title}: {formatCurrency(item.amount)}
+                            {item.quantity > 1 ? (
+                              <span className="font-bold text-blue-600 dark:text-blue-400">{item.quantity} ×</span>
+                            ) : null}
+                            <span>{item.title}:</span>
+                            <span className="font-semibold text-slate-900 dark:text-slate-100">
+                              {formatCurrency(item.amount)}
+                            </span>
                           </span>
                         ))}
                       </div>

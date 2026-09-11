@@ -227,7 +227,7 @@ export default function ResidentHomePage() {
       {/* ===================================================================
           4. QUICK ACTIONS (Big, thumb-friendly icons for mobile)
           =================================================================== */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         <button
           type="button"
           onClick={() => {
@@ -244,6 +244,19 @@ export default function ResidentHomePage() {
           </span>
           <span className="text-[10px] text-slate-400 mt-0.5">Quét mã tiện lợi</span>
         </button>
+
+        <Link
+          href="/resident/vehicles"
+          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all group text-center"
+        >
+          <div className="p-3 rounded-2xl bg-cyan-50 dark:bg-cyan-950 text-cyan-600 dark:text-cyan-400 mb-2 group-hover:scale-110 transition-transform">
+            <Car className="h-6 w-6" />
+          </div>
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600">
+            Xe & Thẻ RFID
+          </span>
+          <span className="text-[10px] text-slate-400 mt-0.5">Quản lý thẻ hầm</span>
+        </Link>
 
         <button
           type="button"

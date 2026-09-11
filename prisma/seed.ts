@@ -12,6 +12,9 @@ import {
   TicketCategory,
   TicketPriority,
   TicketStatus,
+  VehicleType,
+  VehicleStatus,
+  ParkingCardStatus,
 } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -496,6 +499,396 @@ async function main() {
       },
     },
   });
+
+  // 10. Vehicles & Parking Cards
+  console.log('--> Seeding Vehicles & Parking Cards...');
+  interface SeedCard {
+    cardCode: string;
+    status: ParkingCardStatus;
+    issuedAt?: Date;
+    expiresAt?: Date;
+    lockedAt?: Date;
+    lockReason?: string;
+  }
+
+  const vehiclesData: Array<{
+    licensePlate: string;
+    type: VehicleType;
+    brand: string;
+    model: string | null;
+    color: string | null;
+    apartmentId: string;
+    residentId: string | null;
+    status: VehicleStatus;
+    registrationDocumentUrl?: string;
+    cards: SeedCard[];
+  }> = [
+    {
+      licensePlate: '30A-999.88',
+      type: VehicleType.CAR,
+      brand: 'Mercedes-Benz',
+      model: 'C200 Exclusive',
+      color: 'Trắng',
+      apartmentId: aptMap['A-1001'].id,
+      residentId: residentProfileA1001.id,
+      status: VehicleStatus.ACTIVE,
+      registrationDocumentUrl: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=600',
+      cards: [
+        {
+          cardCode: 'CARD-CAR-001',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2026-01-05'),
+          expiresAt: new Date('2027-01-05'),
+        },
+      ],
+    },
+    {
+      licensePlate: '29-G1 888.66',
+      type: VehicleType.MOTORBIKE,
+      brand: 'Honda',
+      model: 'SH 150i ABS',
+      color: 'Đen nhám',
+      apartmentId: aptMap['A-1001'].id,
+      residentId: residentProfileA1001.id,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-MOTO-001',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2026-01-05'),
+          expiresAt: new Date('2027-01-05'),
+        },
+      ],
+    },
+    {
+      licensePlate: '29-H2 334.55',
+      type: VehicleType.ELECTRIC_BIKE,
+      brand: 'VinFast',
+      model: 'Klara S',
+      color: 'Xanh dương',
+      apartmentId: aptMap['A-1001'].id,
+      residentId: residentProfileA1001_spouse.id,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-EBIKE-001',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2026-02-10'),
+          expiresAt: new Date('2027-02-10'),
+        },
+      ],
+    },
+    {
+      licensePlate: '29-AA 019.88',
+      type: VehicleType.BICYCLE,
+      brand: 'Giant',
+      model: 'Escape 2 City Disc',
+      color: 'Ghi xám',
+      apartmentId: aptMap['A-1001'].id,
+      residentId: residentProfileA1001.id,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-BIKE-001',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2026-01-05'),
+          expiresAt: new Date('2027-01-05'),
+        },
+      ],
+    },
+    {
+      licensePlate: '30H-123.45',
+      type: VehicleType.CAR,
+      brand: 'Toyota',
+      model: 'Camry 2.5Q',
+      color: 'Đen bóng',
+      apartmentId: aptMap['A-1002'].id,
+      residentId: residentProfileA1002.id,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-CAR-002',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2025-11-01'),
+          expiresAt: new Date('2026-11-01'),
+        },
+      ],
+    },
+    {
+      licensePlate: '29-E1 678.90',
+      type: VehicleType.MOTORBIKE,
+      brand: 'Honda',
+      model: 'Air Blade 160',
+      color: 'Xám xi măng',
+      apartmentId: aptMap['A-1002'].id,
+      residentId: residentProfileA1002.id,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-MOTO-002',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2025-11-01'),
+          expiresAt: new Date('2026-11-01'),
+        },
+      ],
+    },
+    {
+      licensePlate: '30K-456.78',
+      type: VehicleType.CAR,
+      brand: 'VinFast',
+      model: 'VF8 Plus',
+      color: 'Trắng ngọc trai',
+      apartmentId: aptMap['A-1201'].id,
+      residentId: null,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-CAR-003',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2026-03-01'),
+          expiresAt: new Date('2027-03-01'),
+        },
+      ],
+    },
+    {
+      licensePlate: '29-P1 999.11',
+      type: VehicleType.MOTORBIKE,
+      brand: 'Yamaha',
+      model: 'Grande Hybrid',
+      color: 'Trắng',
+      apartmentId: aptMap['A-1201'].id,
+      residentId: null,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-MOTO-003',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2026-03-01'),
+          expiresAt: new Date('2027-03-01'),
+        },
+      ],
+    },
+    {
+      licensePlate: '51H-555.22',
+      type: VehicleType.CAR,
+      brand: 'Mazda',
+      model: 'CX-5 2.5 Signature',
+      color: 'Đỏ pha lê',
+      apartmentId: aptMap['B-2001'].id,
+      residentId: residentProfileB2001.id,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-CAR-004',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2025-08-15'),
+          expiresAt: new Date('2026-08-15'),
+        },
+      ],
+    },
+    {
+      licensePlate: '59-B1 777.88',
+      type: VehicleType.MOTORBIKE,
+      brand: 'Piaggio',
+      model: 'Vespa Sprint S 150',
+      color: 'Vàng cát',
+      apartmentId: aptMap['B-2001'].id,
+      residentId: residentProfileB2001.id,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-MOTO-004-OLD',
+          status: ParkingCardStatus.LOCKED,
+          issuedAt: new Date('2025-08-15'),
+          expiresAt: new Date('2026-08-15'),
+          lockedAt: new Date('2026-08-01'),
+          lockReason: 'Cư dân báo rơi mất thẻ vật lý, đã cấp đổi thẻ mới',
+        },
+        {
+          cardCode: 'CARD-MOTO-004',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2026-08-03'),
+          expiresAt: new Date('2027-08-03'),
+        },
+      ],
+    },
+    {
+      licensePlate: '29-D2 456.12',
+      type: VehicleType.MOTORBIKE,
+      brand: 'Honda',
+      model: 'Wave Alpha 110',
+      color: 'Xanh ngọc',
+      apartmentId: aptMap['B-2002'].id,
+      residentId: residentProfileB2002.id,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-MOTO-005',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2025-09-15'),
+          expiresAt: new Date('2026-09-15'),
+        },
+      ],
+    },
+    {
+      licensePlate: '30F-889.90',
+      type: VehicleType.CAR,
+      brand: 'Hyundai',
+      model: 'Tucson 2.0 AT',
+      color: 'Đen',
+      apartmentId: aptMap['B-2002'].id,
+      residentId: residentProfileB2002.id,
+      status: VehicleStatus.INACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-CAR-005',
+          status: ParkingCardStatus.LOCKED,
+          issuedAt: new Date('2025-09-15'),
+          expiresAt: new Date('2026-09-15'),
+          lockedAt: new Date('2026-07-20'),
+          lockReason: 'Chủ phương tiện đã bán xe, tạm dừng dịch vụ gửi xe',
+        },
+      ],
+    },
+    {
+      licensePlate: '29-K1 223.34',
+      type: VehicleType.MOTORBIKE,
+      brand: 'Honda',
+      model: 'Lead 125',
+      color: 'Nâu be',
+      apartmentId: aptMap['C-0501'].id,
+      residentId: residentProfileC0501.id,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-MOTO-006',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2025-10-01'),
+          expiresAt: new Date('2026-10-01'),
+        },
+      ],
+    },
+    {
+      licensePlate: '30G-332.11',
+      type: VehicleType.CAR,
+      brand: 'Ford',
+      model: 'Everest Titanium 4x2',
+      color: 'Bạc',
+      apartmentId: aptMap['C-0501'].id,
+      residentId: residentProfileC0501.id,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-CAR-006',
+          status: ParkingCardStatus.EXPIRED,
+          issuedAt: new Date('2025-09-01'),
+          expiresAt: new Date('2026-08-31'),
+        },
+      ],
+    },
+    {
+      licensePlate: '29-M1 987.65',
+      type: VehicleType.MOTORBIKE,
+      brand: 'Yamaha',
+      model: 'Exciter 155 VVA',
+      color: 'Xanh GP',
+      apartmentId: aptMap['C-0502'].id,
+      residentId: null,
+      status: VehicleStatus.ACTIVE,
+      cards: [
+        {
+          cardCode: 'CARD-MOTO-007',
+          status: ParkingCardStatus.ACTIVE,
+          issuedAt: new Date('2026-01-15'),
+          expiresAt: new Date('2027-01-15'),
+        },
+      ],
+    },
+    {
+      licensePlate: '30L-678.99',
+      type: VehicleType.CAR,
+      brand: 'VinFast',
+      model: 'VF9 Eco',
+      color: 'Xám',
+      apartmentId: aptMap['C-0502'].id,
+      residentId: null,
+      status: VehicleStatus.PENDING_APPROVAL,
+      cards: [
+        {
+          cardCode: 'CARD-CAR-007',
+          status: ParkingCardStatus.PENDING,
+        },
+      ],
+    },
+    {
+      licensePlate: '29-X5 112.23',
+      type: VehicleType.MOTORBIKE,
+      brand: 'Honda',
+      model: 'Vision 110',
+      color: 'Đỏ đô',
+      apartmentId: aptMap['C-0602'].id,
+      residentId: null,
+      status: VehicleStatus.PENDING_APPROVAL,
+      cards: [
+        {
+          cardCode: 'CARD-MOTO-008',
+          status: ParkingCardStatus.PENDING,
+        },
+      ],
+    },
+    {
+      licensePlate: '30E-999.00',
+      type: VehicleType.CAR,
+      brand: 'Kia',
+      model: 'Carnival Signature',
+      color: 'Trắng',
+      apartmentId: aptMap['C-0602'].id,
+      residentId: null,
+      status: VehicleStatus.REJECTED,
+      cards: [],
+    },
+  ];
+
+  for (const v of vehiclesData) {
+    const { cards, ...vehicleData } = v;
+    const vehicle = await prisma.vehicle.upsert({
+      where: { licensePlate: vehicleData.licensePlate },
+      update: {
+        type: vehicleData.type,
+        brand: vehicleData.brand,
+        model: vehicleData.model,
+        color: vehicleData.color,
+        apartmentId: vehicleData.apartmentId,
+        residentId: vehicleData.residentId,
+        status: vehicleData.status,
+        registrationDocumentUrl: vehicleData.registrationDocumentUrl || null,
+      },
+      create: vehicleData,
+    });
+
+    for (const card of cards) {
+      await prisma.parkingCard.upsert({
+        where: { cardCode: card.cardCode },
+        update: {
+          vehicleId: vehicle.id,
+          status: card.status,
+          issuedAt: card.issuedAt || null,
+          expiresAt: card.expiresAt || null,
+          lockedAt: (card as any).lockedAt || null,
+          lockReason: (card as any).lockReason || null,
+        },
+        create: {
+          cardCode: card.cardCode,
+          vehicleId: vehicle.id,
+          status: card.status,
+          issuedAt: card.issuedAt || null,
+          expiresAt: card.expiresAt || null,
+          lockedAt: (card as any).lockedAt || null,
+          lockReason: (card as any).lockReason || null,
+        },
+      });
+    }
+  }
 
   console.log('✅ Rich demo dataset seeded successfully!');
 }

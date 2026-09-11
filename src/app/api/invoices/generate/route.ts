@@ -13,7 +13,12 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validated = generateMonthlyInvoicesSchema.parse(body);
-    const result = await invoiceService.generateMonthlyInvoices(validated);
+    const result = await invoiceService.generateMonthlyInvoices(validated, {
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      actorRole: session.user.role,
+      ipAddress: req.headers.get('x-forwarded-for') || '127.0.0.1',
+    });
 
     return apiSuccess(
       result,

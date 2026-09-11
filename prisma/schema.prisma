@@ -94,6 +94,27 @@ enum TicketStatus {
   REJECTED
 }
 
+enum VehicleType {
+  CAR
+  MOTORBIKE
+  BICYCLE
+  ELECTRIC_BIKE
+}
+
+enum VehicleStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  INACTIVE
+  REJECTED
+}
+
+enum ParkingCardStatus {
+  ACTIVE
+  LOCKED
+  EXPIRED
+  PENDING
+}
+
 // 1. User & Account Auth
 model User {
   id            String         @id @default(cuid())
@@ -136,6 +157,7 @@ model Apartment {
   invoices      Invoice[]
   feedbacks     Feedback[]
   notifications NotificationApartment[]
+  vehicles      Vehicle[]
 
   @@index([building])
   @@index([status])
@@ -163,6 +185,7 @@ model Resident {
 
   contracts Contract[]
   feedbacks Feedback[]
+  vehicles  Vehicle[]
 
   @@index([apartmentId])
   @@index([status])
@@ -383,4 +406,48 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// 10. Vehicle & Parking Management
+model Vehicle {
+  id                      String        @id @default(cuid())
+  licensePlate            String        @unique // Biển số xe (e.g. "30A-999.88")
+  type                    VehicleType   @default(MOTORBIKE)
+  brand                   String        // Hãng xe (e.g. "Honda", "Toyota", "VinFast")
+  model                   String?       // Dòng xe (e.g. "SH 150i", "Vios G", "VF8")
+  color                   String?       // Màu sắc (e.g. "Trắng", "Đen", "Xám")
+  apartmentId             String
+  apartment               Apartment     @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  residentId              String?
+  resident                Resident?     @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  status                  VehicleStatus @default(PENDING_APPROVAL)
+  registrationDocumentUrl String?       // Link ảnh đăng ký xe / cavet
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  parkingCards ParkingCard[]
+
+  @@index([apartmentId])
+  @@index([residentId])
+  @@index([status])
+  @@index([type])
+  @@map("vehicles")
+}
+
+model ParkingCard {
+  id         String            @id @default(cuid())
+  cardCode   String            @unique // Mã thẻ từ / RFID (e.g. "CARD-CAR-001")
+  vehicleId  String
+  vehicle    Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  issuedAt   DateTime?         // Thời điểm phát hành thẻ
+  expiresAt  DateTime?         // Thời điểm hết hạn thẻ
+  status     ParkingCardStatus @default(PENDING)
+  lockedAt   DateTime?         // Thời điểm khóa thẻ
+  lockReason String?           // Lý do khóa thẻ (e.g. "Báo mất thẻ", "Nợ phí căn hộ")
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([vehicleId])
+  @@index([status])
+  @@map("parking_cards")
 }
