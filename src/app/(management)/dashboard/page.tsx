@@ -33,6 +33,10 @@ import {
   Car,
   Bike,
   KeyRound,
+  UserCheck,
+  QrCode,
+  Waves,
+  Dumbbell,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -950,6 +954,97 @@ export default function SmartApartmentOperationsDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ===================================================================
+          SECTION: VISITOR ACTIVITY & FACILITY UTILIZATION
+          =================================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Visitor Activity */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs">
+          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                  <UserCheck className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Lưu lượng Khách Thăm (Visitor Activity)
+                  </CardTitle>
+                  <CardDescription className="text-xs">Hôm nay: 18 khách đang trong tòa nhà</CardDescription>
+                </div>
+              </div>
+              <Link href="/visitors">
+                <Button variant="ghost" size="sm" className="text-xs text-blue-600 hover:underline gap-1">
+                  Chi tiết <ChevronRight className="h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Đang hiện diện</span>
+                <span className="text-xl font-black text-blue-600 dark:text-blue-400 mt-0.5 block">18 khách</span>
+                <span className="text-[10px] text-emerald-600">Đã xác minh</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Hẹn hôm nay</span>
+                <span className="text-xl font-black text-slate-900 dark:text-slate-100 mt-0.5 block">45 lượt</span>
+                <span className="text-[10px] text-slate-400">Đăng ký QR</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Tuân thủ an ninh</span>
+                <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5 block">100%</span>
+                <span className="text-[10px] text-emerald-600">0 sự vụ</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Facility Utilization */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs">
+          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+                  <Waves className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Độ Thỏa Dụng Tiện Ích (Facility Utilization)
+                  </CardTitle>
+                  <CardDescription className="text-xs">Tỷ lệ sử dụng tiện ích nội khu tuần này: 76.4%</CardDescription>
+                </div>
+              </div>
+              <Link href="/facilities">
+                <Button variant="ghost" size="sm" className="text-xs text-blue-600 hover:underline gap-1">
+                  Quản lý <ChevronRight className="h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Hồ bơi 4 mùa</span>
+                <span className="text-xl font-black text-blue-600 dark:text-blue-400 mt-0.5 block">82%</span>
+                <span className="text-[10px] text-blue-600">Cao điểm 17h-19h</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Khu BBQ ngoài trời</span>
+                <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5 block">95%</span>
+                <span className="text-[10px] text-emerald-600">Kín slot cuối tuần</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Sân Tennis / Thể thao</span>
+                <span className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5 block">68%</span>
+                <span className="text-[10px] text-slate-400">Trống ca trưa</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* ===================================================================
           SECTION 7: ACTIVITY FEED (Real-time events from DB)

@@ -1,6 +1,6 @@
 export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
 
-export type AlertEntityType = 'CONTRACT' | 'INVOICE' | 'TICKET' | 'APARTMENT';
+export type AlertEntityType = 'CONTRACT' | 'INVOICE' | 'TICKET' | 'APARTMENT' | 'MAINTENANCE' | 'ASSET';
 
 export type AlertType =
   | 'CONTRACT_EXPIRED'
@@ -11,7 +11,9 @@ export type AlertType =
   | 'INVOICE_HIGH_DEBT'
   | 'TICKET_SLA_BREACHED'
   | 'TICKET_SLA_APPROACHING'
-  | 'TICKET_CRITICAL_PENDING';
+  | 'TICKET_CRITICAL_PENDING'
+  | 'MAINTENANCE_OVERDUE'
+  | 'MAINTENANCE_DUE_SOON';
 
 export interface SmartAlert {
   id: string;

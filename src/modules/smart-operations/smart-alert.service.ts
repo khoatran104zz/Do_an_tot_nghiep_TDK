@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { SmartAlert, AlertType, AlertSeverity } from './smart-operations.types';
-import { TicketPriority, TicketStatus, ContractStatus, InvoiceStatus } from '@prisma/client';
+import { TicketPriority, TicketStatus, ContractStatus, InvoiceStatus, MaintenanceStatus } from '@prisma/client';
 import { SLA_HOURS_BY_PRIORITY } from '../feedback/ticket-workflow.service';
 
 export class SmartAlertService {
@@ -24,7 +24,7 @@ export class SmartAlertService {
     const alerts: SmartAlert[] = [];
 
     // Parallel DB Fetching for active resources
-    const [activeContracts, unpaidInvoices, activeTickets] = await Promise.all([
+    const [activeContracts, unpaidInvoices, activeTickets, activeSchedules] = await Promise.all([
       prisma.contract.findMany({
         where: { status: ContractStatus.ACTIVE },
         include: {
@@ -45,6 +45,15 @@ export class SmartAlertService {
         include: {
           apartment: { select: { code: true, building: true } },
           assignedStaff: { select: { fullName: true } },
+        },
+      }),
+      prisma.maintenanceSchedule.findMany({
+        where: {
+          status: { in: [MaintenanceStatus.PENDING, MaintenanceStatus.IN_PROGRESS, MaintenanceStatus.OVERDUE] },
+        },
+        include: {
+          asset: { select: { id: true, code: true, name: true, location: true } },
+          technician: { select: { fullName: true } },
         },
       }),
     ]);
@@ -210,6 +219,47 @@ export class SmartAlertService {
           actionUrl: `/feedbacks/${ticket.id}`,
           createdAt: ticket.createdAt,
           metadata: { priority: ticket.priority, apartmentCode: ticket.apartment.code },
+        });
+      }
+    }
+
+    // 4. SCAN PREVENTIVE MAINTENANCE ALERTS
+    for (const schedule of activeSchedules) {
+      const nextMs = new Date(schedule.nextMaintenance).getTime();
+      const diffMs = nextMs - currentDate.getTime();
+      const diffDays = Math.ceil(diffMs / (24 * 3600 * 1000));
+
+      if (diffDays < 0 || schedule.status === MaintenanceStatus.OVERDUE) {
+        // OVERDUE MAINTENANCE -> HIGH PRIORITY ALERT (CRITICAL)
+        alerts.push({
+          id: `alert_maint_overdue_${schedule.id}`,
+          type: 'MAINTENANCE_OVERDUE',
+          severity: 'CRITICAL',
+          title: `Bảo trì quá hạn (${Math.abs(diffDays)} ngày): ${schedule.asset.name}`,
+          description: `Hạng mục "${schedule.title}" cho thiết bị ${schedule.asset.code} tại ${schedule.asset.location} đã quá hạn bảo dưỡng. Kỹ thuật phụ trách: ${
+            schedule.technician?.fullName || 'Chưa phân công'
+          }.`,
+          entityType: 'MAINTENANCE',
+          entityId: schedule.id,
+          actionUrl: `/maintenance-schedule?search=${schedule.code}`,
+          createdAt: schedule.nextMaintenance,
+          metadata: { diffDays, assetCode: schedule.asset.code, assetName: schedule.asset.name },
+        });
+      } else if (diffDays <= 3) {
+        // UPCOMING (<= 3 days) -> Smart Alert (WARNING)
+        alerts.push({
+          id: `alert_maint_due_soon_${schedule.id}`,
+          type: 'MAINTENANCE_DUE_SOON',
+          severity: 'WARNING',
+          title: `Lịch bảo dưỡng đến hạn (còn ${diffDays} ngày): ${schedule.asset.name}`,
+          description: `Hạng mục "${schedule.title}" (${schedule.asset.code}) cần thực hiện bảo dưỡng vào ngày ${new Date(
+            schedule.nextMaintenance
+          ).toLocaleDateString('vi-VN')}.`,
+          entityType: 'MAINTENANCE',
+          entityId: schedule.id,
+          actionUrl: `/maintenance-schedule?search=${schedule.code}`,
+          createdAt: currentDate,
+          metadata: { diffDays, assetCode: schedule.asset.code, assetName: schedule.asset.name },
         });
       }
     }

@@ -15,6 +15,15 @@ import {
   VehicleType,
   VehicleStatus,
   ParkingCardStatus,
+  ApartmentHistoryEvent,
+  AssetCategory,
+  AssetStatus,
+  MaintenanceCycle,
+  MaintenanceStatus,
+  FacilityType,
+  FacilityStatus,
+  BookingStatus,
+  VisitorStatus,
 } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -27,6 +36,9 @@ async function main() {
   const adminPassword = await bcrypt.hash('admin123', 10);
   const managerPassword = await bcrypt.hash('manager123', 10);
   const residentPassword = await bcrypt.hash('resident123', 10);
+  const techPassword = await bcrypt.hash('tech123', 10);
+  const securityPassword = await bcrypt.hash('security123', 10);
+  const receptionistPassword = await bcrypt.hash('recept123', 10);
 
   // 2. Fee Categories
   console.log('--> Seeding Fee Categories...');
@@ -123,6 +135,125 @@ async function main() {
     aptMap[apt.code] = created;
   }
 
+  // 3.1 Bootstrap Property Hierarchy (Building -> Block -> Floor)
+  console.log('--> Seeding Property Hierarchy (Building -> Block -> Floor)...');
+  const masterBuilding = await prisma.building.upsert({
+    where: { code: 'SMART-CITY' },
+    update: {},
+    create: {
+      code: 'SMART-CITY',
+      name: 'Tổ hợp Chung cư SmartCity Landmark',
+      address: 'Số 108 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+      description: 'Khu phức hợp căn hộ thông minh cao cấp tích hợp IoT & BMS',
+    },
+  });
+
+  const blockConfigs = [
+    { code: 'BLOCK-A', name: 'Tháp A (Sky Tower)', keyword: 'Tòa A' },
+    { code: 'BLOCK-B', name: 'Tháp B (Ocean Tower)', keyword: 'Tòa B' },
+    { code: 'BLOCK-C', name: 'Tháp C (Garden Tower)', keyword: 'Tòa C' },
+  ];
+
+  const seededBlocks: Record<string, any> = {};
+  for (const b of blockConfigs) {
+    const block = await prisma.block.upsert({
+      where: { buildingId_code: { buildingId: masterBuilding.id, code: b.code } },
+      update: { name: b.name },
+      create: {
+        buildingId: masterBuilding.id,
+        code: b.code,
+        name: b.name,
+        totalFloors: 25,
+      },
+    });
+    seededBlocks[b.code] = block;
+  }
+
+  // Link apartments to Blocks & Floors, seed history
+  for (const apt of apartmentsData) {
+    const blockCode = apt.building.includes('Tòa A')
+      ? 'BLOCK-A'
+      : apt.building.includes('Tòa B')
+      ? 'BLOCK-B'
+      : 'BLOCK-C';
+
+    const block = seededBlocks[blockCode];
+    const floor = await prisma.floor.upsert({
+      where: { blockId_floorNumber: { blockId: block.id, floorNumber: apt.floor } },
+      update: {},
+      create: {
+        blockId: block.id,
+        floorNumber: apt.floor,
+        name: `Tầng ${apt.floor.toString().padStart(2, '0')}`,
+      },
+    });
+
+    const aptRecord = aptMap[apt.code];
+    await prisma.apartment.update({
+      where: { id: aptRecord.id },
+      data: {
+        buildingId: masterBuilding.id,
+        blockId: block.id,
+        floorId: floor.id,
+      },
+    });
+
+    // Seed sample history if empty
+    const histCount = await prisma.apartmentHistory.count({ where: { apartmentId: aptRecord.id } });
+    if (histCount === 0) {
+      if (apt.status === ApartmentStatus.OCCUPIED) {
+        await prisma.apartmentHistory.createMany({
+          data: [
+            {
+              apartmentId: aptRecord.id,
+              event: ApartmentHistoryEvent.OWNER_TRANSFER,
+              title: 'Bàn giao căn hộ cho chủ sở hữu',
+              description: `Bàn giao chìa khóa và hồ sơ kỹ thuật căn hộ ${apt.code}`,
+              performedBy: 'Ban Quản Lý Tòa Nhà',
+              createdAt: new Date(Date.now() - 90 * 86400000),
+            },
+            {
+              apartmentId: aptRecord.id,
+              event: ApartmentHistoryEvent.STATUS_CHANGE,
+              title: 'Chuyển trạng thái sang Đang ở (OCCUPIED)',
+              description: 'Cư dân hoàn tất thủ tục đăng ký tạm trú và dọn vào sinh sống',
+              fromStatus: ApartmentStatus.VACANT,
+              toStatus: ApartmentStatus.OCCUPIED,
+              performedBy: 'Ban Quản Lý Tòa Nhà',
+              createdAt: new Date(Date.now() - 60 * 86400000),
+            },
+          ],
+        });
+      } else if (apt.status === ApartmentStatus.UNDER_MAINTENANCE) {
+        await prisma.apartmentHistory.create({
+          data: {
+            apartmentId: aptRecord.id,
+            event: ApartmentHistoryEvent.STATUS_CHANGE,
+            title: 'Chuyển trạng thái sang Bảo dưỡng (UNDER_MAINTENANCE)',
+            description: 'Bảo dưỡng và chống thấm ban công theo kế hoạch kỹ thuật',
+            fromStatus: ApartmentStatus.OCCUPIED,
+            toStatus: ApartmentStatus.UNDER_MAINTENANCE,
+            performedBy: 'Kỹ thuật viên trưởng',
+            createdAt: new Date(Date.now() - 7 * 86400000),
+          },
+        });
+      } else {
+        await prisma.apartmentHistory.create({
+          data: {
+            apartmentId: aptRecord.id,
+            event: ApartmentHistoryEvent.STATUS_CHANGE,
+            title: 'Căn hộ sẵn sàng bàn giao (VACANT)',
+            description: 'Nghiệm thu hoàn thiện nội thất và sẵn sàng đón cư dân',
+            fromStatus: ApartmentStatus.UNDER_MAINTENANCE,
+            toStatus: ApartmentStatus.VACANT,
+            performedBy: 'Ban Quản Lý Tòa Nhà',
+            createdAt: new Date(Date.now() - 30 * 86400000),
+          },
+        });
+      }
+    }
+  }
+
   // 4. Core Users
   console.log('--> Seeding Users...');
   const adminUser = await prisma.user.upsert({
@@ -161,15 +292,161 @@ async function main() {
     },
   });
 
-  const staffUser = await prisma.user.upsert({
-    where: { email: 'tech@building.com' },
-    update: { passwordHash: managerPassword },
+  const techUser = await prisma.user.upsert({
+    where: { email: 'technician@building.com' },
+    update: { passwordHash: techPassword, role: Role.STAFF_TECHNICIAN },
     create: {
-      email: 'tech@building.com',
-      passwordHash: managerPassword,
-      fullName: 'Lê Hoàng Nam (Kỹ thuật viên)',
+      email: 'technician@building.com',
+      passwordHash: techPassword,
+      fullName: 'Lê Hoàng Nam (Kỹ thuật viên Trưởng)',
       phone: '0933445566',
-      role: Role.MANAGER,
+      role: Role.STAFF_TECHNICIAN,
+    },
+  });
+  const staffUser = techUser;
+
+  const securityUser = await prisma.user.upsert({
+    where: { email: 'security@building.com' },
+    update: { passwordHash: securityPassword, role: Role.STAFF_SECURITY },
+    create: {
+      email: 'security@building.com',
+      passwordHash: securityPassword,
+      fullName: 'Hoàng Văn Hùng (Đội trưởng An ninh)',
+      phone: '0944556677',
+      role: Role.STAFF_SECURITY,
+    },
+  });
+
+  const receptionistUser = await prisma.user.upsert({
+    where: { email: 'receptionist@building.com' },
+    update: { passwordHash: receptionistPassword, role: Role.STAFF_RECEPTIONIST },
+    create: {
+      email: 'receptionist@building.com',
+      passwordHash: receptionistPassword,
+      fullName: 'Đỗ Thị Mai (Lễ tân Sảnh chính)',
+      phone: '0955667788',
+      role: Role.STAFF_RECEPTIONIST,
+    },
+  });
+
+  const tech2User = await prisma.user.upsert({
+    where: { email: 'tech2@building.com' },
+    update: { passwordHash: techPassword, role: Role.STAFF_TECHNICIAN },
+    create: {
+      email: 'tech2@building.com',
+      passwordHash: techPassword,
+      fullName: 'Nguyễn Văn Hùng (Kỹ thuật PCCC)',
+      phone: '0945678901',
+      role: Role.STAFF_TECHNICIAN,
+    },
+  });
+
+  const security2User = await prisma.user.upsert({
+    where: { email: 'security2@building.com' },
+    update: { passwordHash: securityPassword, role: Role.STAFF_SECURITY },
+    create: {
+      email: 'security2@building.com',
+      passwordHash: securityPassword,
+      fullName: 'Trần Văn Cường (An ninh ca đêm)',
+      phone: '0966778899',
+      role: Role.STAFF_SECURITY,
+    },
+  });
+
+  // Seed Staff Profiles
+  console.log('--> Seeding Staff Profiles...');
+  await prisma.staffProfile.upsert({
+    where: { userId: techUser.id },
+    update: {
+      employeeCode: 'EMP-TECH-001',
+      position: 'Kỹ thuật viên trưởng',
+      department: 'Ban Kỹ thuật',
+      currentShift: 'MORNING',
+      assignedZone: 'Hệ thống Điện & Thang máy',
+    },
+    create: {
+      userId: techUser.id,
+      employeeCode: 'EMP-TECH-001',
+      position: 'Kỹ thuật viên trưởng',
+      department: 'Ban Kỹ thuật',
+      currentShift: 'MORNING',
+      assignedZone: 'Hệ thống Điện & Thang máy',
+    },
+  });
+
+  await prisma.staffProfile.upsert({
+    where: { userId: securityUser.id },
+    update: {
+      employeeCode: 'EMP-SEC-001',
+      position: 'Đội trưởng An ninh',
+      department: 'Đội An ninh & Bảo vệ',
+      currentShift: 'AFTERNOON',
+      assignedZone: 'Cổng chính & Hầm B1',
+    },
+    create: {
+      userId: securityUser.id,
+      employeeCode: 'EMP-SEC-001',
+      position: 'Đội trưởng An ninh',
+      department: 'Đội An ninh & Bảo vệ',
+      currentShift: 'AFTERNOON',
+      assignedZone: 'Cổng chính & Hầm B1',
+    },
+  });
+
+  await prisma.staffProfile.upsert({
+    where: { userId: receptionistUser.id },
+    update: {
+      employeeCode: 'EMP-REC-001',
+      position: 'Lễ tân Sảnh chính',
+      department: 'Tổ Lễ tân & CSKH',
+      currentShift: 'MORNING',
+      assignedZone: 'Sảnh chính Tòa A (Sky)',
+    },
+    create: {
+      userId: receptionistUser.id,
+      employeeCode: 'EMP-REC-001',
+      position: 'Lễ tân Sảnh chính',
+      department: 'Tổ Lễ tân & CSKH',
+      currentShift: 'MORNING',
+      assignedZone: 'Sảnh chính Tòa A (Sky)',
+    },
+  });
+
+  await prisma.staffProfile.upsert({
+    where: { userId: tech2User.id },
+    update: {
+      employeeCode: 'EMP-TECH-002',
+      position: 'Kỹ thuật viên điện lạnh & PCCC',
+      department: 'Ban Kỹ thuật',
+      currentShift: 'NIGHT',
+      assignedZone: 'Hệ thống PCCC & Cấp thoát nước',
+    },
+    create: {
+      userId: tech2User.id,
+      employeeCode: 'EMP-TECH-002',
+      position: 'Kỹ thuật viên điện lạnh & PCCC',
+      department: 'Ban Kỹ thuật',
+      currentShift: 'NIGHT',
+      assignedZone: 'Hệ thống PCCC & Cấp thoát nước',
+    },
+  });
+
+  await prisma.staffProfile.upsert({
+    where: { userId: security2User.id },
+    update: {
+      employeeCode: 'EMP-SEC-002',
+      position: 'Nhân viên an ninh ca đêm',
+      department: 'Đội An ninh & Bảo vệ',
+      currentShift: 'NIGHT',
+      assignedZone: 'Cổng phụ Tòa B & Bãi xe ngoài trời',
+    },
+    create: {
+      userId: security2User.id,
+      employeeCode: 'EMP-SEC-002',
+      position: 'Nhân viên an ninh ca đêm',
+      department: 'Đội An ninh & Bảo vệ',
+      currentShift: 'NIGHT',
+      assignedZone: 'Cổng phụ Tòa B & Bãi xe ngoài trời',
     },
   });
 
@@ -889,6 +1166,436 @@ async function main() {
       });
     }
   }
+
+  // 11. Building Assets & Preventive Maintenance
+  console.log('--> Seeding Building Assets & Preventive Maintenance...');
+  const buildingRef = await prisma.building.findFirst();
+
+  const elevator1 = await prisma.asset.upsert({
+    where: { code: 'AST-ELEV-001' },
+    update: {},
+    create: {
+      code: 'AST-ELEV-001',
+      name: 'Thang máy Tải khách số 1 - Tòa A (Sky)',
+      category: AssetCategory.ELEVATOR,
+      buildingId: buildingRef?.id || null,
+      location: 'Tòa A (Sky) - Trục 1',
+      supplier: 'Schindler Việt Nam',
+      installDate: new Date('2024-03-15'),
+      warrantyExpiry: new Date('2027-03-15'),
+      status: AssetStatus.OPERATIONAL,
+      description: 'Thang máy tải trọng 1000kg, tốc độ 2.5m/s, 25 điểm dừng',
+      documents: ['https://schindler.com/manual-ast-elev-001.pdf'],
+      images: ['https://images.unsplash.com/photo-1574958269340-fa927503f3dd?w=600'],
+    },
+  });
+
+  const generator1 = await prisma.asset.upsert({
+    where: { code: 'AST-GEN-001' },
+    update: {},
+    create: {
+      code: 'AST-GEN-001',
+      name: 'Máy phát điện dự phòng Cummins 1500kVA',
+      category: AssetCategory.GENERATOR,
+      buildingId: buildingRef?.id || null,
+      location: 'Tầng hầm B2 - Phòng nguồn',
+      supplier: 'Cummins Power Generation VN',
+      installDate: new Date('2023-11-20'),
+      warrantyExpiry: new Date('2026-11-20'),
+      status: AssetStatus.MAINTENANCE,
+      description: 'Máy phát điện công suất 1500kVA dự phòng cấp điện toàn bộ tòa nhà khi mất lưới',
+      documents: ['https://cummins.com/doc-1500kva.pdf'],
+      images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600'],
+    },
+  });
+
+  const pump1 = await prisma.asset.upsert({
+    where: { code: 'AST-PUMP-001' },
+    update: {},
+    create: {
+      code: 'AST-PUMP-001',
+      name: 'Cụm máy bơm tăng áp sinh hoạt Ebara',
+      category: AssetCategory.WATER_PUMP,
+      buildingId: buildingRef?.id || null,
+      location: 'Phòng kỹ thuật nước Tầng hầm B1',
+      supplier: 'Ebara Pumps Vietnam',
+      installDate: new Date('2024-01-10'),
+      warrantyExpiry: new Date('2027-01-10'),
+      status: AssetStatus.OPERATIONAL,
+      description: 'Cụm 3 bơm biến tần duy trì áp lực nước 4.5 bar cho các tầng cao',
+      images: ['https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600'],
+    },
+  });
+
+  const barrier1 = await prisma.asset.upsert({
+    where: { code: 'AST-BAR-001' },
+    update: {},
+    create: {
+      code: 'AST-BAR-001',
+      name: 'Barie tự động lối vào bãi đỗ xe Hầm B1',
+      category: AssetCategory.BARRIER,
+      buildingId: buildingRef?.id || null,
+      location: 'Cổng kiểm soát xe Hầm B1',
+      supplier: 'BFT Automation Italy',
+      installDate: new Date('2024-05-01'),
+      warrantyExpiry: new Date('2026-05-01'),
+      status: AssetStatus.BROKEN,
+      description: 'Cần barie dài 3.5m, tích hợp đầu đọc thẻ RFID tầm xa',
+    },
+  });
+
+  const fireAlarm1 = await prisma.asset.upsert({
+    where: { code: 'AST-FIRE-001' },
+    update: {},
+    create: {
+      code: 'AST-FIRE-001',
+      name: 'Tủ trung tâm báo cháy địa chỉ Hochiki FireNET',
+      category: AssetCategory.FIRE_ALARM,
+      buildingId: buildingRef?.id || null,
+      location: 'Phòng điều hành an ninh Tầng 1',
+      supplier: 'Hochiki Corp',
+      installDate: new Date('2023-09-10'),
+      warrantyExpiry: new Date('2026-09-10'),
+      status: AssetStatus.OPERATIONAL,
+      description: 'Hệ thống báo cháy địa chỉ 4 loop quản lý 500 đầu báo khói nhiệt',
+    },
+  });
+
+  // Link first Feedback to Elevator 1 to showcase reactive integration!
+  const firstFeedback = await prisma.feedback.findFirst();
+  if (firstFeedback) {
+    await prisma.feedback.update({
+      where: { id: firstFeedback.id },
+      data: { assetId: elevator1.id },
+    });
+  }
+
+  // Seed Maintenance Schedules
+  // 1. Upcoming in 2 days (<= 3 days -> Smart Alert WARNING!)
+  const sch1 = await prisma.maintenanceSchedule.upsert({
+    where: { code: 'SCH-2026-001' },
+    update: {},
+    create: {
+      code: 'SCH-2026-001',
+      assetId: elevator1.id,
+      title: 'Kiểm định định kỳ cáp tải & thắng cơ an toàn',
+      cycle: MaintenanceCycle.MONTHLY,
+      lastMaintenance: new Date(Date.now() - 28 * 86400000),
+      nextMaintenance: new Date(Date.now() + 2 * 86400000), // In 2 days!
+      vendor: 'Schindler Việt Nam + Kỹ thuật tòa nhà',
+      technicianId: techUser.id,
+      status: MaintenanceStatus.PENDING,
+      notes: 'Kiểm tra độ võng cáp, mòn puly và thử thả rơi thắng cơ',
+    },
+  });
+
+  // 2. Overdue by 2 days (Trigger HIGH PRIORITY ALERT CRITICAL!)
+  const sch2 = await prisma.maintenanceSchedule.upsert({
+    where: { code: 'SCH-2026-002' },
+    update: {},
+    create: {
+      code: 'SCH-2026-002',
+      assetId: generator1.id,
+      title: 'Chạy thử tải có hòa đồng bộ & thay lọc dầu nhớt',
+      cycle: MaintenanceCycle.MONTHLY,
+      lastMaintenance: new Date(Date.now() - 32 * 86400000),
+      nextMaintenance: new Date(Date.now() - 2 * 86400000), // 2 days ago (OVERDUE!)
+      vendor: 'Đội Kỹ thuật Tòa nhà',
+      technicianId: techUser.id,
+      status: MaintenanceStatus.OVERDUE,
+      notes: 'Kiểm tra ắc quy đề nổ, mức dầu diesel và chạy thử tải 30 phút',
+    },
+  });
+
+  // 3. Due tomorrow (<= 3 days)
+  await prisma.maintenanceSchedule.upsert({
+    where: { code: 'SCH-2026-003' },
+    update: {},
+    create: {
+      code: 'SCH-2026-003',
+      assetId: pump1.id,
+      title: 'Kiểm tra rò rỉ van một chiều và căn chỉnh khớp nối mềm',
+      cycle: MaintenanceCycle.WEEKLY,
+      lastMaintenance: new Date(Date.now() - 6 * 86400000),
+      nextMaintenance: new Date(Date.now() + 1 * 86400000), // Tomorrow!
+      vendor: 'Đội Kỹ thuật Tòa nhà',
+      technicianId: tech2User.id,
+      status: MaintenanceStatus.PENDING,
+      notes: 'Đo dòng khởi động động cơ bơm P1, P2',
+    },
+  });
+
+  // 4. Completed Work Order for Elevator 1
+  await prisma.workOrder.upsert({
+    where: { code: 'WO-2026-001' },
+    update: {},
+    create: {
+      code: 'WO-2026-001',
+      scheduleId: sch1.id,
+      assetId: elevator1.id,
+      technicianId: techUser.id,
+      title: 'Bảo dưỡng định kỳ tháng 8 thang máy TM-01',
+      description: 'Đã hoàn tất bôi trơn ray và kiểm tra hệ thống cứu hộ tự động',
+      findings: 'Thang hoạt động êm ái, các tiếp điểm cửa buồng thang tốt',
+      cost: 1500000,
+      status: MaintenanceStatus.COMPLETED,
+      completedAt: new Date(Date.now() - 28 * 86400000),
+    },
+  });
+
+  // 5. In-progress Work Order for Barrier
+  await prisma.workOrder.upsert({
+    where: { code: 'WO-2026-002' },
+    update: {},
+    create: {
+      code: 'WO-2026-002',
+      assetId: barrier1.id,
+      technicianId: techUser.id,
+      title: 'Xử lý sự cố cần barie hầm B1 bị kẹt motor',
+      description: 'Tháo kiểm tra hộp số và căn chỉnh cảm biến hành trình',
+      status: MaintenanceStatus.IN_PROGRESS,
+    },
+  });
+
+  // 12. Facilities & Bookings
+  console.log('--> Seeding Facilities & Bookings...');
+  const pool = await prisma.facility.upsert({
+    where: { id: 'fac-swimming-pool' },
+    update: {},
+    create: {
+      id: 'fac-swimming-pool',
+      name: 'Hồ bơi vô cực 4 mùa chân mây',
+      type: FacilityType.SWIMMING_POOL,
+      description: 'Hệ thống điện phân muối khoáng, nước ấm mùa đông, có cứu hộ trực 100% thời gian.',
+      location: 'Tầng 5 - Tháp Sky Oasis',
+      openTime: '06:00',
+      closeTime: '21:00',
+      slotDuration: 60,
+      maxUsers: 25,
+      fee: 0,
+      status: FacilityStatus.ACTIVE,
+      images: ['https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&w=800&q=80'],
+      rules: '- Cư dân xuất trình thẻ cư dân hoặc mã đặt chỗ trước khi vào bể.\n- Bắt buộc mặc đồ bơi chuyên dụng.\n- Trẻ em dưới 12 tuổi phải có người lớn đi cùng.\n- Không mang thức ăn, đồ uống có cồn vào khu vực hồ bơi.',
+    },
+  });
+
+  const gym = await prisma.facility.upsert({
+    where: { id: 'fac-gym-fitness' },
+    update: {},
+    create: {
+      id: 'fac-gym-fitness',
+      name: 'Phòng Gym & Yoga Quốc tế TechnoGym',
+      type: FacilityType.GYM,
+      description: 'Trang thiết bị TechnoGym nhập khẩu Ý hiện đại, phòng tập Yoga sàn gỗ tự nhiên.',
+      location: 'Tầng 4 - Tháp Ocean',
+      openTime: '05:30',
+      closeTime: '22:00',
+      slotDuration: 60,
+      maxUsers: 20,
+      fee: 0,
+      status: FacilityStatus.ACTIVE,
+      images: ['https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80'],
+      rules: '- Đi giày thể thao sạch và mang khăn tập cá nhân.\n- Thu dọn tạ về đúng vị trí sau khi tập.\n- Không gây ồn ào và nhường thiết bị khi đông người.',
+    },
+  });
+
+  const bbq = await prisma.facility.upsert({
+    where: { id: 'fac-bbq-garden' },
+    update: {},
+    create: {
+      id: 'fac-bbq-garden',
+      name: 'Vườn nướng BBQ Sky Garden (Chòi số 1)',
+      type: FacilityType.BBQ_AREA,
+      description: 'Bếp nướng điện âm bàn thông minh, bồn rửa inox và bàn tiệc 12 người nhìn ra thành phố.',
+      location: 'Sân thượng Sky Garden - Tầng 26',
+      openTime: '10:00',
+      closeTime: '22:00',
+      slotDuration: 120,
+      maxUsers: 1,
+      fee: 200000,
+      status: FacilityStatus.ACTIVE,
+      images: ['https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80'],
+      rules: '- Đặt trước tối thiểu 4 tiếng để BQL chuẩn bị nguồn điện và bếp nướng.\n- Giữ gìn vệ sinh chung, dọn dẹp thức ăn thừa sau khi sử dụng.\n- Không đốt than củi hoặc chất gây cháy nổ, chỉ sử dụng bếp điện được trang bị sẵn.\n- Kết thúc tiệc trước 22:00 để đảm bảo sự yên tĩnh cho cư dân.',
+    },
+  });
+
+  const communityRoom = await prisma.facility.upsert({
+    where: { id: 'fac-community-room' },
+    update: {},
+    create: {
+      id: 'fac-community-room',
+      name: 'Phòng Sinh hoạt Cộng đồng đa năng',
+      type: FacilityType.COMMUNITY_ROOM,
+      description: 'Không gian tổ chức sinh nhật, hội thảo nhỏ, máy chiếu độ nét cao và dàn âm thanh hội nghị.',
+      location: 'Tầng 1 - Sảnh chính Tháp Sky',
+      openTime: '08:00',
+      closeTime: '21:30',
+      slotDuration: 120,
+      maxUsers: 1,
+      fee: 0,
+      status: FacilityStatus.ACTIVE,
+      images: ['https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80'],
+      rules: '- Đăng ký trước 24h đối với sự kiện trên 20 người.\n- Giữ gìn trang thiết bị âm thanh, máy chiếu.\n- Nghiêm cấm tổ chức các hoạt động thương mại hoặc vi phạm pháp luật.',
+    },
+  });
+
+  const tennisCourt = await prisma.facility.upsert({
+    where: { id: 'fac-sports-court' },
+    update: {},
+    create: {
+      id: 'fac-sports-court',
+      name: 'Sân Pickleball & Tennis tiêu chuẩn',
+      type: FacilityType.SPORTS_COURT,
+      description: 'Mặt sân giảm chấn acrylic 5 lớp chuẩn thi đấu, giàn đèn LED chống chói 500 Lux.',
+      location: 'Sân thượng Tháp Sky - Tầng mái',
+      openTime: '06:00',
+      closeTime: '22:00',
+      slotDuration: 60,
+      maxUsers: 1,
+      fee: 80000,
+      status: FacilityStatus.ACTIVE,
+      images: ['https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80'],
+      rules: '- Chỉ đi giày thể thao đế kếp / không để lại vệt đen trên mặt sân.\n- Tôn trọng lượt đặt và rời sân đúng giờ khi hết khung giờ.',
+    },
+  });
+
+  const meetingRoom = await prisma.facility.upsert({
+    where: { id: 'fac-meeting-room' },
+    update: {},
+    create: {
+      id: 'fac-meeting-room',
+      name: 'Phòng họp & Co-working Cư dân',
+      type: FacilityType.MEETING_ROOM,
+      description: 'Bàn họp 10 chỗ, màn hình TV 75 inch kết nối không dây, bảng viết kính từ tính.',
+      location: 'Tầng 2 - Khu thương mại dịch vụ',
+      openTime: '08:00',
+      closeTime: '20:00',
+      slotDuration: 60,
+      maxUsers: 1,
+      fee: 50000,
+      status: FacilityStatus.ACTIVE,
+      images: ['https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=800&q=80'],
+      rules: '- Thích hợp làm việc yên tĩnh và họp nhóm.\n- Tắt thiết bị điện trước khi rời phòng.',
+    },
+  });
+
+  // Seed sample bookings
+  const todayStr = new Date().toISOString().split('T')[0];
+  const startTodayBBQ = new Date(`${todayStr}T18:00:00.000Z`);
+  const endTodayBBQ = new Date(`${todayStr}T20:00:00.000Z`);
+
+  await prisma.facilityBooking.upsert({
+    where: { bookingCode: 'BK-2026-001' },
+    update: {},
+    create: {
+      bookingCode: 'BK-2026-001',
+      facilityId: bbq.id,
+      userId: residentUser.id,
+      residentId: residentProfileA1001.id,
+      apartmentId: aptMap['A-1001'].id,
+      bookingDate: new Date(`${todayStr}T00:00:00.000Z`),
+      startTime: '18:00',
+      endTime: '20:00',
+      startTimeDate: startTodayBBQ,
+      endTimeDate: endTodayBBQ,
+      numberOfUsers: 6,
+      totalFee: 200000,
+      status: BookingStatus.CONFIRMED,
+      notes: 'Tiệc sinh nhật gia đình 6 người',
+    },
+  });
+
+  const startTodayGym = new Date(`${todayStr}T07:00:00.000Z`);
+  const endTodayGym = new Date(`${todayStr}T08:00:00.000Z`);
+
+  await prisma.facilityBooking.upsert({
+    where: { bookingCode: 'BK-2026-002' },
+    update: {},
+    create: {
+      bookingCode: 'BK-2026-002',
+      facilityId: gym.id,
+      userId: residentUser.id,
+      residentId: residentProfileA1001.id,
+      apartmentId: aptMap['A-1001'].id,
+      bookingDate: new Date(`${todayStr}T00:00:00.000Z`),
+      startTime: '07:00',
+      endTime: '08:00',
+      startTimeDate: startTodayGym,
+      endTimeDate: endTodayGym,
+      numberOfUsers: 1,
+      totalFee: 0,
+      status: BookingStatus.COMPLETED,
+      notes: 'Tập cardio buổi sáng',
+    },
+  });
+
+  // 13. Visitor Passes & Access
+  console.log('--> Seeding Visitor Passes...');
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const todayDateOnly = new Date(`${todayStr}T00:00:00.000Z`);
+
+  await prisma.visitorPass.upsert({
+    where: { passCode: 'VP-2026-0001' },
+    update: {},
+    create: {
+      passCode: 'VP-2026-0001',
+      qrCode: 'QR-PASS-2026-0001-A1001',
+      visitorName: 'Nguyễn Văn B (Bạn thân)',
+      visitorPhone: '0912888999',
+      visitDate: todayDateOnly,
+      expectedTime: '19:00 - 22:00',
+      licensePlate: '29B1-888.99',
+      note: 'Khách ghé ăn tối gia đình',
+      status: VisitorStatus.PENDING,
+      apartmentId: aptMap['A-1001'].id,
+      residentId: residentProfileA1001.id,
+      createdById: residentUser.id,
+    },
+  });
+
+  await prisma.visitorPass.upsert({
+    where: { passCode: 'VP-2026-0002' },
+    update: {},
+    create: {
+      passCode: 'VP-2026-0002',
+      qrCode: 'QR-PASS-2026-0002-A1001',
+      visitorName: 'Trần Thị Mai (Người thân)',
+      visitorPhone: '0988112233',
+      visitDate: todayDateOnly,
+      expectedTime: '14:00 - 18:00',
+      licensePlate: '30F2-123.45',
+      note: 'Lên thăm gia đình',
+      status: VisitorStatus.CHECKED_IN,
+      checkInAt: new Date(Date.now() - 45 * 60 * 1000),
+      checkedInById: securityUser.id,
+      apartmentId: aptMap['A-1001'].id,
+      residentId: residentProfileA1001.id,
+      createdById: residentUser.id,
+    },
+  });
+
+  await prisma.visitorPass.upsert({
+    where: { passCode: 'VP-2026-0003' },
+    update: {},
+    create: {
+      passCode: 'VP-2026-0003',
+      qrCode: 'QR-PASS-2026-0003-A1001',
+      visitorName: 'Shipper TikiNow (Giao hàng)',
+      visitorPhone: '0977665544',
+      visitDate: new Date(yesterday.toISOString().split('T')[0] + 'T00:00:00.000Z'),
+      expectedTime: '10:00 - 11:00',
+      licensePlate: '29A-666.88',
+      note: 'Giao kiện hàng điện máy',
+      status: VisitorStatus.CHECKED_OUT,
+      checkInAt: new Date(yesterday.getTime() + 10 * 3600000 + 15 * 60000),
+      checkOutAt: new Date(yesterday.getTime() + 10 * 3600000 + 40 * 60000),
+      checkedInById: securityUser.id,
+      checkedOutById: securityUser.id,
+      apartmentId: aptMap['A-1001'].id,
+      residentId: residentProfileA1001.id,
+      createdById: residentUser.id,
+    },
+  });
 
   console.log('✅ Rich demo dataset seeded successfully!');
 }

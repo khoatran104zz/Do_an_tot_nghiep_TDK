@@ -303,6 +303,24 @@ export function StatusBadge({
             Ban Quản Lý
           </Badge>
         );
+      case 'STAFF_TECHNICIAN':
+        return (
+          <Badge variant="warning" size={size} dot className={className}>
+            Kỹ thuật viên
+          </Badge>
+        );
+      case 'STAFF_SECURITY':
+        return (
+          <Badge variant="secondary" size={size} dot className={className}>
+            Nhân viên An ninh
+          </Badge>
+        );
+      case 'STAFF_RECEPTIONIST':
+        return (
+          <Badge variant="info" size={size} dot className={className}>
+            Nhân viên Lễ tân
+          </Badge>
+        );
       case 'RESIDENT':
       default:
         return (

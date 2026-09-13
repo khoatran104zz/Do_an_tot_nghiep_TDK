@@ -7,6 +7,7 @@ export interface TooltipProps {
   content: React.ReactNode;
   children: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
+  side?: 'top' | 'bottom' | 'left' | 'right';
   delay?: number;
   className?: string;
 }
@@ -14,10 +15,12 @@ export interface TooltipProps {
 export function Tooltip({
   content,
   children,
-  position = 'top',
+  position,
+  side,
   delay = 200,
   className,
 }: TooltipProps) {
+  const effectivePosition = side || position || 'top';
   const [isVisible, setIsVisible] = React.useState(false);
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -57,7 +60,7 @@ export function Tooltip({
           role="tooltip"
           className={cn(
             'absolute z-50 whitespace-nowrap rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-md pointer-events-none transition-opacity duration-150',
-            positionClasses[position],
+            positionClasses[effectivePosition],
             className
           )}
         >

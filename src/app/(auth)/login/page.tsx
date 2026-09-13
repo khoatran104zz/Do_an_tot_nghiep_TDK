@@ -3,14 +3,14 @@
 import React, { useState, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ShieldCheck, Building2, UserCheck, Lock, Mail, ArrowRight, Crown } from 'lucide-react';
+import { ShieldCheck, Building2, UserCheck, Lock, Mail, ArrowRight, Crown, Wrench, Shield, PhoneCall } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
-type DemoRole = 'ADMIN' | 'MANAGER' | 'RESIDENT';
+type DemoRole = 'ADMIN' | 'MANAGER' | 'STAFF_TECHNICIAN' | 'STAFF_SECURITY' | 'STAFF_RECEPTIONIST' | 'RESIDENT';
 
 function LoginForm() {
   const router = useRouter();
@@ -32,6 +32,18 @@ function LoginForm() {
       setEmail('manager@building.com');
       setPassword('manager123');
       toast.success('Đã điền tài khoản mẫu Ban Quản Lý (Manager)');
+    } else if (role === 'STAFF_TECHNICIAN') {
+      setEmail('technician@building.com');
+      setPassword('tech123');
+      toast.success('Đã điền tài khoản mẫu Kỹ thuật viên (Technician)');
+    } else if (role === 'STAFF_SECURITY') {
+      setEmail('security@building.com');
+      setPassword('security123');
+      toast.success('Đã điền tài khoản mẫu Nhân viên An ninh (Security)');
+    } else if (role === 'STAFF_RECEPTIONIST') {
+      setEmail('receptionist@building.com');
+      setPassword('recept123');
+      toast.success('Đã điền tài khoản mẫu Nhân viên Lễ tân (Receptionist)');
     } else {
       setEmail('resident@building.com');
       setPassword('resident123');
@@ -216,6 +228,45 @@ function LoginForm() {
               </span>
               <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 truncate w-full text-center mt-0.5">
                 resident@...
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => fillDemoAccount('STAFF_TECHNICIAN')}
+              className="flex flex-col items-center justify-center p-2 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-all cursor-pointer group text-left"
+            >
+              <span className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                <Wrench className="h-3 w-3" /> Kỹ thuật
+              </span>
+              <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80 truncate w-full text-center mt-0.5">
+                technician@...
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => fillDemoAccount('STAFF_SECURITY')}
+              className="flex flex-col items-center justify-center p-2 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all cursor-pointer group text-left"
+            >
+              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
+                <Shield className="h-3 w-3" /> An ninh
+              </span>
+              <span className="text-[10px] text-indigo-600/80 dark:text-indigo-400/80 truncate w-full text-center mt-0.5">
+                security@...
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => fillDemoAccount('STAFF_RECEPTIONIST')}
+              className="flex flex-col items-center justify-center p-2 rounded-xl border border-pink-200 dark:border-pink-900/60 bg-pink-50/50 dark:bg-pink-950/30 hover:bg-pink-100 dark:hover:bg-pink-900/50 transition-all cursor-pointer group text-left"
+            >
+              <span className="text-xs font-bold text-pink-700 dark:text-pink-300 flex items-center gap-1">
+                <PhoneCall className="h-3 w-3" /> Lễ tân
+              </span>
+              <span className="text-[10px] text-pink-600/80 dark:text-pink-400/80 truncate w-full text-center mt-0.5">
+                receptionist@...
               </span>
             </button>
           </div>

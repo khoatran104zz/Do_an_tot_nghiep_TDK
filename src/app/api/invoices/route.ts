@@ -4,7 +4,7 @@ import { createInvoiceSchema } from '@/modules/invoice/invoice.schema';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getVerifiedResidentInfo } from '@/lib/authorization';
+import { getVerifiedResidentInfo, requirePermission } from '@/lib/authorization';
 
 export async function GET(req: NextRequest) {
   try {
@@ -31,6 +31,9 @@ export async function GET(req: NextRequest) {
         });
       }
       apartmentId = residentInfo.apartmentId;
+    } else {
+      const permCheck = requirePermission(session.user, 'invoice:read');
+      if (!permCheck.allowed) return apiForbidden(permCheck.error);
     }
 
     const result = await invoiceService.getInvoices({
@@ -57,7 +60,9 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
-    if (session.user.role === 'RESIDENT') return apiForbidden();
+
+    const permCheck = requirePermission(session.user, 'invoice:create');
+    if (!permCheck.allowed) return apiForbidden(permCheck.error);
 
     const body = await req.json();
     const validated = createInvoiceSchema.parse(body);

@@ -5,6 +5,8 @@ import { apiSuccess, apiError, apiUnauthorized, apiForbidden, apiNotFound } from
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+import { requirePermission } from '@/lib/authorization';
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -12,7 +14,8 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
-    if (session.user.role === 'RESIDENT') return apiForbidden();
+    const permCheck = requirePermission(session.user, 'fee:manage');
+    if (!permCheck.allowed) return apiForbidden(permCheck.error);
 
     const { id } = await params;
     const body = await req.json();
@@ -34,7 +37,8 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
-    if (session.user.role === 'RESIDENT') return apiForbidden();
+    const permCheck = requirePermission(session.user, 'fee:manage');
+    if (!permCheck.allowed) return apiForbidden(permCheck.error);
 
     const { id } = await params;
     await feeCategoryService.deleteFeeCategory(id);

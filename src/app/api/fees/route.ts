@@ -5,6 +5,8 @@ import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-r
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+import { requirePermission } from '@/lib/authorization';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,7 +23,8 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
-    if (session.user.role === 'RESIDENT') return apiForbidden();
+    const permCheck = requirePermission(session.user, 'fee:manage');
+    if (!permCheck.allowed) return apiForbidden(permCheck.error);
 
     const body = await req.json();
     const validated = feeCategorySchema.parse(body);

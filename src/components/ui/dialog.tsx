@@ -126,3 +126,7 @@ export function DialogFooter({ className, children, ...props }: React.HTMLAttrib
   );
 }
 
+export function DialogContent({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={className} {...props}>{children}</div>;
+}
+

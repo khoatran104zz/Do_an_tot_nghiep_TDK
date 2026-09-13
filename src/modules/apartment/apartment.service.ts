@@ -1,5 +1,11 @@
 import { apartmentRepository } from './apartment.repository';
-import { ApartmentFilter, CreateApartmentDto, UpdateApartmentDto } from './apartment.types';
+import {
+  ApartmentFilter,
+  CreateApartmentDto,
+  UpdateApartmentDto,
+  CreateApartmentHistoryDto,
+} from './apartment.types';
+import { ApartmentHistoryEvent } from '@prisma/client';
 
 export class ApartmentService {
   async getApartments(filter: ApartmentFilter) {
@@ -14,16 +20,27 @@ export class ApartmentService {
     return item;
   }
 
-  async createApartment(data: CreateApartmentDto) {
+  async createApartment(data: CreateApartmentDto, performedBy?: string) {
     const existing = await apartmentRepository.findByCode(data.code);
     if (existing) {
       throw new Error(`Mã căn hộ "${data.code}" đã tồn tại trong hệ thống`);
     }
-    return apartmentRepository.create(data);
+    const created = await apartmentRepository.create(data);
+
+    // Initial history event
+    await apartmentRepository.createHistory(created.id, {
+      event: ApartmentHistoryEvent.STATUS_CHANGE,
+      title: `Khởi tạo căn hộ ${created.code}`,
+      description: `Đăng ký mới căn hộ vào hệ thống tòa nhà (${created.building} - Tầng ${created.floor})`,
+      toStatus: created.status,
+      performedBy: performedBy || 'Ban Quản Trị Hệ Thống',
+    });
+
+    return created;
   }
 
-  async updateApartment(id: string, data: UpdateApartmentDto) {
-    await this.getApartmentById(id);
+  async updateApartment(id: string, data: UpdateApartmentDto, performedBy?: string) {
+    const current = await this.getApartmentById(id);
 
     if (data.code) {
       const existing = await apartmentRepository.findByCode(data.code);
@@ -32,7 +49,26 @@ export class ApartmentService {
       }
     }
 
-    return apartmentRepository.update(id, data);
+    const updated = await apartmentRepository.update(id, data);
+
+    // If status changed, record a STATUS_CHANGE event
+    if (data.status && data.status !== current.status) {
+      const statusLabels: Record<string, string> = {
+        VACANT: 'Đang trống',
+        OCCUPIED: 'Đang ở',
+        UNDER_MAINTENANCE: 'Đang sửa chữa / bảo dưỡng',
+      };
+      await apartmentRepository.createHistory(id, {
+        event: ApartmentHistoryEvent.STATUS_CHANGE,
+        title: `Chuyển trạng thái sang ${statusLabels[data.status] || data.status}`,
+        description: `Trạng thái căn hộ thay đổi từ [${statusLabels[current.status] || current.status}] thành [${statusLabels[data.status] || data.status}]`,
+        fromStatus: current.status,
+        toStatus: data.status,
+        performedBy: performedBy || 'Quản lý vận hành',
+      });
+    }
+
+    return updated;
   }
 
   async deleteApartment(id: string) {
@@ -45,6 +81,20 @@ export class ApartmentService {
 
   async getBuildings() {
     return apartmentRepository.getBuildings();
+  }
+
+  async getHierarchy() {
+    return apartmentRepository.getHierarchy();
+  }
+
+  async getHistory(apartmentId: string) {
+    await this.getApartmentById(apartmentId);
+    return apartmentRepository.getHistory(apartmentId);
+  }
+
+  async createHistory(apartmentId: string, data: CreateApartmentHistoryDto) {
+    await this.getApartmentById(apartmentId);
+    return apartmentRepository.createHistory(apartmentId, data);
   }
 }
 

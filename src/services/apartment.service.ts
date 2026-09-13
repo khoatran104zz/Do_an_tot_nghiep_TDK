@@ -1,5 +1,10 @@
 import { apiClient } from '@/lib/api-client';
-import { ApartmentFilter, CreateApartmentDto, UpdateApartmentDto } from '@/modules/apartment/apartment.types';
+import {
+  ApartmentFilter,
+  CreateApartmentDto,
+  UpdateApartmentDto,
+  CreateApartmentHistoryDto,
+} from '@/modules/apartment/apartment.types';
 
 export const apartmentClientService = {
   async getApartments(filter: ApartmentFilter = {}) {
@@ -8,6 +13,21 @@ export const apartmentClientService = {
 
   async getApartmentById(id: string) {
     return apiClient(`/apartments/${id}`);
+  },
+
+  async getHierarchy() {
+    return apiClient('/apartments/hierarchy');
+  },
+
+  async getHistory(apartmentId: string) {
+    return apiClient(`/apartments/${apartmentId}/history`);
+  },
+
+  async createHistory(apartmentId: string, data: CreateApartmentHistoryDto) {
+    return apiClient(`/apartments/${apartmentId}/history`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   async createApartment(data: CreateApartmentDto) {

@@ -27,6 +27,9 @@ import {
   DollarSign,
   ChevronRight,
   Info,
+  Package,
+  Siren,
+  UserCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -161,6 +164,34 @@ export default function ResidentHomePage() {
 
   return (
     <div className="space-y-6">
+      {/* ===================================================================
+          0. EMERGENCY ALERTS BANNER (Ưu tiên khẩn cấp)
+          =================================================================== */}
+      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+            <Siren className="h-5 w-5 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-xs uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                Thông báo vận hành khẩn cấp
+              </span>
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              <span className="text-[11px] text-amber-700/80 dark:text-amber-400">Đêm nay 23:00 - 04:00</span>
+            </div>
+            <p className="text-xs text-amber-800 dark:text-amber-200 font-medium mt-0.5">
+              Bảo dưỡng định kỳ bể nước ngầm Tháp A. Vui lòng tích trữ nước sinh hoạt cần thiết.
+            </p>
+          </div>
+        </div>
+        <Link href="/resident/announcements" className="shrink-0">
+          <Button variant="outline" size="sm" className="h-8 text-xs bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200 hover:bg-amber-500/20">
+            Xem chi tiết
+          </Button>
+        </Link>
+      </div>
+
       {/* ===================================================================
           1. WELCOME & APARTMENT CARD (Life in Apartment)
           =================================================================== */}
@@ -685,6 +716,95 @@ export default function ResidentHomePage() {
       </div>
 
       {/* ===================================================================
+          VISITORS & PARCELS (Tiếp đón & Bưu kiện cư dân)
+          =================================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Visitors Card */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                  <UserCheck className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                    Khách thăm căn hộ (Visitors)
+                  </CardTitle>
+                  <CardDescription className="text-xs">Đăng ký trước & tạo mã QR mở cổng bảo vệ</CardDescription>
+                </div>
+              </div>
+              <Link href="/resident/visitors">
+                <Button variant="ghost" size="sm" className="text-xs text-blue-600 hover:underline gap-1">
+                  Xem tất cả <ChevronRight className="h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Nguyễn Văn An (Khách cá nhân)</span>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Hẹn đến: Hôm nay 18:00 - 22:00</p>
+              </div>
+              <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20">
+                QR sẵn sàng
+              </Badge>
+            </div>
+          </CardContent>
+          <div className="p-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex justify-end">
+            <Link href="/resident/visitors">
+              <Button size="sm" className="text-xs font-semibold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="h-3.5 w-3.5" /> Tạo mã QR đón khách
+              </Button>
+            </Link>
+          </div>
+        </Card>
+
+        {/* Parcels Card */}
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400">
+                  <Package className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                    Bưu kiện chờ nhận (Parcels)
+                  </CardTitle>
+                  <CardDescription className="text-xs">Bưu phẩm của căn hộ lưu giữ tại quầy lễ tân</CardDescription>
+                </div>
+              </div>
+              <Link href="/resident/parcels">
+                <Button variant="ghost" size="sm" className="text-xs text-blue-600 hover:underline gap-1">
+                  Xem tất cả <ChevronRight className="h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="p-3.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900 flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-amber-950 dark:text-amber-100 font-mono">SPX-VN-8839219</span>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300">Shopee Express • Vị trí: Kệ A - Ô 14</p>
+              </div>
+              <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30">
+                Chờ nhận
+              </Badge>
+            </div>
+          </CardContent>
+          <div className="p-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex justify-end">
+            <Link href="/resident/parcels">
+              <Button size="sm" variant="outline" className="text-xs font-semibold gap-1.5">
+                <QrCode className="h-3.5 w-3.5" /> Mã QR nhận hàng
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+
+      {/* ===================================================================
           7. BUILDING FACILITIES (Community Living)
           =================================================================== */}
       <div className="space-y-3">
@@ -697,6 +817,11 @@ export default function ResidentHomePage() {
               Thời gian mở cửa và điều kiện sử dụng dành riêng cho cư dân
             </p>
           </div>
+          <Link href="/resident/facilities">
+            <Button variant="outline" size="sm" className="text-xs font-semibold gap-1.5">
+              Đặt chỗ tiện ích <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">

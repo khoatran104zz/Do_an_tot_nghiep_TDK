@@ -9,10 +9,12 @@ import { ShellProvider } from './ShellContext';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 
+import { Role } from '@prisma/client';
+
 interface AppShellProps {
   children: React.ReactNode;
   maxWidth?: '5xl' | '6xl' | '7xl' | 'full';
-  role?: 'ADMIN' | 'MANAGER' | 'RESIDENT';
+  role?: Role | string;
 }
 
 function AppShellContent({

@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
 import { prisma } from '@/lib/prisma';
-import { authorizeInvoiceAccess } from '@/lib/authorization';
+import { authorizeInvoiceAccess, requirePermission } from '@/lib/authorization';
 
 export async function GET(
   req: NextRequest,
@@ -37,7 +37,9 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
-    if (session.user.role === 'RESIDENT') return apiForbidden();
+
+    const permCheck = requirePermission(session.user, 'invoice:cancel');
+    if (!permCheck.allowed) return apiForbidden(permCheck.error);
 
     const { id } = await params;
     await invoiceService.deleteInvoice(id);

@@ -5,14 +5,16 @@ import { VehicleError } from '@/modules/vehicle/vehicle.types';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { requirePermission } from '@/lib/authorization';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
 
-    if (session.user.role === 'RESIDENT') {
-      return apiForbidden('Cư dân không có quyền phê duyệt phương tiện');
+    const permCheck = requirePermission(session.user, 'vehicle:approve');
+    if (!permCheck.allowed) {
+      return apiForbidden(permCheck.error);
     }
 
     const { id } = await params;

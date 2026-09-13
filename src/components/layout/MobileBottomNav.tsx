@@ -26,6 +26,27 @@ export function MobileBottomNav({ role = 'MANAGER' }: { role?: string }) {
     { name: 'Sự cố', href: '/feedbacks', icon: MessageSquareWarning },
   ];
 
+  const technicianItems = [
+    { name: 'Tổng quan', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Sự cố', href: '/feedbacks', icon: MessageSquareWarning },
+    { name: 'Căn hộ', href: '/apartments', icon: Building2 },
+    { name: 'Thông báo', href: '/notifications', icon: Bell },
+  ];
+
+  const securityItems = [
+    { name: 'Tổng quan', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Xe cộ', href: '/vehicles', icon: Building2 },
+    { name: 'Thẻ xe', href: '/parking-cards', icon: Receipt },
+    { name: 'Thông báo', href: '/notifications', icon: Bell },
+  ];
+
+  const receptionistItems = [
+    { name: 'Tổng quan', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Cư dân', href: '/residents', icon: Building2 },
+    { name: 'Căn hộ', href: '/apartments', icon: Building2 },
+    { name: 'Thông báo', href: '/notifications', icon: Bell },
+  ];
+
   const residentItems = [
     { name: 'Trang chủ', href: '/home', icon: Home },
     { name: 'Hóa đơn', href: '/resident/invoices', icon: Receipt },
@@ -33,7 +54,11 @@ export function MobileBottomNav({ role = 'MANAGER' }: { role?: string }) {
     { name: 'Thông báo', href: '/resident/notifications', icon: Bell },
   ];
 
-  const items = role === 'RESIDENT' ? residentItems : managerItems;
+  let items = managerItems;
+  if (role === 'RESIDENT') items = residentItems;
+  else if (role === 'STAFF_TECHNICIAN') items = technicianItems;
+  else if (role === 'STAFF_SECURITY') items = securityItems;
+  else if (role === 'STAFF_RECEPTIONIST') items = receptionistItems;
 
   return (
     <nav

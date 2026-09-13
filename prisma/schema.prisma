@@ -13,6 +13,9 @@ datasource db {
 enum Role {
   ADMIN
   MANAGER
+  STAFF_TECHNICIAN
+  STAFF_SECURITY
+  STAFF_RECEPTIONIST
   RESIDENT
 }
 
@@ -20,6 +23,15 @@ enum ApartmentStatus {
   VACANT
   OCCUPIED
   UNDER_MAINTENANCE
+}
+
+enum ApartmentHistoryEvent {
+  OWNER_TRANSFER
+  TENANT_MOVE_IN
+  TENANT_MOVE_OUT
+  RESIDENT_MOVE_IN
+  RESIDENT_MOVE_OUT
+  STATUS_CHANGE
 }
 
 enum ResidentStatus {
@@ -32,6 +44,21 @@ enum ResidentRelationship {
   OWNER
   FAMILY
   TENANT
+  TEMPORARY_RESIDENT
+}
+
+enum ResidenceRequestType {
+  TEMPORARY_RESIDENCE
+  TEMPORARY_ABSENCE
+  ADD_MEMBER
+  MOVE_IN
+  MOVE_OUT
+}
+
+enum ResidenceRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum ContractType {
@@ -115,6 +142,87 @@ enum ParkingCardStatus {
   PENDING
 }
 
+enum StaffShift {
+  MORNING   // 06:00 - 14:00
+  AFTERNOON // 14:00 - 22:00
+  NIGHT     // 22:00 - 06:00
+}
+
+enum StaffStatus {
+  ACTIVE
+  ON_LEAVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum AssetCategory {
+  ELEVATOR
+  WATER_PUMP
+  FIRE_ALARM
+  FIRE_EXTINGUISHER
+  GENERATOR
+  CCTV
+  BARRIER
+  AIR_CONDITIONER
+  ELECTRICAL_SYSTEM
+  OTHER
+}
+
+enum AssetStatus {
+  OPERATIONAL
+  MAINTENANCE
+  BROKEN
+  RETIRED
+}
+
+enum MaintenanceCycle {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUALLY
+  ANNUALLY
+}
+
+enum MaintenanceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum FacilityType {
+  GYM
+  SWIMMING_POOL
+  BBQ_AREA
+  COMMUNITY_ROOM
+  SPORTS_COURT
+  MEETING_ROOM
+  OTHER
+}
+
+enum FacilityStatus {
+  ACTIVE
+  MAINTENANCE
+  BLOCKED
+  CLOSED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum VisitorStatus {
+  PENDING
+  CHECKED_IN
+  CHECKED_OUT
+  EXPIRED
+  CANCELLED
+}
+
 // 1. User & Account Auth
 model User {
   id            String         @id @default(cuid())
@@ -129,21 +237,82 @@ model User {
   updatedAt     DateTime       @updatedAt
 
   residentProfile       Resident?
+  staffProfile          StaffProfile?
   sentNotifications     Notification[]        @relation("SentNotifications")
   readNotifications     NotificationRead[]
   assignedTickets       Feedback[]            @relation("AssignedStaff")
   ticketStatusChanges   TicketStatusHistory[]
   ticketComments        TicketComment[]
+  requestedResidence    ResidenceRequest[]    @relation("RequestedResidence")
+  reviewedResidence     ResidenceRequest[]    @relation("ReviewedResidence")
+  technicianSchedules   MaintenanceSchedule[] @relation("TechnicianSchedules")
+  technicianWorkOrders  WorkOrder[]           @relation("TechnicianWorkOrders")
+  facilityBookings      FacilityBooking[]
+  createdVisitorPasses    VisitorPass[]       @relation("CreatedVisitorPasses")
+  checkedInVisitorPasses  VisitorPass[]       @relation("CheckedInVisitorPasses")
+  checkedOutVisitorPasses VisitorPass[]       @relation("CheckedOutVisitorPasses")
 
   @@map("users")
 }
 
-// 2. Apartment
+// 2. Property Hierarchy
+model Building {
+  id          String      @id @default(cuid())
+  code        String      @unique // e.g. "SMART-CITY"
+  name        String      // e.g. "SmartCity Complex"
+  address     String?
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  blocks      Block[]
+  apartments  Apartment[]
+  assets      Asset[]
+  facilities  Facility[]
+
+  @@map("buildings")
+}
+
+model Block {
+  id          String      @id @default(cuid())
+  buildingId  String
+  building    Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  code        String      // e.g. "BLOCK-A", "BLOCK-B"
+  name        String      // e.g. "Tháp Sky (Block A)"
+  totalFloors Int         @default(25)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  floors      Floor[]
+  apartments  Apartment[]
+
+  @@unique([buildingId, code])
+  @@index([buildingId])
+  @@map("blocks")
+}
+
+model Floor {
+  id          String      @id @default(cuid())
+  blockId     String
+  block       Block       @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  floorNumber Int         // e.g. 10
+  name        String      // e.g. "Tầng 10"
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  apartments  Apartment[]
+
+  @@unique([blockId, floorNumber])
+  @@index([blockId])
+  @@map("floors")
+}
+
+// 2.1 Apartment
 model Apartment {
   id        String          @id @default(cuid())
   code      String          @unique // e.g. "A-1001"
-  building  String // e.g. "Tòa A"
-  floor     Int // e.g. 10
+  building  String // e.g. "Tòa A" (backward-compatible)
+  floor     Int // e.g. 10 (backward-compatible)
   bedrooms  Int             @default(2)
   bathrooms Int             @default(2)
   area      Float // m2
@@ -152,16 +321,52 @@ model Apartment {
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
+  // Optional hierarchy relations
+  buildingId  String?
+  buildingRef Building?     @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+  blockId     String?
+  block       Block?        @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  floorId     String?
+  floorRef    Floor?        @relation(fields: [floorId], references: [id], onDelete: SetNull)
+
+  // Ownership & Residency History
+  history     ApartmentHistory[]
+
   residents     Resident[]
   contracts     Contract[]
   invoices      Invoice[]
   feedbacks     Feedback[]
   notifications NotificationApartment[]
   vehicles      Vehicle[]
+  residenceRequests ResidenceRequest[]
+  facilityBookings  FacilityBooking[]
+  visitorPasses     VisitorPass[]
 
   @@index([building])
   @@index([status])
+  @@index([buildingId])
+  @@index([blockId])
+  @@index([floorId])
   @@map("apartments")
+}
+
+model ApartmentHistory {
+  id            String                @id @default(cuid())
+  apartmentId   String
+  apartment     Apartment             @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  event         ApartmentHistoryEvent
+  title         String
+  description   String?
+  fromStatus    ApartmentStatus?
+  toStatus      ApartmentStatus?
+  residentId    String?
+  residentName  String?
+  performedBy   String?               // e.g. "Admin", "Manager", or user name
+  metadata      Json?
+  createdAt     DateTime              @default(now())
+
+  @@index([apartmentId, createdAt])
+  @@map("apartment_histories")
 }
 
 // 3. Resident Profile
@@ -182,6 +387,9 @@ model Resident {
   avatarUrl           String?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+
+  facilityBookings    FacilityBooking[]
+  visitorPasses       VisitorPass[]
 
   contracts Contract[]
   feedbacks Feedback[]
@@ -304,6 +512,10 @@ model Feedback {
   rejectReason    String?
   internalNote    String?
 
+  // Reactive linkage to Building Asset
+  assetId         String?
+  asset           Asset?         @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
   rating          Int? // 1 to 5 stars
   ratingComment   String?
   createdAt       DateTime       @default(now())
@@ -314,6 +526,7 @@ model Feedback {
 
   @@index([apartmentId])
   @@index([residentId])
+  @@index([assetId])
   @@index([status])
   @@index([priority])
   @@index([slaDueAt])
@@ -450,4 +663,249 @@ model ParkingCard {
   @@index([vehicleId])
   @@index([status])
   @@map("parking_cards")
+}
+
+// 11. Household & Residence Requests
+model ResidenceRequest {
+  id            String                 @id @default(cuid())
+  code          String                 @unique // e.g. "REQ-2026-0001"
+  type          ResidenceRequestType
+  status        ResidenceRequestStatus @default(PENDING)
+  apartmentId   String
+  apartment     Apartment              @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  requesterId   String
+  requester     User                   @relation("RequestedResidence", fields: [requesterId], references: [id], onDelete: Cascade)
+  fullName      String
+  identityCard  String
+  phone         String
+  relationship  ResidentRelationship   @default(FAMILY)
+  startDate     DateTime?
+  endDate       DateTime?
+  note          String?
+  attachmentUrl String?
+  reviewerId    String?
+  reviewer      User?                  @relation("ReviewedResidence", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewedAt    DateTime?
+  rejectReason  String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([apartmentId])
+  @@index([status])
+  @@index([type])
+  @@index([requesterId])
+  @@map("residence_requests")
+}
+
+// 12. Staff Management
+model StaffProfile {
+  id               String       @id @default(cuid())
+  userId           String       @unique
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeCode     String       @unique // e.g. "NV-TECH-001", "NV-SEC-002", "NV-REC-003"
+  position         String       // e.g. "Kỹ thuật viên trưởng", "Tổ phó an ninh", "Lễ tân sảnh"
+  department       String?      // e.g. "Ban Kỹ thuật", "Đội An ninh", "Tổ Lễ tân"
+  currentShift     StaffShift   @default(MORNING)
+  status           StaffStatus  @default(ACTIVE)
+  joinedDate       DateTime     @default(now())
+  
+  // Specific assignments: Gate for Security, Lobby for Receptionist, Specialty for Technician
+  assignedZone     String?
+  notes            String?
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([employeeCode])
+  @@index([currentShift])
+  @@index([status])
+  @@map("staff_profiles")
+}
+
+// 13. Asset & Preventive Maintenance
+model Asset {
+  id              String         @id @default(cuid())
+  code            String         @unique // e.g. "AST-ELEV-001"
+  name            String         // e.g. "Thang máy tải khách số 1 - Tòa A"
+  category        AssetCategory  @default(OTHER)
+  buildingId      String?
+  building        Building?      @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+  location        String         // e.g. "Tòa A - Trục 1", "Tầng hầm B2"
+  supplier        String?        // e.g. "Schindler VN"
+  installDate     DateTime?
+  warrantyExpiry  DateTime?
+  status          AssetStatus    @default(OPERATIONAL)
+  description     String?
+  documents       String[]       @default([])
+  images          String[]       @default([])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  schedules       MaintenanceSchedule[]
+  workOrders      WorkOrder[]
+  feedbacks       Feedback[]
+
+  @@index([category])
+  @@index([status])
+  @@index([buildingId])
+  @@map("assets")
+}
+
+model MaintenanceSchedule {
+  id              String            @id @default(cuid())
+  code            String            @unique // e.g. "SCH-2026-001"
+  assetId         String
+  asset           Asset             @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  title           String            // e.g. "Kiểm tra định kỳ buồng thang & cáp tải"
+  cycle           MaintenanceCycle  @default(MONTHLY)
+  lastMaintenance DateTime?
+  nextMaintenance DateTime
+  vendor          String?           // Đơn vị thực hiện
+  technicianId    String?
+  technician      User?             @relation("TechnicianSchedules", fields: [technicianId], references: [id], onDelete: SetNull)
+  status          MaintenanceStatus @default(PENDING)
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  workOrders      WorkOrder[]
+
+  @@index([assetId])
+  @@index([technicianId])
+  @@index([status])
+  @@index([nextMaintenance])
+  @@map("maintenance_schedules")
+}
+
+model WorkOrder {
+  id            String               @id @default(cuid())
+  code          String               @unique // e.g. "WO-2026-001"
+  scheduleId    String?
+  schedule      MaintenanceSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  assetId       String
+  asset         Asset                @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  technicianId  String?
+  technician    User?                @relation("TechnicianWorkOrders", fields: [technicianId], references: [id], onDelete: SetNull)
+  title         String
+  description   String?
+  findings      String?              // Kết quả kiểm tra
+  cost          Float?               @default(0)
+  completedAt   DateTime?
+  status        MaintenanceStatus    @default(IN_PROGRESS)
+  images        String[]             @default([])
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([assetId])
+  @@index([technicianId])
+  @@index([status])
+  @@map("work_orders")
+}
+
+// ==========================================
+// 8. Facility & Booking Management
+// ==========================================
+
+model Facility {
+  id          String         @id @default(cuid())
+  name        String         // e.g. "Hồ bơi vô cực 4 mùa"
+  type        FacilityType   // e.g. SWIMMING_POOL, GYM, BBQ_AREA, COMMUNITY_ROOM, SPORTS_COURT, MEETING_ROOM, OTHER
+  description String?
+  location    String         // e.g. "Tầng 5 - Tháp Sky Oasis"
+  buildingId  String?
+  building    Building?      @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+  openTime    String         @default("06:00") // HH:mm
+  closeTime   String         @default("22:00") // HH:mm
+  slotDuration Int           @default(60) // in minutes
+  maxUsers    Int            @default(1)  // maximum allowed capacity/users per slot (1 for exclusive booking)
+  fee         Float          @default(0)  // Fee per slot in VND (0 for free)
+  status      FacilityStatus @default(ACTIVE)
+  images      String[]       @default([])
+  rules       String?        // Nội quy sử dụng
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  bookings    FacilityBooking[]
+
+  @@index([type])
+  @@index([status])
+  @@index([buildingId])
+  @@map("facilities")
+}
+
+model FacilityBooking {
+  id              String        @id @default(cuid())
+  bookingCode     String        @unique // e.g. "BK-2026-001"
+  facilityId      String
+  facility        Facility      @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  residentId      String?
+  resident        Resident?     @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  apartmentId     String?
+  apartment       Apartment?    @relation(fields: [apartmentId], references: [id], onDelete: SetNull)
+  bookingDate     DateTime      // The day of booking (start of day or normalized)
+  startTime       String        // e.g. "17:00"
+  endTime         String        // e.g. "18:00"
+  startTimeDate   DateTime      // exact start timestamp for overlapping queries
+  endTimeDate     DateTime      // exact end timestamp for overlapping queries
+  numberOfUsers   Int           @default(1)
+  totalFee        Float         @default(0)
+  status          BookingStatus @default(CONFIRMED)
+  notes           String?
+  cancelledAt     DateTime?
+  cancelledReason String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([facilityId, bookingDate])
+  @@index([userId])
+  @@index([apartmentId])
+  @@index([status])
+  @@index([startTimeDate, endTimeDate])
+  @@map("facility_bookings")
+}
+
+// ==========================================
+// 9. Visitor Management & QR Access
+// ==========================================
+
+model VisitorPass {
+  id              String        @id @default(cuid())
+  passCode        String        @unique // e.g. "VP-2026-0001"
+  qrCode          String        @unique // Unique secure token
+  visitorName     String
+  visitorPhone    String
+  visitDate       DateTime      // Day of visit
+  expectedTime    String        // e.g. "19:00 - 22:00"
+  licensePlate    String?       // e.g. "29B1-888.99"
+  note            String?
+  status          VisitorStatus @default(PENDING)
+
+  apartmentId     String
+  apartment       Apartment     @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+
+  residentId      String?
+  resident        Resident?     @relation(fields: [residentId], references: [id], onDelete: SetNull)
+
+  createdById     String
+  createdBy       User          @relation("CreatedVisitorPasses", fields: [createdById], references: [id], onDelete: Cascade)
+
+  checkInAt       DateTime?
+  checkedInById   String?
+  checkedInBy     User?         @relation("CheckedInVisitorPasses", fields: [checkedInById], references: [id], onDelete: SetNull)
+
+  checkOutAt      DateTime?
+  checkedOutById  String?
+  checkedOutBy    User?         @relation("CheckedOutVisitorPasses", fields: [checkedOutById], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([apartmentId])
+  @@index([status])
+  @@index([visitDate])
+  @@index([createdById])
+  @@map("visitor_passes")
 }

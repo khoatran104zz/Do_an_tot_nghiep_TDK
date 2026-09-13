@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || undefined;
     const building = searchParams.get('building') || undefined;
+    const block = searchParams.get('block') || undefined;
+    const floorParam = searchParams.get('floor');
+    const floor = floorParam ? parseInt(floorParam, 10) : undefined;
     const status = (searchParams.get('status') as any) || undefined;
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
@@ -41,6 +44,8 @@ export async function GET(req: NextRequest) {
     const result = await apartmentService.getApartments({
       search,
       building,
+      block,
+      floor,
       status,
       page,
       limit,

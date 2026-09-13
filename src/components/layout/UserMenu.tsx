@@ -25,6 +25,15 @@ export function UserMenu() {
   const homeHref = role === 'RESIDENT' ? '/home' : '/dashboard';
   const notificationsHref = role === 'RESIDENT' ? '/resident/notifications' : '/notifications';
 
+  const roleLabels: Record<string, string> = {
+    ADMIN: 'Quản trị viên',
+    MANAGER: 'Ban Quản Lý',
+    STAFF_TECHNICIAN: 'Kỹ thuật viên',
+    STAFF_SECURITY: 'Nhân viên An ninh',
+    STAFF_RECEPTIONIST: 'Nhân viên Lễ tân',
+    RESIDENT: 'Cư Dân',
+  };
+
   return (
     <Dropdown>
       <DropdownTrigger>
@@ -43,7 +52,7 @@ export function UserMenu() {
               {user?.name || 'Người dùng'}
             </span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
-              {role === 'ADMIN' ? 'Quản trị viên' : role === 'MANAGER' ? 'Ban Quản Lý' : 'Cư Dân'}
+              {roleLabels[role] || 'Người dùng'}
             </span>
           </div>
           <ChevronDown className="hidden md:block h-3.5 w-3.5 text-slate-400 ml-0.5" />
