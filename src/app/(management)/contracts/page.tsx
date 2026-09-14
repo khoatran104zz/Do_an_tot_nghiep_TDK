@@ -353,8 +353,8 @@ export default function ContractsPage() {
             }}
           >
             <option value="">Tất cả loại HĐ</option>
-            <option value="RENT">Cho thuê (RENT)</option>
-            <option value="SALE">Mua bán (SALE)</option>
+            <option value="RENT">Cho thuê</option>
+            <option value="SALE">Mua bán</option>
           </Select>
         </div>
 
@@ -472,8 +472,8 @@ export default function ContractsPage() {
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value as ContractType })}
             >
-              <option value="RENT">Cho thuê (RENT)</option>
-              <option value="SALE">Mua bán (SALE)</option>
+              <option value="RENT">Cho thuê</option>
+              <option value="SALE">Mua bán</option>
             </Select>
           </div>
         </div>

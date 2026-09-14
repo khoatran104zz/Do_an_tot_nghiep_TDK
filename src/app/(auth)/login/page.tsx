@@ -27,27 +27,27 @@ function LoginForm() {
     if (role === 'ADMIN') {
       setEmail('admin@building.com');
       setPassword('admin123');
-      toast.success('Đã điền tài khoản mẫu Quản trị viên (Admin)');
+      toast.success('Đã điền tài khoản mẫu Quản trị viên');
     } else if (role === 'MANAGER') {
       setEmail('manager@building.com');
       setPassword('manager123');
-      toast.success('Đã điền tài khoản mẫu Ban Quản Lý (Manager)');
+      toast.success('Đã điền tài khoản mẫu Ban Quản Lý');
     } else if (role === 'STAFF_TECHNICIAN') {
       setEmail('technician@building.com');
       setPassword('tech123');
-      toast.success('Đã điền tài khoản mẫu Kỹ thuật viên (Technician)');
+      toast.success('Đã điền tài khoản mẫu Kỹ thuật viên');
     } else if (role === 'STAFF_SECURITY') {
       setEmail('security@building.com');
       setPassword('security123');
-      toast.success('Đã điền tài khoản mẫu Nhân viên An ninh (Security)');
+      toast.success('Đã điền tài khoản mẫu Nhân viên An ninh');
     } else if (role === 'STAFF_RECEPTIONIST') {
       setEmail('receptionist@building.com');
       setPassword('recept123');
-      toast.success('Đã điền tài khoản mẫu Nhân viên Lễ tân (Receptionist)');
+      toast.success('Đã điền tài khoản mẫu Nhân viên Lễ tân');
     } else {
       setEmail('resident@building.com');
       setPassword('resident123');
-      toast.success('Đã điền tài khoản mẫu Cư Dân (Resident)');
+      toast.success('Đã điền tài khoản mẫu Cư Dân');
     }
   };
 
@@ -129,10 +129,10 @@ function LoginForm() {
 
         <CardTitle className="text-lg text-center font-bold text-slate-800 dark:text-slate-100">
           {activeTab === 'ADMIN'
-            ? 'Đăng nhập Quản trị viên (Admin)'
+            ? 'Đăng nhập Quản trị viên'
             : activeTab === 'MANAGER'
-            ? 'Đăng nhập Ban Quản Lý (Manager)'
-            : 'Đăng nhập Cổng Cư Dân (Resident)'}
+            ? 'Đăng nhập Ban Quản Lý'
+            : 'Đăng nhập Cổng Cư Dân'}
         </CardTitle>
         <CardDescription className="text-center text-xs text-slate-500 dark:text-slate-400">
           Nhập thông tin tài khoản hoặc bấm 1-click Demo Fill bên dưới

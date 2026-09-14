@@ -9,35 +9,52 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Bell, Plus, Trash2, Megaphone, Calendar, Users, Eye } from 'lucide-react';
+import { 
+  Bell, 
+  Plus, 
+  Trash2, 
+  Megaphone, 
+  Calendar, 
+  Eye, 
+  AlertTriangle, 
+  Clock, 
+  Building, 
+  Layers, 
+  Home, 
+  Users 
+} from 'lucide-react';
 import { useNotifications, useCreateNotification, useDeleteNotification } from '@/hooks/use-notifications';
 import { formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function NotificationsManagementPage() {
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [priorityFilter, setPriorityFilter] = useState('ALL');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     title: '',
     content: '',
+    category: 'GENERAL',
+    priority: 'NORMAL',
+    targetScope: 'ALL',
+    targetId: '',
   });
 
-  const { data: response, isLoading, isError, error, refetch } = useNotifications();
-  const notifications = response?.data || [];
+  const { data: response, isLoading, isError, error, refetch } = useNotifications({
+    category: categoryFilter !== 'ALL' ? (categoryFilter as any) : undefined,
+    priority: priorityFilter !== 'ALL' ? (priorityFilter as any) : undefined,
+    search: search || undefined,
+  });
 
+  const notifications = (response as any)?.data || [];
   const createMutation = useCreateNotification();
   const deleteMutation = useDeleteNotification();
-
-  const filteredNotifications = notifications.filter((n: any) =>
-    search
-      ? n.title.toLowerCase().includes(search.toLowerCase()) ||
-        n.content.toLowerCase().includes(search.toLowerCase())
-      : true
-  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,13 +62,23 @@ export default function NotificationsManagementPage() {
       {
         title: formData.title,
         content: formData.content,
-        senderId: '',
+        category: formData.category as any,
+        priority: formData.priority as any,
+        targetScope: formData.targetScope as any,
+        targetValue: formData.targetId ? formData.targetId.trim() : undefined,
       },
       {
         onSuccess: () => {
           setIsFormOpen(false);
-          setFormData({ title: '', content: '' });
-          toast.success('Đã đăng phát thông báo tới toàn thể cư dân');
+          setFormData({
+            title: '',
+            content: '',
+            category: 'GENERAL',
+            priority: 'NORMAL',
+            targetScope: 'ALL',
+            targetId: '',
+          });
+          toast.success('Đã gửi phát thông báo thành công');
         },
       }
     );
@@ -68,11 +95,52 @@ export default function NotificationsManagementPage() {
     }
   };
 
+  const getPriorityBadge = (p: string) => {
+    switch (p) {
+      case 'EMERGENCY':
+        return <Badge className="bg-rose-500 hover:bg-rose-600 text-white flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Khẩn cấp</Badge>;
+      case 'URGENT':
+        return <Badge className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1"><Clock className="h-3 w-3" />Gấp</Badge>;
+      default:
+        return <Badge variant="secondary">Bình thường</Badge>;
+    }
+  };
+
+  const getCategoryBadge = (c: string) => {
+    switch (c) {
+      case 'EMERGENCY':
+        return <Badge variant="destructive">Khẩn cấp</Badge>;
+      case 'MAINTENANCE':
+        return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200">Bảo trì</Badge>;
+      case 'BILLING':
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200">Hóa đơn</Badge>;
+      case 'EVENT':
+        return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200">Sự kiện</Badge>;
+      case 'POLL':
+        return <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Biểu quyết</Badge>;
+      default:
+        return <Badge variant="outline">Thông báo chung</Badge>;
+    }
+  };
+
+  const getTargetBadge = (scope: string, id?: string) => {
+    switch (scope) {
+      case 'ALL':
+        return <span className="inline-flex items-center gap-1 text-xs text-slate-500"><Building className="h-3.5 w-3.5" /> Toàn tòa nhà</span>;
+      case 'FLOOR':
+        return <span className="inline-flex items-center gap-1 text-xs text-slate-500"><Layers className="h-3.5 w-3.5" /> Tầng {id || 'chỉ định'}</span>;
+      case 'APARTMENT':
+        return <span className="inline-flex items-center gap-1 text-xs text-slate-500"><Home className="h-3.5 w-3.5" /> Căn hộ {id || 'chỉ định'}</span>;
+      default:
+        return <span className="inline-flex items-center gap-1 text-xs text-slate-500"><Users className="h-3.5 w-3.5" /> {scope}</span>;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Quản lý Thông báo Tòa nhà"
-        description="Đăng phát các thông báo định kỳ, lịch bảo trì hệ thống, kiểm tra PCCC hoặc tin tức quan trọng tới cư dân."
+        title="Quản lý Thông báo & Bản tin"
+        description="Đăng phát thông báo định kỳ, lịch bảo trì hệ thống, kiểm tra PCCC hoặc tin tức quan trọng tới cư dân."
       >
         <Button
           onClick={() => setIsFormOpen(true)}
@@ -82,8 +150,8 @@ export default function NotificationsManagementPage() {
         </Button>
       </PageHeader>
 
-      {/* Search toolbar */}
-      <div className="flex items-center justify-between gap-3">
+      {/* Filter toolbar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="w-full sm:w-80">
           <SearchInput
             placeholder="Tìm kiếm thông báo..."
@@ -91,8 +159,33 @@ export default function NotificationsManagementPage() {
             onChange={(val) => setSearch(val)}
           />
         </div>
-        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-          {filteredNotifications.length} thông báo
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            aria-label="Lọc theo danh mục thông báo"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="ALL">Tất cả danh mục</option>
+            <option value="GENERAL">Thông báo chung</option>
+            <option value="EMERGENCY">Khẩn cấp</option>
+            <option value="MAINTENANCE">Bảo trì</option>
+            <option value="BILLING">Hóa đơn</option>
+            <option value="EVENT">Sự kiện</option>
+            <option value="POLL">Biểu quyết</option>
+          </select>
+
+          <select
+            aria-label="Lọc theo mức độ ưu tiên thông báo"
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="ALL">Mọi mức ưu tiên</option>
+            <option value="NORMAL">Bình thường</option>
+            <option value="URGENT">Gấp</option>
+            <option value="EMERGENCY">Khẩn cấp</option>
+          </select>
         </div>
       </div>
 
@@ -113,7 +206,7 @@ export default function NotificationsManagementPage() {
           message={(error as any)?.message}
           onRetry={() => refetch()}
         />
-      ) : filteredNotifications.length === 0 ? (
+      ) : notifications.length === 0 ? (
         <Card className="p-8 text-center border-slate-200/80 dark:border-slate-800">
           <EmptyState
             icon={Bell}
@@ -125,42 +218,48 @@ export default function NotificationsManagementPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-3.5">
-          {filteredNotifications.map((item: any) => {
-            const readsCount = item.reads?.length || 0;
+          {notifications.map((item: any) => {
+            const readsCount = item.reads?.length || item._count?.reads || 0;
             return (
               <Card
                 key={item.id}
                 className="overflow-hidden border-slate-200/80 dark:border-slate-800 hover:shadow-md transition-all duration-200"
               >
                 <div className="p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div className="flex items-start gap-3.5">
-                    <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0">
-                      <Megaphone className="h-5 w-5" />
+                  <div className="flex items-start gap-3.5 flex-1">
+                    <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
+                      item.priority === 'EMERGENCY'
+                        ? 'bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400'
+                        : 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400'
+                    }`}>
+                      {item.priority === 'EMERGENCY' ? <AlertTriangle className="h-5 w-5" /> : <Megaphone className="h-5 w-5" />}
                     </div>
-                    <div className="space-y-1.5">
+
+                    <div className="space-y-1.5 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
                           {item.title}
                         </h3>
-                        <Badge variant="secondary" size="sm">
-                          Toàn tòa nhà
-                        </Badge>
+                        {getPriorityBadge(item.priority)}
+                        {getCategoryBadge(item.category)}
                       </div>
+
                       <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                         {item.content}
                       </p>
+
                       <div className="flex flex-wrap items-center gap-4 pt-1 text-[11px] text-slate-400 dark:text-slate-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {formatDateTime(item.createdAt)}
                         </span>
+                        <span>•</span>
+                        {getTargetBadge(item.targetScope, item.targetId || item.targetValue)}
+                        <span>•</span>
                         <span className="flex items-center gap-1">
                           <Eye className="h-3 w-3" />
                           {readsCount} lượt đọc
                         </span>
-                        {item.sender?.fullName && (
-                          <span>Người gửi: {item.sender.fullName}</span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -200,11 +299,80 @@ export default function NotificationsManagementPage() {
               Tiêu đề thông báo <span className="text-rose-500">*</span>
             </label>
             <Input
-              placeholder="VD: Thông báo lịch bảo trì hệ thống PCCC tầng 1-15"
+              placeholder="VD: Thông báo lịch bảo trì hệ thống PCCC"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Danh mục
+              </label>
+              <select
+                aria-label="Chọn danh mục thông báo trong modal"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full text-xs rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="GENERAL">Thông báo chung</option>
+                <option value="EMERGENCY">Khẩn cấp</option>
+                <option value="MAINTENANCE">Bảo trì</option>
+                <option value="BILLING">Hóa đơn</option>
+                <option value="EVENT">Sự kiện</option>
+                <option value="POLL">Biểu quyết</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Mức độ ưu tiên
+              </label>
+              <select
+                aria-label="Chọn mức độ ưu tiên trong modal"
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                className="w-full text-xs rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="NORMAL">Bình thường</option>
+                <option value="URGENT">Gấp</option>
+                <option value="EMERGENCY">Khẩn cấp</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Phạm vi gửi
+              </label>
+              <select
+                aria-label="Chọn phạm vi gửi thông báo trong modal"
+                value={formData.targetScope}
+                onChange={(e) => setFormData({ ...formData, targetScope: e.target.value })}
+                className="w-full text-xs rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">Toàn bộ tòa nhà</option>
+                <option value="FLOOR">Theo số tầng</option>
+                <option value="APARTMENT">Căn hộ cụ thể</option>
+              </select>
+            </div>
+
+            {formData.targetScope !== 'ALL' && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  {formData.targetScope === 'FLOOR' ? 'Số tầng' : 'Mã căn hộ'} <span className="text-rose-500">*</span>
+                </label>
+                <Input
+                  value={formData.targetId}
+                  onChange={(e) => setFormData({ ...formData, targetId: e.target.value })}
+                  placeholder={formData.targetScope === 'FLOOR' ? 'VD: 12' : 'VD: A-1204'}
+                  required
+                />
+              </div>
+            )}
           </div>
 
           <div className="space-y-1">

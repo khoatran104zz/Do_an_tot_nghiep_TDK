@@ -2,10 +2,27 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Bell, Megaphone, ArrowRight, Check } from 'lucide-react';
+import { 
+  Bell, 
+  Megaphone, 
+  ArrowRight, 
+  Check, 
+  AlertTriangle, 
+  CreditCard, 
+  Package, 
+  Vote, 
+  Users, 
+  Wrench 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useNotifications, useMarkNotificationAsRead } from '@/hooks/use-notifications';
+import { 
+  useNotifications, 
+  useUnreadNotificationCount, 
+  useMarkNotificationAsRead, 
+  useMarkAllNotificationsAsRead 
+} from '@/hooks/use-notifications';
+import { useRealtimeNotifications } from '@/hooks/use-realtime';
 import { formatDateTime, cn } from '@/lib/utils';
 
 interface NotificationBellProps {
@@ -17,12 +34,18 @@ export function NotificationBell({ role, className }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { data: response } = useNotifications();
-  const markReadMutation = useMarkNotificationAsRead();
+  // Kích hoạt kết nối Server-Sent Events (SSE) theo thời gian thực
+  useRealtimeNotifications();
 
-  const notifications = response?.data || [];
-  const unreadNotifications = notifications.filter((n: any) => !n.reads || n.reads.length === 0);
-  const unreadCount = unreadNotifications.length;
+  const { data: response } = useNotifications({ limit: 10 });
+  const { data: unreadData } = useUnreadNotificationCount();
+  const markReadMutation = useMarkNotificationAsRead();
+  const markAllReadMutation = useMarkAllNotificationsAsRead();
+
+  const notifications = (response as any)?.data || [];
+  const serverUnreadCount = (unreadData as any)?.data?.unreadCount;
+  const localUnreadCount = notifications.filter((n: any) => !n.reads || n.reads.length === 0).length;
+  const unreadCount = typeof serverUnreadCount === 'number' ? serverUnreadCount : localUnreadCount;
 
   const targetHref = role === 'RESIDENT' ? '/resident/notifications' : '/notifications';
 
@@ -48,9 +71,27 @@ export function NotificationBell({ role, className }: NotificationBellProps) {
   }, [open]);
 
   const handleMarkAllRead = () => {
-    unreadNotifications.forEach((n: any) => {
-      markReadMutation.mutate(n.id);
-    });
+    markAllReadMutation.mutate();
+  };
+
+  const getCategoryIcon = (category?: string, priority?: string) => {
+    if (priority === 'EMERGENCY' || category === 'EMERGENCY') {
+      return <AlertTriangle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />;
+    }
+    switch (category) {
+      case 'BILLING':
+        return <CreditCard className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />;
+      case 'PARCEL':
+        return <Package className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />;
+      case 'POLL':
+        return <Vote className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />;
+      case 'VISITOR':
+        return <Users className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />;
+      case 'MAINTENANCE':
+        return <Wrench className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />;
+      default:
+        return <Megaphone className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />;
+    }
   };
 
   return (
@@ -66,7 +107,7 @@ export function NotificationBell({ role, className }: NotificationBellProps) {
       >
         <Bell className="h-4.5 w-4.5" />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold ring-2 ring-white dark:ring-slate-900">
+          <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-600 text-white text-[10px] font-bold ring-2 ring-white dark:ring-slate-900 animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -75,30 +116,31 @@ export function NotificationBell({ role, className }: NotificationBellProps) {
       {open && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl shadow-slate-900/10 z-50 overflow-hidden animate-in fade-in-0 zoom-in-95">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+          <div className="flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-slate-900 dark:text-slate-100">Thông báo tòa nhà</span>
+              <span className="font-bold text-sm text-slate-900 dark:text-slate-100">Thông báo</span>
               {unreadCount > 0 && (
-                <Badge variant="default" size="sm">
+                <Badge variant="default" size="sm" className="bg-rose-500 hover:bg-rose-600">
                   {unreadCount} mới
                 </Badge>
               )}
             </div>
-
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
                 <button
-                  type="button"
                   onClick={handleMarkAllRead}
-                  className="text-[11px] font-medium text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 inline-flex items-center gap-1 cursor-pointer"
+                  disabled={markAllReadMutation.isPending}
+                  className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5 font-medium cursor-pointer"
+                  title="Đánh dấu tất cả là đã đọc"
                 >
-                  <Check className="h-3 w-3" /> Đã đọc hết
+                  <Check className="h-3 w-3" />
+                  Đã đọc tất cả
                 </button>
               )}
               <Link
                 href={targetHref}
                 onClick={() => setOpen(false)}
-                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-0.5"
+                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
               >
                 Xem tất cả
                 <ArrowRight className="h-3 w-3" />
@@ -106,13 +148,13 @@ export function NotificationBell({ role, className }: NotificationBellProps) {
             </div>
           </div>
 
-          {/* Notification List */}
+          {/* List */}
           <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs">
+              <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
                 <Bell className="h-8 w-8 text-slate-300 dark:text-slate-600 mx-auto mb-2 stroke-1" />
-                <p className="font-medium text-slate-600 dark:text-slate-300">Không có thông báo mới</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Tất cả thông báo hệ thống sẽ hiển thị ở đây</p>
+                <p className="font-medium text-slate-600 dark:text-slate-400">Không có thông báo mới</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Tất cả thông báo sẽ hiển thị ở đây</p>
               </div>
             ) : (
               notifications.slice(0, 5).map((item: any) => {
@@ -134,19 +176,21 @@ export function NotificationBell({ role, className }: NotificationBellProps) {
                       <div
                         className={cn(
                           'p-1.5 rounded-lg shrink-0 mt-0.5',
-                          !isRead
-                            ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                          item.priority === 'EMERGENCY'
+                            ? 'bg-rose-100 dark:bg-rose-950/50'
+                            : !isRead
+                            ? 'bg-blue-100 dark:bg-blue-950/50'
+                            : 'bg-slate-100 dark:bg-slate-800'
                         )}
                       >
-                        <Megaphone className="h-3.5 w-3.5" />
+                        {getCategoryIcon(item.category, item.priority)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1">
                           <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                             {item.title}
                           </p>
-                          {!isRead && <span className="h-1.5 w-1.5 rounded-full bg-blue-600 shrink-0" />}
+                          {!isRead && <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />}
                         </div>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-relaxed">
                           {item.content}

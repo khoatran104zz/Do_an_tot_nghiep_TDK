@@ -88,7 +88,7 @@ export default function ApartmentsPage() {
   // Form state for Apartment
   const [formData, setFormData] = useState({
     code: '',
-    building: 'Tòa A (Sky)',
+    building: 'Tòa A',
     floor: 1,
     bedrooms: 2,
     bathrooms: 2,
@@ -156,7 +156,7 @@ export default function ApartmentsPage() {
     setEditingItem(null);
     setFormData({
       code: '',
-      building: 'Tòa A (Sky)',
+      building: 'Tòa A',
       floor: 1,
       bedrooms: 2,
       bathrooms: 2,
@@ -440,8 +440,8 @@ export default function ApartmentsPage() {
     <div className="space-y-6">
       {/* Top Header with View Switcher */}
       <PageHeader
-        title="Quản lý Bất động sản (Property Management)"
-        description="Mô hình phân cấp Tòa nhà (Building) → Tháp (Block) → Tầng (Floor) → Căn hộ (Apartment) và lịch sử biến động."
+        title="Quản lý Bất động sản"
+        description="Mô hình phân cấp Tòa nhà → Tháp → Tầng → Căn hộ và lịch sử biến động."
       >
         <div className="flex items-center gap-2.5">
           {/* Switcher: [List View] & [Floor Plan View] */}
@@ -510,9 +510,9 @@ export default function ApartmentsPage() {
             }}
           >
             <option value="">Tất cả Block / Tòa</option>
-            <option value="Block A">Block A (Sky Tower)</option>
-            <option value="Block B">Block B (Ocean Tower)</option>
-            <option value="Block C">Block C (Garden Tower)</option>
+            <option value="Block A">Block A</option>
+            <option value="Block B">Block B</option>
+            <option value="Block C">Block C</option>
           </Select>
         </div>
 
@@ -544,9 +544,9 @@ export default function ApartmentsPage() {
             }}
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="OCCUPIED">Đang ở (Occupied)</option>
-            <option value="VACANT">Đang trống (Vacant)</option>
-            <option value="UNDER_MAINTENANCE">Đang sửa chữa (Maintenance)</option>
+            <option value="OCCUPIED">Đang ở</option>
+            <option value="VACANT">Đang trống</option>
+            <option value="UNDER_MAINTENANCE">Đang sửa chữa</option>
           </Select>
         </div>
       </FilterBar>
@@ -752,7 +752,7 @@ export default function ApartmentsPage() {
       )}
 
       {/* =====================================================================
-          VIEW MODE 2: STANDARD ENTERPRISE LIST VIEW (DataTable)
+          VIEW MODE 2: STANDARD ENTERPRISE LIST VIEW 
           ===================================================================== */}
       {viewMode === 'LIST' && (
         <DataTable
@@ -911,7 +911,7 @@ export default function ApartmentsPage() {
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
-                          HỘ GIA ĐÌNH (HOUSEHOLD)
+                          HỘ GIA ĐÌNH
                         </h4>
                       </div>
                       <Badge variant="outline" className="text-[10px] font-mono">
@@ -1247,9 +1247,9 @@ export default function ApartmentsPage() {
               value={formData.building}
               onChange={(e) => setFormData({ ...formData, building: e.target.value })}
             >
-              <option value="Tòa A (Sky)">Tòa A (Sky Tower)</option>
-              <option value="Tòa B (Ocean)">Tòa B (Ocean Tower)</option>
-              <option value="Tòa C (Garden)">Tòa C (Garden Tower)</option>
+              <option value="Tòa A">Tòa A</option>
+              <option value="Tòa B">Tòa B</option>
+              <option value="Tòa C">Tòa C</option>
             </Select>
           </div>
 

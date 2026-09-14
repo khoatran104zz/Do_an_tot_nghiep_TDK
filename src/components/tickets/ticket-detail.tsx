@@ -566,7 +566,7 @@ export function TicketDetail({ ticketId, mode, backUrl }: TicketDetailProps) {
           {/* Activity Timeline */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
-              Nhật ký xử lý (Audit History)
+              Nhật ký xử lý
             </h3>
             <TicketTimeline
               history={ticket.statusHistory || []}

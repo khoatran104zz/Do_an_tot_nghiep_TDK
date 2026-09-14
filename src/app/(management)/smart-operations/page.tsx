@@ -6,7 +6,7 @@ import { Cpu, Zap, Activity, ShieldCheck, Wifi, Radio } from 'lucide-react';
 export default function SmartOperationsPage() {
     return (
         <SmartModulePlaceholder
-            title="Vận hành thông minh (Smart Building Operations)"
+            title="Vận hành thông minh"
             description="Trung tâm giám sát IoT, BMS tòa nhà: điều khiển tự động chiếu sáng, nhiệt độ hành lang, bơm nước, báo cháy và trạm sạc xe điện."
             category="Hạ tầng thông minh & IoT"
             badgeText="IoT & BMS Center"
@@ -21,7 +21,7 @@ export default function SmartOperationsPage() {
             sampleRows={[
                 ['Controller Chiếu Sáng Hành Lang Tháp A', 'Tầng kỹ thuật A.25', 'Tự động 40% công suất', '2 phút trước', 'Hoạt động bình thường', 'Điều khiển'],
                 ['Cảm biến áp lực nước sinh hoạt Tầng hầm', 'Trạm bơm P2', 'Áp lực 3.2 bar (Chuẩn)', '1 phút trước', 'Hoạt động bình thường', 'Điều khiển'],
-                ['Hệ thống thông gió tầng hầm B1/B2 (CO2)', 'Hầm B1 khu để xe', 'Nồng độ 320 ppm (An toàn)', '5 phút trước', 'Chế độ Eco', 'Điều khiển'],
+                ['Hệ thống thông gió tầng hầm B1/B2', 'Hầm B1 khu để xe', 'Nồng độ 320 ppm (An toàn)', '5 phút trước', 'Chế độ Eco', 'Điều khiển'],
                 ['Trạm sạc xe điện thông minh SmartEV-01', 'Hầm B2 khu A', 'Đang sạc 4/6 trụ (48kW)', 'Realtime', 'Hoạt động bình thường', 'Chi tiết'],
             ]}
             actionButtonText="Thêm thiết bị IoT mới"

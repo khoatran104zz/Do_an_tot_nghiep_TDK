@@ -73,7 +73,7 @@ export function CompleteMaintenanceModal({
               Nghiệm thu & Hoàn thành Bảo trì
             </DialogTitle>
             <DialogDescription>
-              Ghi nhận kết quả kiểm tra thực tế, chi phí phát sinh và tự động tạo Phiếu công việc (Work Order).
+              Ghi nhận kết quả kiểm tra thực tế, chi phí phát sinh và tự động tạo Phiếu công việc.
             </DialogDescription>
           </DialogHeader>
 

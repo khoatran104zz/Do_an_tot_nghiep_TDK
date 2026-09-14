@@ -107,7 +107,7 @@ export default function VisitorsManagementPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="Quản Lý Khách Thăm (Visitors)"
+        title="Quản Lý Khách Thăm"
         description="Theo dõi lịch sử vào ra, cấp thẻ khách QR Code và giám sát an ninh tòa nhà theo thời gian thực"
         badge={
           <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">

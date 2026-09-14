@@ -279,7 +279,7 @@ export default function VisitorScanPage() {
                         KẾT QUẢ KIỂM TRA
                       </div>
                       <div className="text-xl font-black tracking-tight">
-                        ✓ HỢP LỆ (VALID)
+                        ✓ HỢP LỆ
                       </div>
                     </div>
                   </div>
@@ -302,7 +302,7 @@ export default function VisitorScanPage() {
                       KẾT QUẢ KIỂM TRA
                     </div>
                     <div className="text-xl font-black tracking-tight">
-                      ✕ KHÔNG HỢP LỆ (INVALID)
+                      ✕ KHÔNG HỢP LỆ
                     </div>
                     <p className="text-xs mt-1 text-muted-foreground">
                       {scanResult.message}
@@ -336,7 +336,7 @@ export default function VisitorScanPage() {
                       <div className="p-4 rounded-xl bg-muted/30 border border-border/60">
                         <div className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5">
                           <User className="h-4 w-4 text-emerald-500" />
-                          <span className="font-semibold">Khách đến thăm (Visitor)</span>
+                          <span className="font-semibold">Khách đến thăm</span>
                         </div>
                         <div className="text-base font-bold text-foreground">
                           {pass.visitorName}

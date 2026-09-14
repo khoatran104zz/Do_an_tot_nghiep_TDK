@@ -207,7 +207,7 @@ export default function MyFamilyPage() {
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
-          title="Quản lý Hộ gia đình (Household)"
+          title="Quản lý Hộ gia đình"
           description={`Cấu trúc nhân khẩu căn hộ ${
             apartment?.code ? `Căn ${apartment.code} - ${apartment.building}` : ''
           }. Quản lý danh bạ thành viên và đăng ký các thủ tục hành chính cư trú trực tuyến.`}
@@ -477,7 +477,7 @@ export default function MyFamilyPage() {
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-amber-600" />
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Yêu cầu cư trú của tôi (My Residence Requests)
+              Yêu cầu cư trú của tôi
             </h3>
           </div>
           <Badge variant="outline" className="text-xs font-mono">

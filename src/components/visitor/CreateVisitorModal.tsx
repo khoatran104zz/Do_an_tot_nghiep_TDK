@@ -91,7 +91,7 @@ export const CreateVisitorModal: React.FC<CreateVisitorModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-foreground">
-                Tạo Thẻ Khách Ra Vào (Visitor Pass)
+                Tạo Thẻ Khách Ra Vào
               </h2>
               <p className="text-xs text-muted-foreground">
                 Đăng ký trước thông tin khách đến thăm căn hộ

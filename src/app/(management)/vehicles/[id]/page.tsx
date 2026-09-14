@@ -515,7 +515,7 @@ export default function VehicleDetailPage() {
             <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
               <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <History className="h-4.5 w-4.5 text-blue-600" />
-                Lịch sử Thao tác & Vận hành (Audit Timeline)
+                Lịch sử Thao tác & Vận hành
               </CardTitle>
             </CardHeader>
             <CardContent className="p-5">

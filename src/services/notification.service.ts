@@ -6,6 +6,10 @@ export const notificationClientService = {
     return apiClient('/notifications', { params: filter as any });
   },
 
+  async getUnreadCount() {
+    return apiClient<{ unreadCount: number }>('/notifications/unread-count');
+  },
+
   async createNotification(data: CreateNotificationDto) {
     return apiClient('/notifications', {
       method: 'POST',
@@ -15,6 +19,12 @@ export const notificationClientService = {
 
   async markAsRead(id: string) {
     return apiClient(`/notifications/${id}/read`, {
+      method: 'POST',
+    });
+  },
+
+  async markAllAsRead() {
+    return apiClient('/notifications/mark-all-read', {
       method: 'POST',
     });
   },

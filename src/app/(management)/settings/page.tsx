@@ -6,7 +6,7 @@ import { Settings, ShieldAlert, BellRing, Database, Sliders, KeyRound } from 'lu
 export default function SettingsPage() {
     return (
         <SmartModulePlaceholder
-            title="Cài đặt hệ thống tòa nhà (Building Settings)"
+            title="Cài đặt hệ thống tòa nhà"
             description="Cấu hình thông số tòa nhà, định mức bảng giá điện nước dịch vụ, hạn ngạch SLA kỹ thuật, cổng thanh toán và tích hợp bên thứ ba."
             category="Hệ thống & Cấu hình"
             badgeText="System Configuration"
@@ -19,10 +19,10 @@ export default function SettingsPage() {
             tableTitle="Các phân hệ cấu hình chính"
             tableHeaders={['Phân hệ cấu hình', 'Mô tả', 'Người chỉnh sửa gần nhất', 'Thời gian thay đổi', 'Trạng thái', 'Hành động']}
             sampleRows={[
-                ['Bảng giá dịch vụ & Định mức phí 2026', 'Phí quản lý, tiền xe máy, ô tô, phí dọn rác', 'Ban Quản Trị (ADMIN)', '01/08/2026', 'Đang áp dụng', 'Cấu hình'],
-                ['Quy tắc xử lý SLA & Cảnh báo phản ánh', 'Thời gian phản hồi tiêu chuẩn cho từng loại sự cố', 'Quản lý vận hành (MANAGER)', '15/08/2026', 'Đang áp dụng', 'Cấu hình'],
-                ['Kết nối Cổng thanh toán & Ngân hàng đối tác', 'VietQR, MoMo sandbox, VNPay API', 'Ban Quản Trị (ADMIN)', '20/07/2026', 'Đang kết nối', 'Cấu hình'],
-                ['Tài khoản & Phân quyền Role-based Access Control', 'Phân quyền Kỹ thuật, Bảo vệ, Lễ tân', 'Ban Quản Trị (ADMIN)', '13/09/2026', 'Đang áp dụng', 'Cấu hình'],
+                ['Bảng giá dịch vụ & Định mức phí 2026', 'Phí quản lý, tiền xe máy, ô tô, phí dọn rác', 'Ban Quản Trị', '01/08/2026', 'Đang áp dụng', 'Cấu hình'],
+                ['Quy tắc xử lý SLA & Cảnh báo phản ánh', 'Thời gian phản hồi tiêu chuẩn cho từng loại sự cố', 'Quản lý vận hành', '15/08/2026', 'Đang áp dụng', 'Cấu hình'],
+                ['Kết nối Cổng thanh toán & Ngân hàng đối tác', 'VietQR, MoMo sandbox, VNPay API', 'Ban Quản Trị', '20/07/2026', 'Đang kết nối', 'Cấu hình'],
+                ['Tài khoản & Phân quyền Role-based Access Control', 'Phân quyền Kỹ thuật, Bảo vệ, Lễ tân', 'Ban Quản Trị', '13/09/2026', 'Đang áp dụng', 'Cấu hình'],
             ]}
             actionButtonText="Lưu cấu hình hệ thống"
         />

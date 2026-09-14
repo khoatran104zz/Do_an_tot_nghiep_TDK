@@ -6,7 +6,7 @@ import { Wrench, CheckCircle2, Clock, AlertCircle, Camera, MessageSquare } from 
 export default function TechnicianTasksPage() {
     return (
         <SmartModulePlaceholder
-            title="Nhiệm vụ của tôi (My Tasks)"
+            title="Nhiệm vụ của tôi"
             description="Danh sách sự vụ kỹ thuật, sửa chữa và bảo dưỡng được giao riêng cho kỹ thuật viên. Hỗ trợ cập nhật tiến độ, ảnh Before/After và phản hồi."
             category="Nhiệm vụ kỹ thuật viên"
             badgeText="Technician Assignments"

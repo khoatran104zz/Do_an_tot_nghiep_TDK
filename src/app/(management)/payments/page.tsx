@@ -7,7 +7,7 @@ import { SmartModulePlaceholder } from '@/components/shared/SmartModulePlacehold
 export default function PaymentsManagementPage() {
   return (
     <SmartModulePlaceholder
-      title="Quản lý Giao dịch & Cổng Thanh toán (Payments)"
+      title="Quản lý Giao dịch & Cổng Thanh toán"
       description="Giám sát đối soát thanh toán trực tuyến qua Napas 247 VietQR, VNPay và MoMo"
       categoryBadge="Financial Operations"
       icon={CreditCard}

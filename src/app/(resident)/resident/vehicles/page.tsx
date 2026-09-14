@@ -456,7 +456,7 @@ export default function ResidentVehiclesPage() {
             return (
               <Card
                 key={vehicle.id}
-                onClick={() => setInspectingVehicle(vehicle)}
+                onClick={() => setInspectingVehicle}
                 className={`overflow-hidden rounded-2xl border transition-all cursor-pointer hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 group ${
                   isPending
                     ? 'border-amber-200 dark:border-amber-900/60 bg-gradient-to-b from-amber-50/20 to-transparent'
@@ -721,7 +721,7 @@ export default function ResidentVehiclesPage() {
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Ảnh chụp Cà vẹt / Giấy đăng ký xe (Link URL)
+              Ảnh chụp Cà vẹt / Giấy đăng ký xe
             </label>
             <Input
               type="url"
@@ -739,7 +739,7 @@ export default function ResidentVehiclesPage() {
               <Info className="h-3.5 w-3.5" /> Quy trình sau khi gửi:
             </p>
             <p className="text-[11px] text-blue-700 dark:text-blue-400">
-              Hồ sơ sẽ ở trạng thái <strong>Chờ duyệt (PENDING_APPROVAL)</strong>. Sau khi BQL đối soát hợp lệ, phương tiện sẽ được kích hoạt kèm mã thẻ RFID nhận tại phòng Ban Quản Lý.
+              Hồ sơ sẽ ở trạng thái <strong>Chờ duyệt</strong>. Sau khi BQL đối soát hợp lệ, phương tiện sẽ được kích hoạt kèm mã thẻ RFID nhận tại phòng Ban Quản Lý.
             </p>
           </div>
         </div>

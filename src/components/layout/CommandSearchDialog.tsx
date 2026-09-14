@@ -173,7 +173,7 @@ export function CommandSearchDialog() {
               <Search className="h-8 w-8 text-slate-300 dark:text-slate-600 mx-auto mb-2 stroke-1" />
               <p className="font-semibold text-slate-700 dark:text-slate-200">Không tìm thấy kết quả phù hợp</p>
               <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                Thử tìm theo mã căn (A-1001), tên cư dân, mã hóa đơn hoặc số điện thoại
+                Thử tìm theo mã căn ví dụ A-1001, tên cư dân, mã hóa đơn hoặc số điện thoại
               </p>
             </div>
           )}

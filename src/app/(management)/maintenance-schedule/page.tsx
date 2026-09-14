@@ -81,7 +81,7 @@ export default function MaintenanceSchedulePage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Lịch Bảo trì Phòng ngừa (Preventive Maintenance)
+              Lịch Bảo trì Phòng ngừa
             </h1>
             <Badge variant="outline" className="font-semibold text-indigo-700 bg-indigo-50 border-indigo-200">
               PM Schedules
@@ -202,7 +202,7 @@ export default function MaintenanceSchedulePage() {
                 Phát hiện {stats.overdueMaintenanceCount} lịch bảo trì kỹ thuật đã QUÁ HẠN!
               </h4>
               <p className="text-xs text-red-700 mt-0.5">
-                Hệ thống cảnh báo thông minh (Smart Alert) đã kích hoạt cảnh báo đỏ. Kỹ thuật viên cần kiểm tra và nghiệm thu ngay.
+                Hệ thống cảnh báo thông minh đã kích hoạt cảnh báo đỏ. Kỹ thuật viên cần kiểm tra và nghiệm thu ngay.
               </p>
             </div>
           </div>

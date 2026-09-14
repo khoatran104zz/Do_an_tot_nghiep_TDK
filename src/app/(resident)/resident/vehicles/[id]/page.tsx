@@ -194,7 +194,7 @@ export default function ResidentVehicleDetailPage() {
               <span className="absolute -left-6 top-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-slate-900" />
               <div>
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  1. Gửi hồ sơ đăng ký xe (Submitted)
+                  1. Gửi hồ sơ đăng ký xe
                 </p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   Đã ghi nhận thông tin vào hệ thống ngày {formatDateTime(vehicle.createdAt)}
@@ -211,7 +211,7 @@ export default function ResidentVehicleDetailPage() {
               />
               <div>
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  2. Ban Quản Lý thụ lý & đối soát cà vẹt (Under review)
+                  2. Ban Quản Lý thụ lý & đối soát cà vẹt
                 </p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   {isPending
@@ -227,7 +227,7 @@ export default function ResidentVehicleDetailPage() {
                 <span className="absolute -left-6 top-0.5 h-3 w-3 rounded-full bg-rose-500 ring-4 ring-white dark:ring-slate-900" />
                 <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 space-y-1">
                   <p className="text-xs font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
-                    <XCircle className="h-4 w-4" /> 3. Hồ sơ bị từ chối phê duyệt (Rejected)
+                    <XCircle className="h-4 w-4" /> 3. Hồ sơ bị từ chối phê duyệt
                   </p>
                   <p className="text-xs text-rose-600 dark:text-rose-300">
                     <span className="font-semibold">Lý do từ chối:</span>{' '}
@@ -251,7 +251,7 @@ export default function ResidentVehicleDetailPage() {
                       isApproved ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'
                     }`}
                   >
-                    3. Phê duyệt & Kích hoạt thẻ xe (Approved)
+                    3. Phê duyệt & Kích hoạt thẻ xe
                   </p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                     {isApproved
@@ -420,7 +420,7 @@ export default function ResidentVehicleDetailPage() {
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Ảnh chụp Cà vẹt / Giấy đăng ký xe (Link URL)
+              Ảnh chụp Cà vẹt / Giấy đăng ký xe
             </label>
             <Input
               type="url"

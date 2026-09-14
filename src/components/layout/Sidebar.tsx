@@ -36,7 +36,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useShell } from './ShellContext';
 
@@ -63,67 +62,68 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     {
       groupName: 'Tổng quan',
       items: [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Smart Operations', href: '/smart-operations', icon: Zap },
+        { name: 'Bảng điều khiển', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Vận hành thông minh', href: '/smart-operations', icon: Zap },
       ],
     },
     {
       groupName: 'Bất động sản & Cư dân',
       items: [
-        { name: 'Property', href: '/apartments', icon: Building2 },
-        { name: 'Residents', href: '/residents', icon: Users },
-        { name: 'Contracts', href: '/contracts', icon: FileText },
+        { name: 'Căn hộ', href: '/apartments', icon: Building2 },
+        { name: 'Cư dân', href: '/residents', icon: Users },
+        { name: 'Hợp đồng', href: '/contracts', icon: FileText },
       ],
     },
     {
       groupName: 'Tài chính & Thanh toán',
       items: [
-        { name: 'Billing', href: '/invoices', icon: Receipt },
-        { name: 'Payments', href: '/payments', icon: CreditCard },
+        { name: 'Hóa đơn', href: '/invoices', icon: Receipt },
+        { name: 'Thanh toán', href: '/payments', icon: CreditCard },
       ],
     },
     {
       groupName: 'Phương tiện & An ninh',
       items: [
-        { name: 'Vehicles', href: '/vehicles', icon: Car },
-        { name: 'Parking', href: '/parking-cards', icon: KeyRound },
-        { name: 'Visitors', href: '/visitors', icon: UserCheck },
+        { name: 'Phương tiện', href: '/vehicles', icon: Car },
+        { name: 'Thẻ gửi xe', href: '/parking-cards', icon: KeyRound },
+        { name: 'Khách ra vào', href: '/visitors', icon: UserCheck },
       ],
     },
     {
       groupName: 'Vận hành & Tiện ích',
       items: [
-        { name: 'Maintenance', href: '/feedbacks', icon: Wrench },
-        { name: 'Assets', href: '/assets', icon: Boxes },
-        { name: 'Facilities', href: '/facilities', icon: Sparkles },
-        { name: 'Parcels', href: '/parcels', icon: Package },
+        { name: 'Bảo trì & Sự cố', href: '/feedbacks', icon: Wrench },
+        { name: 'Tài sản', href: '/assets', icon: Boxes },
+        { name: 'Tiện ích', href: '/facilities', icon: Sparkles },
+        { name: 'Bưu kiện', href: '/parcels', icon: Package },
       ],
     },
     {
       groupName: 'Cộng đồng & Quản trị',
       items: [
-        { name: 'Announcements', href: '/notifications', icon: Megaphone },
-        { name: 'Polls', href: '/polls', icon: Vote },
-        { name: 'Staff', href: '/staff', icon: ShieldCheck },
-        { name: 'Reports', href: '/reports', icon: BarChart3 },
-        { name: 'Settings', href: '/settings', icon: Settings },
+        { name: 'Bản tin tòa nhà', href: '/announcements', icon: Megaphone },
+        { name: 'Khảo sát ý kiến', href: '/polls', icon: Vote },
+        { name: 'Thông báo hệ thống', href: '/notifications', icon: Bell },
+        { name: 'Nhân viên', href: '/staff', icon: ShieldCheck },
+        { name: 'Báo cáo & Thống kê', href: '/reports', icon: BarChart3 },
+        { name: 'Cài đặt', href: '/settings', icon: Settings },
       ],
     },
   ];
 
   // =========================================================================
-  // 2. NHÂN VIÊN VẬN HÀNH (Staff) Navigation by specific role
+  // 2. NHÂN VIÊN VẬN HÀNH Navigation
   // =========================================================================
   const technicianGroups: NavGroup[] = [
     {
       groupName: 'Kỹ thuật viên',
       items: [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'My Tasks', href: '/tasks', icon: ClipboardList },
-        { name: 'Maintenance', href: '/feedbacks', icon: Wrench },
-        { name: 'Assets', href: '/assets', icon: Boxes },
-        { name: 'Maintenance Schedule', href: '/maintenance-schedule', icon: FileClock },
-        { name: 'Notifications', href: '/notifications', icon: Bell },
+        { name: 'Bảng điều khiển', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Nhiệm vụ của tôi', href: '/tasks', icon: ClipboardList },
+        { name: 'Bảo trì & Sự cố', href: '/feedbacks', icon: Wrench },
+        { name: 'Tài sản', href: '/assets', icon: Boxes },
+        { name: 'Lịch bảo trì', href: '/maintenance-schedule', icon: FileClock },
+        { name: 'Thông báo', href: '/notifications', icon: Bell },
       ],
     },
   ];
@@ -132,13 +132,13 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     {
       groupName: 'An ninh & Cổng vào',
       items: [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Visitor Check-in', href: '/visitors/check-in', icon: QrCode },
-        { name: 'Visitor History', href: '/visitors/history', icon: History },
-        { name: 'Parking', href: '/parking-cards', icon: KeyRound },
-        { name: 'Parking Access Logs', href: '/parking-logs', icon: FileClock },
-        { name: 'Vehicles', href: '/vehicles', icon: Car },
-        { name: 'Notifications', href: '/notifications', icon: Bell },
+        { name: 'Bảng điều khiển', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Đón tiếp khách', href: '/visitors/check-in', icon: QrCode },
+        { name: 'Lịch sử khách', href: '/visitors/history', icon: History },
+        { name: 'Thẻ gửi xe', href: '/parking-cards', icon: KeyRound },
+        { name: 'Lịch sử ra vào xe', href: '/parking-logs', icon: FileClock },
+        { name: 'Phương tiện', href: '/vehicles', icon: Car },
+        { name: 'Thông báo', href: '/notifications', icon: Bell },
       ],
     },
   ];
@@ -147,44 +147,44 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     {
       groupName: 'Lễ tân & Sảnh',
       items: [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Parcels', href: '/parcels', icon: Package },
-        { name: 'Residents', href: '/residents', icon: Users },
-        { name: 'Visitor Overview', href: '/visitors', icon: UserCheck },
-        { name: 'Notifications', href: '/notifications', icon: Bell },
+        { name: 'Bảng điều khiển', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Bưu kiện', href: '/parcels', icon: Package },
+        { name: 'Cư dân', href: '/residents', icon: Users },
+        { name: 'Khách ra vào', href: '/visitors', icon: UserCheck },
+        { name: 'Thông báo', href: '/notifications', icon: Bell },
       ],
     },
   ];
 
   // =========================================================================
-  // 3. CƯ DÂN (Resident) Navigation
+  // 3. CƯ DÂN Navigation
   // =========================================================================
   const residentGroups: NavGroup[] = [
     {
       groupName: 'Căn hộ của tôi',
       items: [
-        { name: 'Home', href: '/home', icon: Home },
-        { name: 'My Apartment', href: '/resident/apartment', icon: Building2 },
-        { name: 'My Family', href: '/resident/family', icon: Users },
+        { name: 'Trang chủ', href: '/home', icon: Home },
+        { name: 'Căn hộ của tôi', href: '/resident/apartment', icon: Building2 },
+        { name: 'Thành viên gia đình', href: '/resident/family', icon: Users },
       ],
     },
     {
-      groupName: 'Dịch vụ Cư dân',
+      groupName: 'Dịch vụ cư dân',
       items: [
-        { name: 'Bills & Payments', href: '/resident/invoices', icon: Receipt },
-        { name: 'Vehicles', href: '/resident/vehicles', icon: Car },
-        { name: 'Maintenance Requests', href: '/resident/feedback', icon: Wrench },
-        { name: 'Facilities', href: '/resident/facilities', icon: Sparkles },
-        { name: 'Visitors', href: '/resident/visitors', icon: UserCheck },
-        { name: 'Parcels', href: '/resident/parcels', icon: Package },
+        { name: 'Hóa đơn & Thanh toán', href: '/resident/invoices', icon: Receipt },
+        { name: 'Phương tiện', href: '/resident/vehicles', icon: Car },
+        { name: 'Yêu cầu bảo trì', href: '/resident/feedback', icon: Wrench },
+        { name: 'Đặt tiện ích', href: '/resident/facilities', icon: Sparkles },
+        { name: 'Đăng ký khách', href: '/resident/visitors', icon: UserCheck },
+        { name: 'Bưu kiện', href: '/resident/parcels', icon: Package },
       ],
     },
     {
       groupName: 'Cộng đồng',
       items: [
-        { name: 'Announcements', href: '/resident/announcements', icon: Megaphone },
-        { name: 'Polls', href: '/resident/polls', icon: Vote },
-        { name: 'Notifications', href: '/resident/notifications', icon: Bell },
+        { name: 'Bản tin cư dân', href: '/resident/announcements', icon: Megaphone },
+        { name: 'Khảo sát ý kiến', href: '/resident/polls', icon: Vote },
+        { name: 'Thông báo', href: '/resident/notifications', icon: Bell },
       ],
     },
   ];
@@ -212,9 +212,9 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
       {/* Sidebar Aside */}
       <aside
         className={cn(
-          'fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-200 ease-in-out md:static shadow-xs',
+          'relative fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-200 ease-in-out md:relative shadow-xs',
           isCollapsed ? 'md:w-[72px]' : 'md:w-64',
-          isMobileOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0'
+          isMobileOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0 md:relative'
         )}
       >
         {/* Header Branding */}
@@ -226,20 +226,20 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
             {!isCollapsed && (
               <div className="flex flex-col truncate">
                 <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-slate-100 uppercase">
-                  Smart Building
+                  Tòa Nhà Thông Minh
                 </span>
                 <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold tracking-wider uppercase">
                   {role === 'ADMIN'
-                    ? 'Super Admin'
+                    ? 'Quản trị viên cấp cao'
                     : role === 'MANAGER'
-                    ? 'Management'
+                    ? 'Ban quản lý'
                     : role === 'STAFF_TECHNICIAN'
-                    ? 'Technician'
+                    ? 'Kỹ thuật viên'
                     : role === 'STAFF_SECURITY'
-                    ? 'Security'
+                    ? 'An ninh bảo vệ'
                     : role === 'STAFF_RECEPTIONIST'
-                    ? 'Receptionist'
-                    : 'Resident Portal'}
+                    ? 'Lễ tân'
+                    : 'Cổng thông tin cư dân'}
                 </span>
               </div>
             )}
@@ -340,27 +340,20 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
           ))}
         </div>
 
-        {/* Desktop Collapse Toggle Footer */}
-        <div className="hidden md:flex p-3 border-t border-slate-200/80 dark:border-slate-800 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleCollapse}
-            className={cn(
-              'w-full text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold cursor-pointer',
-              isCollapsed ? 'justify-center px-0' : 'justify-start'
-            )}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <>
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                <span>Thu gọn menu</span>
-              </>
-            )}
-          </Button>
-        </div>
+        {/* Collapse Toggle Button - Centered Vertically in the Middle of Sidebar */}
+        <button
+          type="button"
+          onClick={toggleCollapse}
+          className="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 h-7 w-7 items-center justify-center rounded-full border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500 shadow-md transition-all cursor-pointer hover:scale-110"
+          title={isCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
+          aria-label="Thu gọn menu"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </button>
       </aside>
     </>
   );

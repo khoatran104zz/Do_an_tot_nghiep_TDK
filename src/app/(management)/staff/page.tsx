@@ -526,7 +526,7 @@ export default function StaffPage() {
   return (
     <div className="space-y-6 pb-12">
       <PageHeader
-        title="Quản lý Đội ngũ Vận hành (Staff Management)"
+        title="Quản lý Đội ngũ Vận hành"
         description="Điều phối phân ca làm việc, quản lý chuyên môn Kỹ thuật, An ninh, Lễ tân và giám sát KPI giải quyết sự vụ của tòa nhà."
       >
         <Button
@@ -764,7 +764,7 @@ export default function StaffPage() {
                 {renderRoleBadge(inspectingMember.role)}
               </div>
               <p className="text-[11px] text-slate-500">
-                Nhân sự tuân thủ nghiêm ngặt chính sách phân quyền vai trò (RBAC). Không được tự ý
+                Nhân sự tuân thủ nghiêm ngặt chính sách phân quyền vai trò. Không được tự ý
                 thay đổi role hoặc vượt quá phạm vi chuyên môn.
               </p>
             </div>
@@ -916,9 +916,9 @@ export default function StaffPage() {
                 });
               }}
             >
-              <option value="STAFF_TECHNICIAN">🛠️ Kỹ thuật viên (Technician)</option>
-              <option value="STAFF_SECURITY">🛡️ Nhân viên an ninh (Security)</option>
-              <option value="STAFF_RECEPTIONIST">🛎️ Nhân viên lễ tân (Receptionist)</option>
+              <option value="STAFF_TECHNICIAN">🛠️ Kỹ thuật viên</option>
+              <option value="STAFF_SECURITY">🛡️ Nhân viên an ninh</option>
+              <option value="STAFF_RECEPTIONIST">🛎️ Nhân viên lễ tân</option>
             </Select>
           </div>
 
@@ -957,7 +957,7 @@ export default function StaffPage() {
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Khu vực / Chốt trực (Zone/Lobby/Gate)
+              Khu vực / Chốt trực
             </label>
             <Input
               placeholder="VD: Cổng chính, Sảnh Tòa A, Điện nước..."
@@ -1014,10 +1014,10 @@ export default function StaffPage() {
               value={editFormData.role}
               onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as Role })}
             >
-              <option value="STAFF_TECHNICIAN">🛠️ Kỹ thuật viên (Technician)</option>
-              <option value="STAFF_SECURITY">🛡️ Nhân viên an ninh (Security)</option>
-              <option value="STAFF_RECEPTIONIST">🛎️ Nhân viên lễ tân (Receptionist)</option>
-              <option value="MANAGER">💼 Ban Quản lý (Manager)</option>
+              <option value="STAFF_TECHNICIAN">🛠️ Kỹ thuật viên</option>
+              <option value="STAFF_SECURITY">🛡️ Nhân viên an ninh</option>
+              <option value="STAFF_RECEPTIONIST">🛎️ Nhân viên lễ tân</option>
+              <option value="MANAGER">💼 Ban Quản lý</option>
             </Select>
           </div>
 
@@ -1054,9 +1054,9 @@ export default function StaffPage() {
                 setEditFormData({ ...editFormData, status: e.target.value as StaffStatus })
               }
             >
-              <option value="ACTIVE">Đang làm việc (ACTIVE)</option>
-              <option value="ON_LEAVE">Nghỉ phép (ON_LEAVE)</option>
-              <option value="SUSPENDED">Tạm khóa (SUSPENDED)</option>
+              <option value="ACTIVE">Đang làm việc</option>
+              <option value="ON_LEAVE">Nghỉ phép</option>
+              <option value="SUSPENDED">Tạm khóa</option>
             </Select>
           </div>
         </div>
@@ -1097,7 +1097,7 @@ export default function StaffPage() {
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Phân công khu vực / Chốt trực (Gate / Lobby / Discipline)
+              Phân công khu vực / Chốt trực
             </label>
             <Input
               placeholder={

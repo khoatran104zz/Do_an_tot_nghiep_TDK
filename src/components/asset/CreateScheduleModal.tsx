@@ -82,7 +82,7 @@ export function CreateScheduleModal({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-bold">
               <CalendarDays className="h-5 w-5 text-indigo-600" />
-              Lập Kế hoạch Bảo trì Phòng ngừa (PM Schedule)
+              Lập Kế hoạch Bảo trì Phòng ngừa
             </DialogTitle>
             <DialogDescription>
               Tạo chu kỳ kiểm tra, bảo dưỡng định kỳ giúp tăng tuổi thọ và độ an toàn của thiết bị.

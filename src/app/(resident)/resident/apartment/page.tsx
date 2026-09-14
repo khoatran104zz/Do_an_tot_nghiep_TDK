@@ -15,7 +15,7 @@ export default function MyApartmentPage() {
     return (
         <div className="space-y-6 pb-12">
             <PageHeader
-                title="Căn hộ của tôi (My Apartment)"
+                title="Căn hộ của tôi"
                 description="Thông tin chi tiết căn hộ, hợp đồng sở hữu/thuê và danh mục thiết bị bàn giao."
             />
 

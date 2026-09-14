@@ -60,7 +60,7 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     if (!session) return apiUnauthorized();
 
     if (session.user.role !== 'ADMIN') {
-      return apiForbidden('Chỉ Quản trị viên (ADMIN) có quyền xóa tiện ích');
+      return apiForbidden('Chỉ Quản trị viên có quyền xóa tiện ích');
     }
 
     const { id } = await context.params;

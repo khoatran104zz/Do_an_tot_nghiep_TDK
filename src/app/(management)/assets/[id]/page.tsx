@@ -225,19 +225,19 @@ export default function AssetDetailPage({ params }: AssetDetailPageProps) {
           items={[
             {
               id: 'schedules',
-              label: 'Kế hoạch Bảo trì Định kỳ (PM)',
+              label: 'Kế hoạch Bảo trì Định kỳ',
               icon: <Calendar className="h-4 w-4" />,
               count: asset.maintenanceSchedules?.length || 0,
             },
             {
               id: 'work-orders',
-              label: 'Phiếu Công việc đã hoàn tất (Work Orders)',
+              label: 'Phiếu Công việc đã hoàn tất',
               icon: <CheckCircle2 className="h-4 w-4" />,
               count: allWorkOrders.length,
             },
             {
               id: 'incidents',
-              label: 'Sự cố & Yêu cầu đột xuất (Reactive)',
+              label: 'Sự cố & Yêu cầu đột xuất',
               icon: <AlertTriangle className="h-4 w-4" />,
               count: asset.feedbacks?.length || 0,
             },

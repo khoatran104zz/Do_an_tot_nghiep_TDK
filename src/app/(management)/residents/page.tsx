@@ -504,7 +504,7 @@ export default function ResidentsPage() {
       </div>
 
       {/* =====================================================================
-          TAB 1: DANH BẠ CƯ DÂN (RESIDENTS DIRECTORY)
+          TAB 1: DANH BẠ CƯ DÂN
           ===================================================================== */}
       {mainTab === 'RESIDENTS' && (
         <div className="space-y-4">
@@ -572,7 +572,7 @@ export default function ResidentsPage() {
       )}
 
       {/* =====================================================================
-          TAB 2: YÊU CẦU CƯ TRÚ CHỜ DUYỆT (PENDING RESIDENCE REQUESTS)
+          TAB 2: YÊU CẦU CƯ TRÚ CHỜ DUYỆT
           ===================================================================== */}
       {mainTab === 'PENDING_REQUESTS' && (
         <div className="space-y-4">
@@ -917,7 +917,7 @@ export default function ResidentsPage() {
         open={Boolean(approvingItem)}
         onOpenChange={(open) => !open && setApprovingItem(null)}
         title={`Phê duyệt yêu cầu: ${approvingItem?.code}?`}
-        description={`Hệ thống sẽ cập nhật trạng thái cư trú của nhân khẩu ${approvingItem?.fullName} và tự động ghi nhận vào Lịch sử Biến động căn hộ (Apartment History).`}
+        description={`Hệ thống sẽ cập nhật trạng thái cư trú của nhân khẩu ${approvingItem?.fullName} và tự động ghi nhận vào Lịch sử Biến động căn hộ .`}
         isLoading={reviewMutation.isPending}
         onConfirm={handleConfirmApprove}
       />

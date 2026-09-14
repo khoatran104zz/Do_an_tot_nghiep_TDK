@@ -170,7 +170,7 @@ export default function AssetsManagementPage() {
           <div className="mt-2 text-2xl font-bold text-rose-900">
             {isStatsLoading ? '...' : stats.overdueMaintenanceCount}
           </div>
-          <p className="text-[11px] text-rose-700 mt-0.5 font-medium">Báo động đỏ (Critical)</p>
+          <p className="text-[11px] text-rose-700 mt-0.5 font-medium">Báo động đỏ</p>
         </div>
       </div>
 

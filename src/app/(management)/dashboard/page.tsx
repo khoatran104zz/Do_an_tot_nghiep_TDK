@@ -238,7 +238,7 @@ export default function SmartApartmentOperationsDashboard() {
       </div>
 
       {/* ===================================================================
-          SMART OPERATIONS — 5 VIỆC CẦN CHÚ Ý HÔM NAY (Top 5 Prioritized)
+          VẬN HÀNH THÔNG MINH — 5 VIỆC CẦN CHÚ Ý HÔM NAY
           =================================================================== */}
       <SmartDashboardAlerts />
 
@@ -415,7 +415,7 @@ export default function SmartApartmentOperationsDashboard() {
       <SmartInsightCards />
 
       {/* ===================================================================
-          SECTION 6 — QUICK ACTIONS (RBAC-aware)
+          SECTION 6 — QUICK ACTIONS
           =================================================================== */}
       <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs bg-slate-50/50 dark:bg-slate-900/40">
         <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
@@ -467,14 +467,14 @@ export default function SmartApartmentOperationsDashboard() {
           SECTION 3 & SECTION 4: REVENUE ANALYTICS & OCCUPANCY DONUT
           =================================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* SECTION 3 — REVENUE ANALYTICS (Revenue vs Collection) */}
+        {/* SECTION 3 — REVENUE ANALYTICS */}
         <Card className="lg:col-span-2 border-slate-200/80 dark:border-slate-800 shadow-2xs">
           <CardHeader className="pb-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-blue-600" />
-                  Doanh thu & Tiến độ Thu phí (Revenue vs Collection)
+                  Doanh thu & Tiến độ Thu phí
                 </CardTitle>
                 <CardDescription className="text-xs mt-0.5">
                   So sánh dòng tiền tổng phát hành hóa đơn và số tiền thực thu về tài khoản
@@ -621,7 +621,7 @@ export default function SmartApartmentOperationsDashboard() {
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
                   <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-blue-600">
-                    Đang ở (Occupied)
+                    Đang ở
                   </span>
                 </div>
                 <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
@@ -637,7 +637,7 @@ export default function SmartApartmentOperationsDashboard() {
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
                   <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-blue-600">
-                    Đang trống (Vacant)
+                    Đang trống
                   </span>
                 </div>
                 <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
@@ -653,7 +653,7 @@ export default function SmartApartmentOperationsDashboard() {
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
                   <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-amber-600">
-                    Bảo dưỡng (Maintenance)
+                    Bảo dưỡng
                   </span>
                 </div>
                 <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
@@ -726,22 +726,22 @@ export default function SmartApartmentOperationsDashboard() {
               <div className="space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 font-bold text-rose-600">
-                    <Flame className="h-3.5 w-3.5" /> Khẩn cấp (Urgent)
+                    <Flame className="h-3.5 w-3.5" /> Khẩn cấp
                   </span>
                   <span className="font-bold">{maintenance.priorityDistribution.URGENT}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 font-semibold text-amber-600">
-                    <AlertCircle className="h-3.5 w-3.5" /> Cao (High)
+                    <AlertCircle className="h-3.5 w-3.5" /> Cao
                   </span>
                   <span className="font-bold">{maintenance.priorityDistribution.HIGH}</span>
                 </div>
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
-                  <span>Trung bình (Medium)</span>
+                  <span>Trung bình</span>
                   <span className="font-bold">{maintenance.priorityDistribution.MEDIUM}</span>
                 </div>
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
-                  <span>Thấp (Low)</span>
+                  <span>Thấp</span>
                   <span className="font-bold">{maintenance.priorityDistribution.LOW}</span>
                 </div>
               </div>
@@ -756,7 +756,7 @@ export default function SmartApartmentOperationsDashboard() {
               <div>
                 <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   <Flame className="h-4 w-4 text-rose-600" />
-                  Sự cố Khẩn cấp & Cần Ưu tiên (Critical Tickets)
+                  Sự cố Khẩn cấp & Cần Ưu tiên
                 </CardTitle>
                 <CardDescription className="text-xs">
                   Các phản ánh sự cố kỹ thuật có độ ưu tiên cao cần xử lý ngay
@@ -829,7 +829,7 @@ export default function SmartApartmentOperationsDashboard() {
               </div>
               <div>
                 <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  Quản lý Phương tiện & Bãi giữ xe (Parking Operations)
+                  Quản lý Phương tiện & Bãi giữ xe
                   {parking.pendingApprovals > 0 && (
                     <span className="inline-flex items-center gap-1 text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2.5 py-0.5 rounded-full animate-pulse">
                       <Clock className="h-3 w-3" /> {parking.pendingApprovals} xe chờ duyệt
@@ -880,7 +880,7 @@ export default function SmartApartmentOperationsDashboard() {
               className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group"
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Ô tô (Cars)</span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Ô tô</span>
                 <span className="h-2 w-2 rounded-full bg-blue-600" />
               </div>
               <div className="text-2xl font-black text-blue-600 dark:text-blue-400">
@@ -895,7 +895,7 @@ export default function SmartApartmentOperationsDashboard() {
               className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all cursor-pointer group"
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Xe máy (Bikes)</span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Xe máy</span>
                 <Bike className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform" />
               </div>
               <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
@@ -969,7 +969,7 @@ export default function SmartApartmentOperationsDashboard() {
                 </div>
                 <div>
                   <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    Lưu lượng Khách Thăm (Visitor Activity)
+                    Lưu lượng Khách Thăm
                   </CardTitle>
                   <CardDescription className="text-xs">Hôm nay: 18 khách đang trong tòa nhà</CardDescription>
                 </div>
@@ -1012,7 +1012,7 @@ export default function SmartApartmentOperationsDashboard() {
                 </div>
                 <div>
                   <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    Độ Thỏa Dụng Tiện Ích (Facility Utilization)
+                    Độ Thỏa Dụng Tiện Ích
                   </CardTitle>
                   <CardDescription className="text-xs">Tỷ lệ sử dụng tiện ích nội khu tuần này: 76.4%</CardDescription>
                 </div>
@@ -1047,13 +1047,13 @@ export default function SmartApartmentOperationsDashboard() {
       </div>
 
       {/* ===================================================================
-          SECTION 7: ACTIVITY FEED (Real-time events from DB)
+          SECTION 7: ACTIVITY FEED
           =================================================================== */}
       <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Activity className="h-4 w-4 text-blue-600" />
-            Nhật ký Hoạt động Vận hành (Live Operations Feed)
+            Nhật ký Hoạt động Vận hành
           </CardTitle>
           <CardDescription className="text-xs">
             Dòng sự kiện ghi nhận giao dịch thanh toán, cập nhật sự cố và thông báo tòa nhà

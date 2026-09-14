@@ -251,6 +251,9 @@ model User {
   createdVisitorPasses    VisitorPass[]       @relation("CreatedVisitorPasses")
   checkedInVisitorPasses  VisitorPass[]       @relation("CheckedInVisitorPasses")
   checkedOutVisitorPasses VisitorPass[]       @relation("CheckedOutVisitorPasses")
+  receivedParcels         ParcelDelivery[]    @relation("ReceivedParcels")
+  handedOverParcels       ParcelDelivery[]    @relation("HandedOverParcels")
+  createdPolls            Poll[]              @relation("CreatedPolls")
 
   @@map("users")
 }
@@ -341,6 +344,8 @@ model Apartment {
   residenceRequests ResidenceRequest[]
   facilityBookings  FacilityBooking[]
   visitorPasses     VisitorPass[]
+  parcels           ParcelDelivery[]
+  pollVotes         PollVote[]
 
   @@index([building])
   @@index([status])
@@ -390,6 +395,8 @@ model Resident {
 
   facilityBookings    FacilityBooking[]
   visitorPasses       VisitorPass[]
+  parcels             ParcelDelivery[]
+  pollVotes           PollVote[]
 
   contracts Contract[]
   feedbacks Feedback[]
@@ -562,20 +569,30 @@ model TicketComment {
 
 // 8. Notifications
 model Notification {
-  id         String   @id @default(cuid())
-  title      String
-  content    String
-  isGlobal   Boolean  @default(true)
-  targetRole Role?
-  senderId   String
-  sender     User     @relation("SentNotifications", fields: [senderId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
+  id                String                   @id @default(cuid())
+  title             String
+  content           String
+  isGlobal          Boolean                  @default(true)
+  targetRole        Role?
+  category          NotificationCategory     @default(GENERAL)
+  priority          NotificationPriority     @default(NORMAL)
+  targetScope       NotificationTargetScope  @default(ALL)
+  publishAt         DateTime?
+  expiresAt         DateTime?
+  relatedEntityType String?
+  relatedEntityId   String?
+  senderId          String
+  sender            User                     @relation("SentNotifications", fields: [senderId], references: [id], onDelete: Cascade)
+  createdAt         DateTime                 @default(now())
 
-  apartments NotificationApartment[]
-  reads      NotificationRead[]
+  apartments        NotificationApartment[]
+  reads             NotificationRead[]
 
   @@index([targetRole])
   @@index([createdAt])
+  @@index([category])
+  @@index([priority])
+  @@index([publishAt])
   @@map("notifications")
 }
 
@@ -908,4 +925,157 @@ model VisitorPass {
   @@index([visitDate])
   @@index([createdById])
   @@map("visitor_passes")
+}
+
+
+// ============================================================================
+// PARCEL MANAGEMENT (BƯU KIỆN & GIAO NHẬN)
+// ============================================================================
+
+enum ParcelStatus {
+  RECEIVED
+  NOTIFIED
+  COLLECTED
+  RETURNED
+  EXPIRED
+  CANCELLED
+}
+
+model ParcelDelivery {
+  id              String        @id @default(cuid())
+  apartmentId     String
+  apartment       Apartment     @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  recipientId     String?
+  recipient       Resident?     @relation(fields: [recipientId], references: [id], onDelete: SetNull)
+  recipientName   String
+  recipientPhone  String?
+  carrier         String
+  trackingNumber  String?
+  pickupCode      String
+  photoUrl        String?
+  location        String?
+  note            String?
+  status          ParcelStatus  @default(RECEIVED)
+  receivedAt      DateTime      @default(now())
+  notifiedAt      DateTime?
+  collectedAt     DateTime?
+  receivedById    String?
+  receivedBy      User?         @relation("ReceivedParcels", fields: [receivedById], references: [id], onDelete: SetNull)
+  collectedById   String?
+  collectedBy     User?         @relation("HandedOverParcels", fields: [collectedById], references: [id], onDelete: SetNull)
+  collectedByName String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([apartmentId])
+  @@index([recipientId])
+  @@index([status])
+  @@index([pickupCode])
+  @@index([receivedAt])
+  @@map("parcel_deliveries")
+}
+
+
+// ============================================================================
+// COMMUNICATION & POLL / VOTING ENUMS & MODELS
+// ============================================================================
+
+enum NotificationCategory {
+  GENERAL
+  EMERGENCY
+  MAINTENANCE
+  BILLING
+  EVENT
+  PARCEL
+  VISITOR
+  POLL
+  SYSTEM
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+  EMERGENCY
+}
+
+enum NotificationTargetScope {
+  ALL
+  BUILDING
+  BLOCK
+  FLOOR
+  APARTMENT
+}
+
+enum PollStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  CLOSED
+  CANCELLED
+}
+
+enum PollTargetScope {
+  ALL_APARTMENTS
+  BUILDING
+  BLOCK
+  FLOOR
+  SELECTED_APARTMENTS
+}
+
+model Poll {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  status      PollStatus      @default(DRAFT)
+  targetScope PollTargetScope @default(ALL_APARTMENTS)
+  targetValue String?
+  startAt     DateTime        @default(now())
+  endAt       DateTime
+  createdById String
+  createdBy   User            @relation("CreatedPolls", fields: [createdById], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  options     PollOption[]
+  votes       PollVote[]
+
+  @@index([status])
+  @@index([startAt])
+  @@index([endAt])
+  @@index([createdById])
+  @@map("polls")
+}
+
+model PollOption {
+  id           String     @id @default(cuid())
+  pollId       String
+  poll         Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  label        String
+  displayOrder Int        @default(0)
+  votes        PollVote[]
+
+  @@index([pollId])
+  @@map("poll_options")
+}
+
+model PollVote {
+  id              String      @id @default(cuid())
+  pollId          String
+  poll            Poll        @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId        String
+  option          PollOption  @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  apartmentId     String
+  apartment       Apartment   @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  voterResidentId String?
+  voterResident   Resident?   @relation(fields: [voterResidentId], references: [id], onDelete: SetNull)
+  createdAt       DateTime    @default(now())
+
+  // RÀNG BUỘC CỐT LÕI: MỖI CĂN HỘ CHỈ ĐƯỢC TÍNH 1 PHIẾU DUY NHẤT
+  @@unique([pollId, apartmentId])
+  @@index([pollId])
+  @@index([apartmentId])
+  @@index([optionId])
+  @@map("poll_votes")
 }

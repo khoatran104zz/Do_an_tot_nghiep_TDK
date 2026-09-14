@@ -6,8 +6,8 @@ import { History, Car, ShieldCheck, AlertCircle, Scan, ArrowDownRight, ArrowUpRi
 export default function ParkingLogsPage() {
     return (
         <SmartModulePlaceholder
-            title="Nhật ký quẹt thẻ & vào ra bãi xe (Parking Access Logs)"
-            description="Giám sát luồng xe vào ra tự động qua đầu đọc thẻ RFID và camera nhận diện biển số (ANPR) tại các làn hầm B1, B2."
+            title="Nhật ký quẹt thẻ & vào ra bãi xe"
+            description="Giám sát luồng xe vào ra tự động qua đầu đọc thẻ RFID và camera nhận diện biển số tại các làn hầm B1, B2."
             category="An ninh & Bãi đỗ xe"
             badgeText="RFID & ANPR Gate Logs"
             stats={[

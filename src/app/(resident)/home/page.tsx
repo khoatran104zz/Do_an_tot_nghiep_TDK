@@ -729,7 +729,7 @@ export default function ResidentHomePage() {
                 </div>
                 <div>
                   <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                    Khách thăm căn hộ (Visitors)
+                    Khách thăm căn hộ
                   </CardTitle>
                   <CardDescription className="text-xs">Đăng ký trước & tạo mã QR mở cổng bảo vệ</CardDescription>
                 </div>
@@ -771,7 +771,7 @@ export default function ResidentHomePage() {
                 </div>
                 <div>
                   <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                    Bưu kiện chờ nhận (Parcels)
+                    Bưu kiện chờ nhận
                   </CardTitle>
                   <CardDescription className="text-xs">Bưu phẩm của căn hộ lưu giữ tại quầy lễ tân</CardDescription>
                 </div>
@@ -811,7 +811,7 @@ export default function ResidentHomePage() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Tiện Ích Nội Khu Tòa Nhà (Facilities)
+              Tiện Ích Nội Khu Tòa Nhà
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Thời gian mở cửa và điều kiện sử dụng dành riêng cho cư dân
@@ -1089,7 +1089,7 @@ export default function ResidentHomePage() {
               <div>
                 <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Loại hợp đồng</span>
                 <span className="font-bold text-slate-900 dark:text-slate-100">
-                  {apartment.activeContract.type === 'SALE' ? 'Mua bán' : 'Cho thuê (RENT)'}
+                  {apartment.activeContract.type === 'SALE' ? 'Mua bán' : 'Cho thuê'}
                 </span>
               </div>
               <div>

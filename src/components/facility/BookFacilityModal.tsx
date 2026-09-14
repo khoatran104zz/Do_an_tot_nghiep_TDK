@@ -157,7 +157,7 @@ export function BookFacilityModal({
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-blue-600" />
-                <span>Khung giờ khả dụng (Time Slots):</span>
+                <span>Khung giờ khả dụng:</span>
               </label>
               <div className="flex items-center gap-3 text-[11px] text-slate-500">
                 <span className="flex items-center gap-1">
