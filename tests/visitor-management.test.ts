@@ -7,20 +7,19 @@ import { VisitorStatus, Role } from '@prisma/client';
 
 test('Visitor Management & QR Check-in Module Test Suite', async (t) => {
   // Setup test context
-  const testApartment = await prisma.apartment.findFirst({
-    include: { residents: true },
+  const residentRecord = await prisma.resident.findFirst({
+    where: { userId: { not: null }, apartmentId: { not: null } },
+    include: { user: true, apartment: { include: { residents: true } } },
   });
-  assert.ok(testApartment, 'Should have at least one apartment');
+  assert.ok(residentRecord && residentRecord.user && residentRecord.apartment, 'Should have resident with apartment');
+
+  const testApartment = residentRecord.apartment;
+  const residentUser = residentRecord.user;
 
   const securityUser = await prisma.user.findFirst({
     where: { role: Role.STAFF_SECURITY },
   });
   assert.ok(securityUser, 'Should have STAFF_SECURITY user');
-
-  const residentUser = await prisma.user.findFirst({
-    where: { role: Role.RESIDENT },
-  });
-  assert.ok(residentUser, 'Should have RESIDENT user');
 
   const adminUser = await prisma.user.findFirst({
     where: { role: Role.ADMIN },

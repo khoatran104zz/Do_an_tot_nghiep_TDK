@@ -4,6 +4,12 @@ import {
   CreateApartmentDto,
   UpdateApartmentDto,
   CreateApartmentHistoryDto,
+  CreateBuildingDto,
+  UpdateBuildingDto,
+  CreateBlockDto,
+  UpdateBlockDto,
+  CreateFloorDto,
+  UpdateFloorDto,
 } from './apartment.types';
 import { Prisma, ApartmentStatus, ApartmentHistoryEvent } from '@prisma/client';
 
@@ -12,9 +18,11 @@ export class ApartmentRepository {
     const {
       search,
       building,
+      buildingId,
       block,
       blockId,
       floor,
+      floorId,
       floorNumber,
       status,
       page = 1,
@@ -33,11 +41,15 @@ export class ApartmentRepository {
       ];
     }
 
-    if (building) {
+    if (buildingId) {
+      where.buildingId = buildingId;
+    } else if (building) {
       where.building = building;
     }
 
-    if (block) {
+    if (blockId) {
+      where.blockId = blockId;
+    } else if (block) {
       where.OR = [
         ...(where.OR || []),
         { building: { contains: block, mode: 'insensitive' } },
@@ -46,13 +58,13 @@ export class ApartmentRepository {
       ];
     }
 
-    if (blockId) {
-      where.blockId = blockId;
-    }
-
-    const targetFloor = floorNumber !== undefined ? floorNumber : floor;
-    if (targetFloor !== undefined && !isNaN(targetFloor)) {
-      where.floor = targetFloor;
+    if (floorId) {
+      where.floorId = floorId;
+    } else {
+      const targetFloor = floorNumber !== undefined ? floorNumber : floor;
+      if (targetFloor !== undefined && !isNaN(targetFloor)) {
+        where.floor = targetFloor;
+      }
     }
 
     if (status) {
@@ -88,6 +100,9 @@ export class ApartmentRepository {
           },
           floorRef: {
             select: { id: true, floorNumber: true, name: true },
+          },
+          buildingRef: {
+            select: { id: true, code: true, name: true },
           },
           _count: { select: { residents: true, contracts: true, vehicles: true } },
         },
@@ -136,17 +151,25 @@ export class ApartmentRepository {
           orderBy: { createdAt: 'desc' },
         },
         invoices: {
-          take: 5,
+          take: 10,
           orderBy: { createdAt: 'desc' },
         },
         feedbacks: {
-          take: 5,
+          take: 10,
           orderBy: { createdAt: 'desc' },
         },
         vehicles: true,
+        visitorPasses: {
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+        },
+        parcels: {
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+        },
         history: {
           orderBy: { createdAt: 'desc' },
-          take: 20,
+          take: 30,
         },
         block: true,
         floorRef: true,
@@ -183,20 +206,81 @@ export class ApartmentRepository {
   }
 
   async create(data: CreateApartmentDto) {
+    let buildingName = data.building;
+    let floorNumber = data.floor;
+    let buildingId = data.buildingId;
+    let blockId = data.blockId;
+    let floorId = data.floorId;
+
+    // Resolve hierarchy links if floorId is specified
+    if (floorId) {
+      const floorRecord = await prisma.floor.findUnique({
+        where: { id: floorId },
+        include: { block: true },
+      });
+      if (floorRecord) {
+        floorNumber = floorRecord.floorNumber;
+        blockId = floorRecord.blockId;
+        buildingId = floorRecord.block.buildingId;
+        if (!buildingName) {
+          buildingName = floorRecord.block.name;
+        }
+      }
+    }
+
     return prisma.apartment.create({
       data: {
-        ...data,
         code: data.code.trim().toUpperCase(),
+        building: buildingName || 'Tòa A',
+        floor: floorNumber !== undefined ? floorNumber : 1,
+        bedrooms: data.bedrooms || 2,
+        bathrooms: data.bathrooms || 2,
+        area: data.area,
+        status: data.status || ApartmentStatus.VACANT,
+        note: data.note || null,
+        buildingId: buildingId || null,
+        blockId: blockId || null,
+        floorId: floorId || null,
       },
     });
   }
 
   async update(id: string, data: UpdateApartmentDto) {
+    let resolvedBuilding = data.building;
+    let resolvedFloor = data.floor;
+    let resolvedBuildingId = data.buildingId;
+    let resolvedBlockId = data.blockId;
+    let resolvedFloorId = data.floorId;
+
+    if (data.floorId) {
+      const floorRecord = await prisma.floor.findUnique({
+        where: { id: data.floorId },
+        include: { block: true },
+      });
+      if (floorRecord) {
+        resolvedFloor = floorRecord.floorNumber;
+        resolvedBlockId = floorRecord.blockId;
+        resolvedBuildingId = floorRecord.block.buildingId;
+        if (!resolvedBuilding) {
+          resolvedBuilding = floorRecord.block.name;
+        }
+      }
+    }
+
     return prisma.apartment.update({
       where: { id },
       data: {
-        ...data,
         ...(data.code && { code: data.code.trim().toUpperCase() }),
+        ...(resolvedBuilding !== undefined && { building: resolvedBuilding }),
+        ...(resolvedFloor !== undefined && { floor: resolvedFloor }),
+        ...(data.bedrooms !== undefined && { bedrooms: data.bedrooms }),
+        ...(data.bathrooms !== undefined && { bathrooms: data.bathrooms }),
+        ...(data.area !== undefined && { area: data.area }),
+        ...(data.status !== undefined && { status: data.status }),
+        ...(data.note !== undefined && { note: data.note }),
+        ...(resolvedBuildingId !== undefined && { buildingId: resolvedBuildingId }),
+        ...(resolvedBlockId !== undefined && { blockId: resolvedBlockId }),
+        ...(resolvedFloorId !== undefined && { floorId: resolvedFloorId }),
       },
     });
   }
@@ -205,6 +289,234 @@ export class ApartmentRepository {
     return prisma.apartment.delete({
       where: { id },
     });
+  }
+
+  // --- Building Methods ---
+  async findBuildings() {
+    return prisma.building.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        blocks: {
+          orderBy: { code: 'asc' },
+          include: {
+            _count: { select: { floors: true, apartments: true } },
+          },
+        },
+        _count: { select: { blocks: true, apartments: true } },
+      },
+    });
+  }
+
+  async findBuildingById(id: string) {
+    return prisma.building.findUnique({
+      where: { id },
+      include: {
+        blocks: {
+          orderBy: { code: 'asc' },
+          include: {
+            floors: {
+              orderBy: { floorNumber: 'asc' },
+              include: {
+                _count: { select: { apartments: true } },
+              },
+            },
+            _count: { select: { floors: true, apartments: true } },
+          },
+        },
+        _count: { select: { blocks: true, apartments: true } },
+      },
+    });
+  }
+
+  async createBuilding(data: CreateBuildingDto) {
+    return prisma.building.create({
+      data: {
+        code: data.code.trim().toUpperCase(),
+        name: data.name.trim(),
+        address: data.address?.trim() || null,
+        description: data.description?.trim() || null,
+      },
+    });
+  }
+
+  async updateBuilding(id: string, data: UpdateBuildingDto) {
+    return prisma.building.update({
+      where: { id },
+      data: {
+        ...(data.code && { code: data.code.trim().toUpperCase() }),
+        ...(data.name && { name: data.name.trim() }),
+        ...(data.address !== undefined && { address: data.address?.trim() || null }),
+        ...(data.description !== undefined && { description: data.description?.trim() || null }),
+      },
+    });
+  }
+
+  async deleteBuilding(id: string) {
+    const building = await prisma.building.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { blocks: true, apartments: true } },
+      },
+    });
+    if (!building) throw new Error('Không tìm thấy tòa nhà để xóa');
+    if (building._count.blocks > 0 || building._count.apartments > 0) {
+      throw new Error('Không thể xóa tòa nhà khi vẫn còn các khối tháp hoặc căn hộ trực thuộc!');
+    }
+    return prisma.building.delete({ where: { id } });
+  }
+
+  // --- Block Methods ---
+  async findBlocks(buildingId?: string) {
+    const where: Prisma.BlockWhereInput = {};
+    if (buildingId) where.buildingId = buildingId;
+    return prisma.block.findMany({
+      where,
+      orderBy: { code: 'asc' },
+      include: {
+        building: { select: { id: true, code: true, name: true } },
+        floors: {
+          orderBy: { floorNumber: 'asc' },
+          include: {
+            _count: { select: { apartments: true } },
+          },
+        },
+        _count: { select: { floors: true, apartments: true } },
+      },
+    });
+  }
+
+  async findBlockById(id: string) {
+    return prisma.block.findUnique({
+      where: { id },
+      include: {
+        building: true,
+        floors: {
+          orderBy: { floorNumber: 'asc' },
+          include: {
+            _count: { select: { apartments: true } },
+          },
+        },
+        _count: { select: { floors: true, apartments: true } },
+      },
+    });
+  }
+
+  async createBlock(data: CreateBlockDto) {
+    return prisma.block.create({
+      data: {
+        buildingId: data.buildingId,
+        code: data.code.trim().toUpperCase(),
+        name: data.name.trim(),
+        totalFloors: data.totalFloors || 25,
+      },
+    });
+  }
+
+  async updateBlock(id: string, data: UpdateBlockDto) {
+    return prisma.block.update({
+      where: { id },
+      data: {
+        ...(data.code && { code: data.code.trim().toUpperCase() }),
+        ...(data.name && { name: data.name.trim() }),
+        ...(data.totalFloors !== undefined && { totalFloors: data.totalFloors }),
+      },
+    });
+  }
+
+  async deleteBlock(id: string) {
+    const block = await prisma.block.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { floors: true, apartments: true } },
+      },
+    });
+    if (!block) throw new Error('Không tìm thấy khối tháp');
+    if (block._count.floors > 0 || block._count.apartments > 0) {
+      throw new Error('Không thể xóa khối tháp khi vẫn còn tầng hoặc căn hộ!');
+    }
+    return prisma.block.delete({ where: { id } });
+  }
+
+  // --- Floor Methods ---
+  async findFloors(blockId?: string) {
+    const where: Prisma.FloorWhereInput = {};
+    if (blockId) where.blockId = blockId;
+    return prisma.floor.findMany({
+      where,
+      orderBy: { floorNumber: 'asc' },
+      include: {
+        block: {
+          include: {
+            building: { select: { id: true, code: true, name: true } },
+          },
+        },
+        _count: { select: { apartments: true } },
+      },
+    });
+  }
+
+  async findFloorById(id: string) {
+    return prisma.floor.findUnique({
+      where: { id },
+      include: {
+        block: {
+          include: {
+            building: true,
+          },
+        },
+        apartments: {
+          orderBy: { code: 'asc' },
+          include: {
+            residents: {
+              select: { id: true, fullName: true, phone: true, status: true, relationshipToOwner: true },
+            },
+            invoices: {
+              where: { status: { in: ['UNPAID', 'OVERDUE'] } },
+              select: { id: true, totalAmount: true, status: true },
+            },
+            feedbacks: {
+              where: { status: { in: ['NEW', 'ASSIGNED', 'PROCESSING'] } },
+              select: { id: true, status: true, priority: true, title: true },
+            },
+          },
+        },
+        _count: { select: { apartments: true } },
+      },
+    });
+  }
+
+  async createFloor(data: CreateFloorDto) {
+    return prisma.floor.create({
+      data: {
+        blockId: data.blockId,
+        floorNumber: data.floorNumber,
+        name: data.name.trim(),
+      },
+    });
+  }
+
+  async updateFloor(id: string, data: UpdateFloorDto) {
+    return prisma.floor.update({
+      where: { id },
+      data: {
+        ...(data.floorNumber !== undefined && { floorNumber: data.floorNumber }),
+        ...(data.name && { name: data.name.trim() }),
+      },
+    });
+  }
+
+  async deleteFloor(id: string) {
+    const floor = await prisma.floor.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { apartments: true } },
+      },
+    });
+    if (!floor) throw new Error('Không tìm thấy tầng');
+    if (floor._count.apartments > 0) {
+      throw new Error('Không thể xóa tầng khi vẫn còn căn hộ trực thuộc!');
+    }
+    return prisma.floor.delete({ where: { id } });
   }
 
   async getBuildings() {
@@ -217,9 +529,7 @@ export class ApartmentRepository {
   }
 
   async getHierarchy() {
-    // Make sure database has hierarchy structure initialized
-    await this.bootstrapHierarchy();
-
+    // Pure Read-only query
     const buildings = await prisma.building.findMany({
       include: {
         blocks: {
@@ -251,7 +561,42 @@ export class ApartmentRepository {
       },
     });
 
-    return buildings;
+    if (buildings.length > 0) {
+      return buildings;
+    }
+
+    // Fallback: If DB hierarchy is empty, initialize once safely
+    await this.bootstrapHierarchy();
+    return prisma.building.findMany({
+      include: {
+        blocks: {
+          orderBy: { code: 'asc' },
+          include: {
+            floors: {
+              orderBy: { floorNumber: 'asc' },
+              include: {
+                apartments: {
+                  orderBy: { code: 'asc' },
+                  include: {
+                    residents: {
+                      select: { id: true, fullName: true, phone: true, relationshipToOwner: true, status: true },
+                    },
+                    invoices: {
+                      where: { status: { in: ['UNPAID', 'OVERDUE'] } },
+                      select: { id: true, totalAmount: true, status: true },
+                    },
+                    feedbacks: {
+                      where: { status: { in: ['NEW', 'ASSIGNED', 'PROCESSING'] } },
+                      select: { id: true, status: true, priority: true, title: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
   }
 
   async getHistory(apartmentId: string) {
@@ -279,150 +624,129 @@ export class ApartmentRepository {
   }
 
   async bootstrapHierarchy() {
-    // 1. Ensure master building exists
-    let defaultBuilding = await prisma.building.findFirst();
-    if (!defaultBuilding) {
-      defaultBuilding = await prisma.building.create({
-        data: {
-          code: 'SMART-CITY',
-          name: 'Tổ hợp Chung cư SmartCity Landmark',
-          address: 'Số 108 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
-          description: 'Khu phức hợp căn hộ thông minh cao cấp tích hợp IoT & BMS',
-        },
-      });
-    }
+    try {
+      // 1. Ensure master building exists
+      let defaultBuilding = await prisma.building.findFirst();
+      if (!defaultBuilding) {
+        defaultBuilding = await prisma.building.create({
+          data: {
+            code: 'SMART-CITY',
+            name: 'Tổ hợp Chung cư SmartCity Landmark',
+            address: 'Số 108 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+            description: 'Khu phức hợp căn hộ thông minh cao cấp tích hợp IoT & BMS',
+          },
+        });
+      }
 
-    // 2. Fetch all apartments
-    const apartments = await prisma.apartment.findMany();
+      // 2. Fetch all apartments
+      const apartments = await prisma.apartment.findMany();
 
-    // Map each unique building name to a Block
-    const blockCache: Record<string, any> = {};
-    const floorCache: Record<string, any> = {};
+      // Map each unique building name to a Block
+      const towerConfigs = [
+        { code: 'BLOCK-A', name: 'Tháp A (Sky Tower)', totalFloors: 15 },
+        { code: 'BLOCK-B', name: 'Tháp B (Ocean Tower)', totalFloors: 25 },
+        { code: 'BLOCK-C', name: 'Tháp C (Garden Tower)', totalFloors: 10 },
+      ];
 
-    for (const apt of apartments) {
-      const blockCode = apt.building.includes('A')
-        ? 'BLOCK-A'
-        : apt.building.includes('B')
-        ? 'BLOCK-B'
-        : 'BLOCK-C';
+      const blockCache: Record<string, any> = {};
+      const floorCache: Record<string, any> = {};
 
-      const blockName = apt.building.includes('A')
-        ? 'Tháp A (Sky Tower)'
-        : apt.building.includes('B')
-        ? 'Tháp B (Ocean Tower)'
-        : 'Tháp C (Garden Tower)';
-
-      let block = blockCache[blockCode];
-      if (!block) {
-        block = await prisma.block.upsert({
+      for (const t of towerConfigs) {
+        const block = await prisma.block.upsert({
           where: {
             buildingId_code: {
               buildingId: defaultBuilding.id,
-              code: blockCode,
+              code: t.code,
             },
           },
-          update: {},
+          update: {
+            name: t.name,
+            totalFloors: t.totalFloors,
+          },
           create: {
             buildingId: defaultBuilding.id,
-            code: blockCode,
-            name: blockName,
-            totalFloors: 25,
+            code: t.code,
+            name: t.name,
+            totalFloors: t.totalFloors,
           },
         });
-        blockCache[blockCode] = block;
-      }
+        blockCache[t.code] = block;
 
-      const floorKey = `${block.id}_${apt.floor}`;
-      let floor = floorCache[floorKey];
-      if (!floor) {
-        floor = await prisma.floor.upsert({
-          where: {
-            blockId_floorNumber: {
+        // Ensure all floors 1 to totalFloors exist
+        for (let f = 1; f <= t.totalFloors; f++) {
+          const floor = await prisma.floor.upsert({
+            where: {
+              blockId_floorNumber: {
+                blockId: block.id,
+                floorNumber: f,
+              },
+            },
+            update: {},
+            create: {
               blockId: block.id,
-              floorNumber: apt.floor,
-            },
-          },
-          update: {},
-          create: {
-            blockId: block.id,
-            floorNumber: apt.floor,
-            name: `Tầng ${apt.floor.toString().padStart(2, '0')}`,
-          },
-        });
-        floorCache[floorKey] = floor;
-      }
-
-      // If apartment not yet linked to hierarchy, update it
-      if (!apt.blockId || !apt.floorId || !apt.buildingId) {
-        await prisma.apartment.update({
-          where: { id: apt.id },
-          data: {
-            buildingId: defaultBuilding.id,
-            blockId: block.id,
-            floorId: floor.id,
-          },
-        });
-      }
-
-      // Check if sample history exists, if not seed initial history
-      const historyCount = await prisma.apartmentHistory.count({
-        where: { apartmentId: apt.id },
-      });
-
-      if (historyCount === 0) {
-        if (apt.status === ApartmentStatus.OCCUPIED) {
-          await prisma.apartmentHistory.createMany({
-            data: [
-              {
-                apartmentId: apt.id,
-                event: ApartmentHistoryEvent.OWNER_TRANSFER,
-                title: 'Bàn giao căn hộ cho chủ sở hữu',
-                description: `Bàn giao chìa khóa và hồ sơ kỹ thuật căn hộ ${apt.code}`,
-                performedBy: 'Ban Quản Lý Tòa Nhà',
-                createdAt: new Date(Date.now() - 90 * 86400000),
-              },
-              {
-                apartmentId: apt.id,
-                event: ApartmentHistoryEvent.STATUS_CHANGE,
-                title: 'Chuyển trạng thái sang Đang ở (OCCUPIED)',
-                description: 'Cư dân hoàn tất thủ tục đăng ký tạm trú và dọn vào sinh sống',
-                fromStatus: ApartmentStatus.VACANT,
-                toStatus: ApartmentStatus.OCCUPIED,
-                performedBy: 'Ban Quản Lý Tòa Nhà',
-                createdAt: new Date(Date.now() - 60 * 86400000),
-              },
-            ],
-          });
-        } else if (apt.status === ApartmentStatus.UNDER_MAINTENANCE) {
-          await prisma.apartmentHistory.create({
-            data: {
-              apartmentId: apt.id,
-              event: ApartmentHistoryEvent.STATUS_CHANGE,
-              title: 'Chuyển trạng thái sang Bảo dưỡng (UNDER_MAINTENANCE)',
-              description: 'Bảo dưỡng và chống thấm theo kế hoạch kỹ thuật định kỳ',
-              fromStatus: ApartmentStatus.OCCUPIED,
-              toStatus: ApartmentStatus.UNDER_MAINTENANCE,
-              performedBy: 'Kỹ thuật viên trưởng',
-              createdAt: new Date(Date.now() - 5 * 86400000),
+              floorNumber: f,
+              name: `Tầng ${f.toString().padStart(2, '0')}`,
             },
           });
-        } else {
-          await prisma.apartmentHistory.create({
-            data: {
-              apartmentId: apt.id,
-              event: ApartmentHistoryEvent.STATUS_CHANGE,
-              title: 'Căn hộ sẵn sàng đón cư dân (VACANT)',
-              description: 'Nghiệm thu hoàn thiện nội thất và sẵn sàng bàn giao',
-              fromStatus: ApartmentStatus.UNDER_MAINTENANCE,
-              toStatus: ApartmentStatus.VACANT,
-              performedBy: 'Ban Quản Lý Tòa Nhà',
-              createdAt: new Date(Date.now() - 30 * 86400000),
-            },
-          });
+          floorCache[`${block.id}_${f}`] = floor;
         }
       }
+
+      for (const apt of apartments) {
+        const blockCode = apt.building.includes('A')
+          ? 'BLOCK-A'
+          : apt.building.includes('B')
+          ? 'BLOCK-B'
+          : 'BLOCK-C';
+
+        let block = blockCache[blockCode];
+        if (!block) {
+          block = blockCache['BLOCK-A'];
+        }
+
+        const floorKey = `${block.id}_${apt.floor}`;
+        let floor = floorCache[floorKey];
+        if (!floor) {
+          floor = await prisma.floor.upsert({
+            where: {
+              blockId_floorNumber: {
+                blockId: block.id,
+                floorNumber: apt.floor,
+              },
+            },
+            update: {},
+            create: {
+              blockId: block.id,
+              floorNumber: apt.floor,
+              name: `Tầng ${apt.floor.toString().padStart(2, '0')}`,
+            },
+          });
+          floorCache[floorKey] = floor;
+        }
+
+        // If apartment not yet linked to hierarchy, update it safely
+        if (!apt.blockId || !apt.floorId || !apt.buildingId) {
+          try {
+            await prisma.apartment.update({
+              where: { id: apt.id },
+              data: {
+                buildingId: defaultBuilding.id,
+                blockId: block.id,
+                floorId: floor.id,
+              },
+            });
+          } catch {
+            // Ignore if apartment was concurrently deleted
+          }
+        }
+      }
+      return { success: true, message: 'Đồng bộ cấu trúc phân cấp thành công' };
+    } catch (error: any) {
+      console.error('[ApartmentRepository] Error in bootstrapHierarchy:', error);
+      return { success: false, message: error.message };
     }
   }
 }
 
 export const apartmentRepository = new ApartmentRepository();
+

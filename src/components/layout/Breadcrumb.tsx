@@ -23,7 +23,11 @@ const routeLabels: Record<string, { label: string; parent?: string }> = {
 
 export function Breadcrumb({ className }: { className?: string }) {
   const pathname = usePathname();
-  const currentRoute = routeLabels[pathname] || { label: 'Tổng quan' };
+  const currentRoute =
+    routeLabels[pathname] ||
+    (pathname.startsWith('/apartments/')
+      ? { label: 'Chi tiết Căn hộ', parent: 'Quản lý Căn hộ' }
+      : { label: 'Tổng quan' });
   const isResident = pathname.startsWith('/home') || pathname.startsWith('/resident');
   const homeHref = isResident ? '/home' : '/dashboard';
 

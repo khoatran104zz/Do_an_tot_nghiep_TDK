@@ -27,6 +27,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog } from '@/components/ui/dialog';
 import { VISITOR_STATUS_MAP } from '@/modules/visitor/visitor.constants';
 import {
   useVisitorPasses,
@@ -425,30 +426,23 @@ export default function VisitorsManagementPage() {
       </Card>
 
       {/* Pass Detail Modal */}
-      {selectedPass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div className="relative w-full max-w-2xl my-8">
-            <VisitorPassCard
-              pass={selectedPass}
-              onCancel={async (id) => {
-                await cancelMutation.mutateAsync(id);
-                setSelectedPass(null);
-                refetch();
-              }}
-              isCancelling={cancelMutation.isPending}
-            />
-            <div className="mt-3 flex justify-center">
-              <Button
-                variant="outline"
-                onClick={() => setSelectedPass(null)}
-                className="bg-card text-foreground"
-              >
-                Đóng cửa sổ
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={Boolean(selectedPass)}
+        onOpenChange={(open) => !open && setSelectedPass(null)}
+        className="max-w-2xl p-0 overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xl"
+      >
+        {selectedPass && (
+          <VisitorPassCard
+            pass={selectedPass}
+            onCancel={async (id) => {
+              await cancelMutation.mutateAsync(id);
+              setSelectedPass(null);
+              refetch();
+            }}
+            isCancelling={cancelMutation.isPending}
+          />
+        )}
+      </Dialog>
 
       {/* Create Pass Modal */}
       <CreateVisitorModal

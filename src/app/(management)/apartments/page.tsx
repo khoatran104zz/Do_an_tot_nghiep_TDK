@@ -45,7 +45,12 @@ import {
   X,
   Home,
   User,
+  FolderTree,
+  RefreshCw,
+  ExternalLink,
 } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   useApartments,
   useApartmentHierarchy,
@@ -54,14 +59,55 @@ import {
   useUpdateApartment,
   useDeleteApartment,
   useCreateApartmentHistory,
+  useBuildings,
+  useCreateBuilding,
+  useUpdateBuilding,
+  useDeleteBuilding,
+  useCreateBlock,
+  useUpdateBlock,
+  useDeleteBlock,
+  useCreateFloor,
+  useUpdateFloor,
+  useDeleteFloor,
+  useBootstrapHierarchy,
 } from '@/hooks/use-apartments';
 import { ApartmentStatus, ApartmentHistoryEvent } from '@prisma/client';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
+import { PropertyTree, SelectedNode } from '@/components/property/PropertyTree';
+import { BuildingDetailCard } from '@/components/property/BuildingDetailCard';
+import { BlockDetailCard } from '@/components/property/BlockDetailCard';
+import { FloorDetailCard } from '@/components/property/FloorDetailCard';
+import {
+  BuildingFormModal,
+  BlockFormModal,
+  FloorFormModal,
+  ApartmentFormModal,
+} from '@/components/property/PropertyModals';
 
 export default function ApartmentsPage() {
-  // View mode switcher: 'LIST' or 'FLOOR_PLAN'
-  const [viewMode, setViewMode] = useState<'LIST' | 'FLOOR_PLAN'>('FLOOR_PLAN');
+  const router = useRouter();
+  // View mode switcher: 'TREE', 'FLOOR_PLAN', 'LIST'
+  const [viewMode, setViewMode] = useState<'TREE' | 'FLOOR_PLAN' | 'LIST'>('TREE');
+
+  // Property Tree Selected Node State
+  const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
+
+  // Hierarchy CRUD Modals State
+  const [isBuildingModalOpen, setIsBuildingModalOpen] = useState(false);
+  const [editingBuilding, setEditingBuilding] = useState<any>(null);
+
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [targetBuildingIdForBlock, setTargetBuildingIdForBlock] = useState<string>('');
+  const [editingBlock, setEditingBlock] = useState<any>(null);
+
+  const [isFloorModalOpen, setIsFloorModalOpen] = useState(false);
+  const [targetBlockIdForFloor, setTargetBlockIdForFloor] = useState<string>('');
+  const [suggestedFloorNum, setSuggestedFloorNum] = useState<number>(1);
+  const [editingFloor, setEditingFloor] = useState<any>(null);
+
+  const [isAptModalOpen, setIsAptModalOpen] = useState(false);
+  const [defaultFloorIdForApt, setDefaultFloorIdForApt] = useState<string>('');
 
   // Filters
   const [search, setSearch] = useState('');
@@ -119,7 +165,7 @@ export default function ApartmentsPage() {
     floor: floorFilter ? parseInt(floorFilter, 10) : undefined,
     status: (statusFilter as ApartmentStatus) || undefined,
     page: viewMode === 'LIST' ? page : 1,
-    limit: viewMode === 'LIST' ? 10 : 150, // Fetch full set for Floor Plan view
+    limit: viewMode === 'LIST' ? 10 : 300, // Fetch full set for Floor Plan view
   });
 
   // Hierarchy query
@@ -137,7 +183,79 @@ export default function ApartmentsPage() {
   const deleteMutation = useDeleteApartment();
   const createHistoryMutation = useCreateApartmentHistory();
 
+  // Building/Block/Floor mutations
+  const createBuildingMutation = useCreateBuilding();
+  const updateBuildingMutation = useUpdateBuilding();
+  const deleteBuildingMutation = useDeleteBuilding();
+
+  const createBlockMutation = useCreateBlock();
+  const updateBlockMutation = useUpdateBlock();
+  const deleteBlockMutation = useDeleteBlock();
+
+  const createFloorMutation = useCreateFloor();
+  const updateFloorMutation = useUpdateFloor();
+  const deleteFloorMutation = useDeleteFloor();
+
+  const bootstrapMutation = useBootstrapHierarchy();
+
   const apartments = listResponse?.data || [];
+  const hierarchyList = hierarchyResponse?.data || [];
+
+  // Dynamically extract all available floor numbers
+  const allFloorNumbers = useMemo(() => {
+    const nums = new Set<number>();
+    hierarchyList.forEach((b: any) => {
+      (b.blocks || []).forEach((blk: any) => {
+        (blk.floors || []).forEach((flr: any) => {
+          if (flr.floorNumber) nums.add(flr.floorNumber);
+        });
+      });
+    });
+    const sorted = Array.from(nums).sort((a, b) => a - b);
+    return sorted.length > 0 ? sorted : Array.from({ length: 25 }, (_, i) => i + 1);
+  }, [hierarchyList]);
+
+  // Default select first building once hierarchy loads if none selected
+  React.useEffect(() => {
+    if (!selectedNode && hierarchyList.length > 0) {
+      const firstBuilding = hierarchyList[0];
+      setSelectedNode({
+        type: 'BUILDING',
+        id: firstBuilding.id,
+        data: firstBuilding,
+        parentPath: {
+          buildingName: firstBuilding.name,
+          buildingId: firstBuilding.id,
+        },
+      });
+    }
+  }, [hierarchyList, selectedNode]);
+
+  // Keep selected node in sync with updated hierarchy data
+  const currentSelectedData = useMemo(() => {
+    if (!selectedNode) return null;
+    if (selectedNode.type === 'BUILDING') {
+      return hierarchyList.find((b: any) => b.id === selectedNode.id) || selectedNode.data;
+    }
+    if (selectedNode.type === 'BLOCK') {
+      for (const b of hierarchyList) {
+        const blk = (b.blocks || []).find((x: any) => x.id === selectedNode.id);
+        if (blk) return blk;
+      }
+      return selectedNode.data;
+    }
+    if (selectedNode.type === 'FLOOR') {
+      for (const b of hierarchyList) {
+        for (const blk of b.blocks || []) {
+          const flr = (blk.floors || []).find((f: any) => f.id === selectedNode.id);
+          if (flr) return flr;
+        }
+      }
+      return selectedNode.data;
+    }
+    return selectedNode.data;
+  }, [hierarchyList, selectedNode]);
+
   const meta = listResponse?.meta || { page: 1, totalPages: 1, total: 0 };
   const historyList = historyResponse?.data || [];
 
@@ -401,6 +519,13 @@ export default function ApartmentsPage() {
       className: 'text-right',
       cell: (row) => (
         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <Link
+            href={`/apartments/${row.id}`}
+            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-lg inline-flex items-center"
+            title="Trang quản lý chi tiết (Đầy đủ 360°)"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Link>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -409,7 +534,7 @@ export default function ApartmentsPage() {
               setActiveDrawerTab('DETAILS');
             }}
             className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800"
-            title="Xem chi tiết & Lịch sử"
+            title="Xem nhanh & Lịch sử"
           >
             <Eye className="h-4 w-4" />
           </Button>
@@ -441,11 +566,23 @@ export default function ApartmentsPage() {
       {/* Top Header with View Switcher */}
       <PageHeader
         title="Quản lý Bất động sản"
-        description="Mô hình phân cấp Tòa nhà → Tháp → Tầng → Căn hộ và lịch sử biến động."
+        description="Mô hình phân cấp Tòa nhà → Block/Tháp → Tầng → Căn hộ và thông tin vận hành 360°."
       >
-        <div className="flex items-center gap-2.5">
-          {/* Switcher: [List View] & [Floor Plan View] */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Switcher: [Cấu trúc cây] & [Floor Plan View] & [List View] */}
           <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setViewMode('TREE')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'TREE'
+                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <FolderTree className="h-3.5 w-3.5" />
+              Cấu trúc cây
+            </button>
             <button
               type="button"
               onClick={() => setViewMode('FLOOR_PLAN')}
@@ -473,15 +610,35 @@ export default function ApartmentsPage() {
           </div>
 
           <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              try {
+                const res = await bootstrapMutation.mutateAsync();
+                toast.success(res.message || 'Đồng bộ cấu trúc thành công');
+              } catch (err: any) {
+                toast.error(err.message || 'Lỗi đồng bộ cấu trúc');
+              }
+            }}
+            disabled={bootstrapMutation.isPending}
+            className="text-xs gap-1.5 h-9"
+            title="Tự động đồng bộ Tòa nhà, Block, Tầng từ dữ liệu hiện có"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${bootstrapMutation.isPending ? 'animate-spin' : ''}`} />
+            Đồng bộ Cấu trúc
+          </Button>
+
+          <Button
             onClick={handleOpenCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20 text-xs gap-1.5"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20 text-xs gap-1.5 h-9"
           >
             <Plus className="h-4 w-4" /> Thêm Căn hộ
           </Button>
         </div>
       </PageHeader>
 
-      {/* Unified FilterBar */}
+      {/* Unified FilterBar (Only shown for Floor Plan and List views) */}
+      {viewMode !== 'TREE' && (
       <FilterBar
         activeTags={activeTags}
         hasActiveFilters={hasActiveFilters}
@@ -526,7 +683,7 @@ export default function ApartmentsPage() {
             }}
           >
             <option value="">Tất cả các tầng</option>
-            {[1, 2, 3, 5, 6, 10, 12, 15, 20, 21].map((fl) => (
+            {allFloorNumbers.map((fl) => (
               <option key={fl} value={fl.toString()}>
                 Tầng {fl.toString().padStart(2, '0')}
               </option>
@@ -550,6 +707,176 @@ export default function ApartmentsPage() {
           </Select>
         </div>
       </FilterBar>
+      )}
+
+      {/* =====================================================================
+          VIEW MODE 0: PROPERTY HIERARCHY TREE VIEW (Building -> Block -> Floor)
+          ===================================================================== */}
+      {viewMode === 'TREE' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column: Interactive Tree Navigator */}
+          <div className="lg:col-span-4">
+            <PropertyTree
+              buildings={hierarchyList}
+              isLoading={hierarchyResponse === undefined}
+              selectedNode={selectedNode}
+              onSelectNode={setSelectedNode}
+              onAddBuilding={() => {
+                setEditingBuilding(null);
+                setIsBuildingModalOpen(true);
+              }}
+              onAddBlock={(buildingId: string) => {
+                setTargetBuildingIdForBlock(buildingId);
+                setEditingBlock(null);
+                setIsBlockModalOpen(true);
+              }}
+              onAddFloor={(blockId: string) => {
+                setTargetBlockIdForFloor(blockId);
+                setSuggestedFloorNum(1);
+                setEditingFloor(null);
+                setIsFloorModalOpen(true);
+              }}
+              onAddApartment={(floorId: string) => {
+                setDefaultFloorIdForApt(floorId);
+                setIsAptModalOpen(true);
+              }}
+            />
+          </div>
+
+          {/* Right Column: Node Details and Sub-Entity Management */}
+          <div className="lg:col-span-8">
+            {selectedNode?.type === 'BUILDING' && currentSelectedData && (
+              <BuildingDetailCard
+                building={currentSelectedData}
+                onEdit={() => {
+                  setEditingBuilding(currentSelectedData);
+                  setIsBuildingModalOpen(true);
+                }}
+                onDelete={async () => {
+                  if (confirm(`Bạn có chắc chắn muốn xóa tòa "${currentSelectedData.name}"?`)) {
+                    try {
+                      await deleteBuildingMutation.mutateAsync(currentSelectedData.id);
+                      toast.success('Đã xóa tòa nhà thành công');
+                      setSelectedNode(null);
+                    } catch (e: any) {
+                      toast.error(e.message || 'Lỗi khi xóa tòa nhà');
+                    }
+                  }
+                }}
+                onAddBlock={() => {
+                  setTargetBuildingIdForBlock(currentSelectedData.id);
+                  setEditingBlock(null);
+                  setIsBlockModalOpen(true);
+                }}
+                onSelectBlock={(block) => {
+                  setSelectedNode({
+                    type: 'BLOCK',
+                    id: block.id,
+                    data: block,
+                    parentPath: {
+                      buildingName: currentSelectedData.name,
+                      buildingId: currentSelectedData.id,
+                      blockName: block.name,
+                      blockId: block.id,
+                    },
+                  });
+                }}
+              />
+            )}
+
+            {selectedNode?.type === 'BLOCK' && currentSelectedData && (
+              <BlockDetailCard
+                block={currentSelectedData}
+                buildingName={selectedNode.parentPath?.buildingName}
+                onEdit={() => {
+                  setEditingBlock(currentSelectedData);
+                  setTargetBuildingIdForBlock(currentSelectedData.buildingId);
+                  setIsBlockModalOpen(true);
+                }}
+                onDelete={async () => {
+                  if (confirm(`Bạn có chắc chắn muốn xóa Block "${currentSelectedData.name}"?`)) {
+                    try {
+                      await deleteBlockMutation.mutateAsync(currentSelectedData.id);
+                      toast.success('Đã xóa Block thành công');
+                      setSelectedNode(null);
+                    } catch (e: any) {
+                      toast.error(e.message || 'Lỗi khi xóa Block');
+                    }
+                  }
+                }}
+                onAddFloor={() => {
+                  setTargetBlockIdForFloor(currentSelectedData.id);
+                  const highestFloor = (currentSelectedData.floors || []).reduce(
+                    (max: number, f: any) => Math.max(max, f.floorNumber),
+                    0
+                  );
+                  setSuggestedFloorNum(highestFloor + 1);
+                  setEditingFloor(null);
+                  setIsFloorModalOpen(true);
+                }}
+                onSelectFloor={(floor) => {
+                  setSelectedNode({
+                    type: 'FLOOR',
+                    id: floor.id,
+                    data: floor,
+                    parentPath: {
+                      buildingName: selectedNode.parentPath?.buildingName,
+                      buildingId: selectedNode.parentPath?.buildingId,
+                      blockName: currentSelectedData.name,
+                      blockId: currentSelectedData.id,
+                      floorName: floor.name || `Tầng ${floor.floorNumber}`,
+                      floorId: floor.id,
+                    },
+                  });
+                }}
+              />
+            )}
+
+            {selectedNode?.type === 'FLOOR' && currentSelectedData && (
+              <FloorDetailCard
+                floor={currentSelectedData}
+                blockName={selectedNode.parentPath?.blockName}
+                buildingName={selectedNode.parentPath?.buildingName}
+                onEdit={() => {
+                  setEditingFloor(currentSelectedData);
+                  setTargetBlockIdForFloor(currentSelectedData.blockId);
+                  setIsFloorModalOpen(true);
+                }}
+                onDelete={async () => {
+                  if (confirm(`Bạn có chắc chắn muốn xóa Tầng ${currentSelectedData.floorNumber}?`)) {
+                    try {
+                      await deleteFloorMutation.mutateAsync(currentSelectedData.id);
+                      toast.success('Đã xóa tầng thành công');
+                      setSelectedNode(null);
+                    } catch (e: any) {
+                      toast.error(e.message || 'Lỗi khi xóa tầng');
+                    }
+                  }
+                }}
+                onAddApartment={() => {
+                  setDefaultFloorIdForApt(currentSelectedData.id);
+                  setIsAptModalOpen(true);
+                }}
+                onSelectApartment={(apt) => {
+                  router.push(`/apartments/${apt.id}`);
+                }}
+              />
+            )}
+
+            {!selectedNode && (
+              <Card className="p-12 text-center text-slate-500 border-dashed">
+                <FolderTree className="h-12 w-12 mx-auto text-slate-300 mb-3" />
+                <h4 className="text-base font-bold text-slate-700 dark:text-slate-300">
+                  Chọn một thực thể trong cây phân cấp
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Chọn Tòa nhà, Block hoặc Tầng bên trái để xem thông tin chi tiết và thao tác quản lý.
+                </p>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* =====================================================================
           VIEW MODE 1: FLOOR PLAN VIEW (Hierarchical Block -> Floor -> Cards)
@@ -815,7 +1142,17 @@ export default function ApartmentsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/apartments/${inspectingItem.id}`)}
+                  className="text-xs gap-1.5 h-8 font-semibold bg-white dark:bg-slate-800"
+                  title="Mở toàn màn hình trang chi tiết 360°"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 text-blue-600" />
+                  Trang chi tiết 360°
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon-sm"
@@ -1387,6 +1724,66 @@ export default function ApartmentsPage() {
         description="Thao tác này sẽ xóa vĩnh viễn thông tin căn hộ khỏi hệ thống. Thao tác không thể hoàn tác."
         isLoading={deleteMutation.isPending}
         onConfirm={handleDeleteConfirm}
+      />
+
+      {/* Hierarchy Modals */}
+      <BuildingFormModal
+        open={isBuildingModalOpen}
+        onOpenChange={setIsBuildingModalOpen}
+        initialData={editingBuilding}
+        onSubmit={async (data) => {
+          if (editingBuilding) {
+            await updateBuildingMutation.mutateAsync({ id: editingBuilding.id, ...data });
+            toast.success('Đã cập nhật thông tin tòa nhà');
+          } else {
+            await createBuildingMutation.mutateAsync(data);
+            toast.success('Đã thêm tòa nhà mới');
+          }
+        }}
+      />
+
+      <BlockFormModal
+        open={isBlockModalOpen}
+        onOpenChange={setIsBlockModalOpen}
+        buildingId={targetBuildingIdForBlock}
+        initialData={editingBlock}
+        onSubmit={async (data) => {
+          if (editingBlock) {
+            await updateBlockMutation.mutateAsync({ id: editingBlock.id, ...data });
+            toast.success('Đã cập nhật thông tin Block');
+          } else {
+            await createBlockMutation.mutateAsync(data);
+            toast.success('Đã thêm Block mới');
+          }
+        }}
+      />
+
+      <FloorFormModal
+        open={isFloorModalOpen}
+        onOpenChange={setIsFloorModalOpen}
+        blockId={targetBlockIdForFloor}
+        suggestedFloorNumber={suggestedFloorNum}
+        initialData={editingFloor}
+        onSubmit={async (data) => {
+          if (editingFloor) {
+            await updateFloorMutation.mutateAsync({ id: editingFloor.id, ...data });
+            toast.success('Đã cập nhật thông tin Tầng');
+          } else {
+            await createFloorMutation.mutateAsync(data);
+            toast.success('Đã thêm Tầng mới');
+          }
+        }}
+      />
+
+      <ApartmentFormModal
+        open={isAptModalOpen}
+        onOpenChange={setIsAptModalOpen}
+        hierarchy={hierarchyList}
+        defaultFloorId={defaultFloorIdForApt}
+        onSubmit={async (data) => {
+          await createMutation.mutateAsync(data);
+          toast.success('Đã thêm căn hộ thành công');
+        }}
       />
     </div>
   );

@@ -28,16 +28,19 @@ export function SmartDashboardAlerts() {
   const router = useRouter();
   const { data: alertsRes, isLoading } = useSmartAlerts();
   const alertsData = alertsRes?.data;
-  const top5Today = alertsData?.top5Today || [];
+  const items: any[] =
+    alertsData?.top5Today ||
+    alertsData?.items?.filter((x: any) => x.status !== 'RESOLVED')?.slice(0, 5) ||
+    [];
   const counts = alertsData?.counts || { total: 0, critical: 0, warning: 0, info: 0 };
 
   if (isLoading) {
     return (
-      <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
-        <div className="h-6 w-48 bg-slate-200 animate-pulse rounded-md" />
+      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+        <div className="h-6 w-48 bg-slate-200 dark:bg-slate-800 animate-pulse rounded-md" />
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-14 bg-slate-100 animate-pulse rounded-xl" />
+            <div key={i} className="h-14 bg-slate-100 dark:bg-slate-800/60 animate-pulse rounded-xl" />
           ))}
         </div>
       </div>
@@ -50,39 +53,39 @@ export function SmartDashboardAlerts() {
         return {
           icon: AlertOctagon,
           dot: '🔴',
-          bg: 'bg-rose-50/90 border-rose-200 text-rose-900',
+          bg: 'bg-rose-50/90 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60 text-rose-900 dark:text-rose-200 hover:border-rose-300 dark:hover:border-rose-800',
           indicator: 'bg-rose-600',
         };
       case 'WARNING':
         return {
           icon: AlertTriangle,
           dot: '🟠',
-          bg: 'bg-amber-50/90 border-amber-200 text-amber-900',
+          bg: 'bg-amber-50/90 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60 text-amber-900 dark:text-amber-200 hover:border-amber-300 dark:hover:border-amber-800',
           indicator: 'bg-amber-500',
         };
       default:
         return {
           icon: AlertCircle,
           dot: '🟡',
-          bg: 'bg-sky-50/90 border-sky-200 text-sky-900',
+          bg: 'bg-sky-50/90 dark:bg-sky-950/30 border-sky-200 dark:border-sky-900/60 text-sky-900 dark:text-sky-200 hover:border-sky-300 dark:hover:border-sky-800',
           indicator: 'bg-sky-500',
         };
     }
   };
 
   return (
-    <Card className="border-slate-200 shadow-xs overflow-hidden">
-      <CardHeader className="p-5 pb-3 border-b border-slate-100 bg-linear-to-r from-slate-50 to-white">
+    <Card className="border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden">
+      <CardHeader className="p-5 pb-3 border-b border-slate-100 dark:border-slate-800 bg-linear-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800/60">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
               <Zap className="w-4 h-4" />
             </div>
             <div>
-              <CardTitle className="text-base font-bold text-slate-900">
-                5 việc cần chú ý hôm nay
+              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                {items.length > 0 ? `${items.length} việc cần chú ý hôm nay` : 'Việc cần chú ý hôm nay'}
               </CardTitle>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Tự động quét từ hợp đồng, hóa đơn và sự cố kỹ thuật theo thời gian thực
               </p>
             </div>
@@ -90,12 +93,12 @@ export function SmartDashboardAlerts() {
 
           <div className="flex items-center gap-2">
             {counts.critical > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
+              <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/80">
                 🔴 {counts.critical} Khẩn cấp
               </span>
             )}
             {counts.warning > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+              <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/80">
                 🟠 {counts.warning} Cảnh báo
               </span>
             )}
@@ -104,37 +107,54 @@ export function SmartDashboardAlerts() {
       </CardHeader>
 
       <CardContent className="p-4 space-y-2.5">
-        {top5Today.length > 0 ? (
-          top5Today.map((item: any) => {
-            const badge = getSeverityBadge(item.severity);
-            const Icon = badge.icon;
-            return (
-              <div
-                key={item.id}
-                onClick={() => router.push(item.actionUrl)}
-                className={`p-3.5 rounded-xl border flex items-start justify-between gap-3 cursor-pointer transition-all hover:scale-[1.005] hover:shadow-xs ${badge.bg}`}
-              >
-                <div className="flex items-start gap-3 min-w-0">
-                  <span className="text-base mt-0.5 shrink-0">{badge.dot}</span>
-                  <div className="min-w-0">
-                    <h4 className="font-bold text-xs sm:text-sm truncate leading-snug">
-                      {item.title}
-                    </h4>
-                    <p className="text-xs opacity-85 mt-0.5 line-clamp-1">{item.description}</p>
+        {items.length > 0 ? (
+          <>
+            {items.map((item: any) => {
+              const badge = getSeverityBadge(item.severity);
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => router.push(item.actionUrl)}
+                  className={`p-3.5 rounded-xl border flex items-start justify-between gap-3 cursor-pointer transition-all hover:scale-[1.005] hover:shadow-xs ${badge.bg}`}
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <span className="text-base mt-0.5 shrink-0">{badge.dot}</span>
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-xs sm:text-sm truncate leading-snug">
+                        {item.title}
+                      </h4>
+                      <p className="text-xs opacity-85 mt-0.5 line-clamp-1">{item.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-xs font-semibold shrink-0 pt-1 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400">
+                    <span>Xử lý</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
+              );
+            })}
 
-                <div className="flex items-center gap-1 text-xs font-semibold shrink-0 pt-1 text-slate-700 hover:text-indigo-600">
-                  <span>Xử lý</span>
+            {counts.total > items.length && (
+              <div className="pt-2 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Đang hiển thị {items.length} việc cần xử lý ưu tiên cao nhất
+                </span>
+                <button
+                  type="button"
+                  onClick={() => router.push('/smart-operations/alerts')}
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <span>Xem tất cả {counts.total} cảnh báo vận hành</span>
                   <ArrowRight className="w-3.5 h-3.5" />
-                </div>
+                </button>
               </div>
-            );
-          })
+            )}
+          </>
         ) : (
-          <div className="py-6 text-center text-xs text-slate-500 flex flex-col items-center gap-1">
+          <div className="py-6 text-center text-xs text-slate-500 dark:text-slate-400 flex flex-col items-center gap-1">
             <CheckCircle2 className="w-6 h-6 text-emerald-500 mb-1" />
-            <span className="font-semibold text-slate-700">Mọi chỉ số vận hành đều ổn định</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">Mọi chỉ số vận hành đều ổn định</span>
             <span>Không có cảnh báo khẩn cấp nào cần xử lý ngay lúc này.</span>
           </div>
         )}

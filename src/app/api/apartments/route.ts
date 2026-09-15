@@ -14,9 +14,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || undefined;
     const building = searchParams.get('building') || undefined;
+    const buildingId = searchParams.get('buildingId') || undefined;
     const block = searchParams.get('block') || undefined;
+    const blockId = searchParams.get('blockId') || undefined;
     const floorParam = searchParams.get('floor');
     const floor = floorParam ? parseInt(floorParam, 10) : undefined;
+    const floorId = searchParams.get('floorId') || undefined;
     const status = (searchParams.get('status') as any) || undefined;
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
@@ -44,8 +47,11 @@ export async function GET(req: NextRequest) {
     const result = await apartmentService.getApartments({
       search,
       building,
+      buildingId,
       block,
+      blockId,
       floor,
+      floorId,
       status,
       page,
       limit,
@@ -62,7 +68,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -71,7 +76,12 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validated = apartmentSchema.parse(body);
-    const item = await apartmentService.createApartment(validated);
+    const item = await apartmentService.createApartment(validated, {
+      id: session.user.id,
+      email: session.user.email,
+      role: session.user.role,
+      name: session.user.name || undefined,
+    });
     return apiSuccess(item, 'Thêm mới căn hộ thành công', undefined, 201);
   } catch (error: any) {
     if (error.name === 'ZodError') {
@@ -80,3 +90,4 @@ export async function POST(req: NextRequest) {
     return apiError(error.message || 'Thêm mới căn hộ thất bại', 'CREATE_FAILED', 400);
   }
 }
+

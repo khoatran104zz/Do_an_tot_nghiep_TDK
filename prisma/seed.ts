@@ -149,56 +149,97 @@ async function main() {
   });
 
   const blockConfigs = [
-    { code: 'BLOCK-A', name: 'Tháp A (Sky Tower)', keyword: 'Tòa A' },
-    { code: 'BLOCK-B', name: 'Tháp B (Ocean Tower)', keyword: 'Tòa B' },
-    { code: 'BLOCK-C', name: 'Tháp C (Garden Tower)', keyword: 'Tòa C' },
+    { code: 'BLOCK-A', name: 'Tháp A (Sky Tower)', keyword: 'Tòa A', prefix: 'A', totalFloors: 15, aptPerFloor: 4 },
+    { code: 'BLOCK-B', name: 'Tháp B (Ocean Tower)', keyword: 'Tòa B', prefix: 'B', totalFloors: 25, aptPerFloor: 4 },
+    { code: 'BLOCK-C', name: 'Tháp C (Garden Tower)', keyword: 'Tòa C', prefix: 'C', totalFloors: 10, aptPerFloor: 4 },
   ];
 
   const seededBlocks: Record<string, any> = {};
   for (const b of blockConfigs) {
     const block = await prisma.block.upsert({
       where: { buildingId_code: { buildingId: masterBuilding.id, code: b.code } },
-      update: { name: b.name },
+      update: { name: b.name, totalFloors: b.totalFloors },
       create: {
         buildingId: masterBuilding.id,
         code: b.code,
         name: b.name,
-        totalFloors: 25,
+        totalFloors: b.totalFloors,
       },
     });
     seededBlocks[b.code] = block;
+
+    // Generate all floors from 1 to totalFloors
+    for (let f = 1; f <= b.totalFloors; f++) {
+      const floorName = `Tầng ${f.toString().padStart(2, '0')}`;
+      const floor = await prisma.floor.upsert({
+        where: { blockId_floorNumber: { blockId: block.id, floorNumber: f } },
+        update: { name: floorName },
+        create: {
+          blockId: block.id,
+          floorNumber: f,
+          name: floorName,
+        },
+      });
+
+      // Generate apartments for each floor
+      for (let aptIdx = 1; aptIdx <= b.aptPerFloor; aptIdx++) {
+        const aptCode = `${b.prefix}-${f.toString().padStart(2, '0')}${aptIdx.toString().padStart(2, '0')}`;
+        const existingApt = aptMap[aptCode];
+
+        if (!existingApt) {
+          const hash = (f * 7 + aptIdx * 13) % 10;
+          let status: ApartmentStatus = ApartmentStatus.OCCUPIED;
+          if (hash === 1 || hash === 5) status = ApartmentStatus.VACANT;
+          else if (hash === 9) status = ApartmentStatus.UNDER_MAINTENANCE;
+
+          const bedrooms = aptIdx === 1 ? 1 : aptIdx === 2 ? 2 : aptIdx === 3 ? 3 : 2;
+          const bathrooms = aptIdx === 1 ? 1 : 2;
+          const area = aptIdx === 1 ? 52.0 : aptIdx === 2 ? 75.0 : aptIdx === 3 ? 95.0 : 68.0;
+
+          const createdApt = await prisma.apartment.upsert({
+            where: { code: aptCode },
+            update: {
+              buildingId: masterBuilding.id,
+              blockId: block.id,
+              floorId: floor.id,
+              building: b.name,
+              floor: f,
+            },
+            create: {
+              code: aptCode,
+              building: b.name,
+              floor: f,
+              bedrooms,
+              bathrooms,
+              area,
+              status,
+              note: `Căn ${bedrooms}PN view ${aptIdx % 2 === 0 ? 'hồ bơi' : 'công viên'}`,
+              buildingId: masterBuilding.id,
+              blockId: block.id,
+              floorId: floor.id,
+            },
+          });
+          aptMap[aptCode] = createdApt;
+        } else {
+          await prisma.apartment.update({
+            where: { id: existingApt.id },
+            data: {
+              buildingId: masterBuilding.id,
+              blockId: block.id,
+              floorId: floor.id,
+              building: b.name,
+              floor: f,
+            },
+          });
+        }
+      }
+    }
   }
 
-  // Link apartments to Blocks & Floors, seed history
+  // Seed sample history if empty for initial apartments
   for (const apt of apartmentsData) {
-    const blockCode = apt.building.includes('Tòa A')
-      ? 'BLOCK-A'
-      : apt.building.includes('Tòa B')
-      ? 'BLOCK-B'
-      : 'BLOCK-C';
-
-    const block = seededBlocks[blockCode];
-    const floor = await prisma.floor.upsert({
-      where: { blockId_floorNumber: { blockId: block.id, floorNumber: apt.floor } },
-      update: {},
-      create: {
-        blockId: block.id,
-        floorNumber: apt.floor,
-        name: `Tầng ${apt.floor.toString().padStart(2, '0')}`,
-      },
-    });
-
     const aptRecord = aptMap[apt.code];
-    await prisma.apartment.update({
-      where: { id: aptRecord.id },
-      data: {
-        buildingId: masterBuilding.id,
-        blockId: block.id,
-        floorId: floor.id,
-      },
-    });
-
-    // Seed sample history if empty
+    if (!aptRecord) continue;
     const histCount = await prisma.apartmentHistory.count({ where: { apartmentId: aptRecord.id } });
     if (histCount === 0) {
       if (apt.status === ApartmentStatus.OCCUPIED) {

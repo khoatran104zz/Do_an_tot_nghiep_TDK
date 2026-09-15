@@ -1,6 +1,10 @@
-export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
+export type AlertSeverity = 'INFO' | 'WARNING' | 'HIGH' | 'CRITICAL';
 
-export type AlertEntityType = 'CONTRACT' | 'INVOICE' | 'TICKET' | 'APARTMENT' | 'MAINTENANCE' | 'ASSET';
+export type AlertStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED';
+
+export type AlertSource = 'IOT' | 'SLA' | 'INVOICE' | 'CONTRACT' | 'MAINTENANCE';
+
+export type AlertEntityType = 'CONTRACT' | 'INVOICE' | 'TICKET' | 'APARTMENT' | 'MAINTENANCE' | 'ASSET' | 'SENSOR';
 
 export type AlertType =
   | 'CONTRACT_EXPIRED'
@@ -13,20 +17,42 @@ export type AlertType =
   | 'TICKET_SLA_APPROACHING'
   | 'TICKET_CRITICAL_PENDING'
   | 'MAINTENANCE_OVERDUE'
-  | 'MAINTENANCE_DUE_SOON';
+  | 'MAINTENANCE_DUE_SOON'
+  | 'WATER_LEAKAGE'
+  | 'SMOKE_DETECTED'
+  | 'ELEVATOR_OFFLINE'
+  | 'HIGH_TEMPERATURE';
 
 export interface SmartAlert {
   id: string;
-  type: AlertType;
+  type: AlertType | string;
   severity: AlertSeverity;
+  source?: AlertSource;
+  status?: AlertStatus;
   title: string;
   description: string;
-  entityType: AlertEntityType;
-  entityId: string;
+  location?: string | null;
+  entityType?: AlertEntityType | string | null;
+  entityId?: string | null;
   actionUrl: string;
   createdAt: Date;
+  acknowledgedAt?: Date | null;
+  acknowledgedBy?: string | null;
   resolvedAt?: Date | null;
+  resolvedBy?: string | null;
   metadata?: Record<string, any>;
+}
+
+export interface SmartAlertFilter {
+  severity?: AlertSeverity;
+  source?: AlertSource;
+  status?: AlertStatus;
+  location?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface CollectionInsight {
@@ -88,6 +114,7 @@ export interface SmartOperationsSummary {
   counts: {
     total: number;
     critical: number;
+    high: number;
     warning: number;
     info: number;
   };

@@ -10,13 +10,14 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MessageSquareWarning, Plus, Star, Wrench, Calendar, CheckCircle2, Clock } from 'lucide-react';
+import { MessageSquareWarning, Plus, Star, Calendar, CheckCircle2 } from 'lucide-react';
 import { useFeedbacks, useCreateFeedback, useRateFeedback } from '@/hooks/use-feedbacks';
 import { TicketCategory, TicketPriority } from '@prisma/client';
 import { formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
+import { IncidentClassifierCard } from '@/components/ai/IncidentClassifierCard';
 
 export default function ResidentFeedbackPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -51,7 +52,7 @@ export default function ResidentFeedbackPage() {
           content: '',
           priority: 'MEDIUM',
         });
-        toast.success('Đã gửi phản ánh tới BQL tòa nhà!');
+        toast.success('Đã gửi phản ánh tới Ban Quản Lý tòa nhà!');
       },
     });
   };
@@ -183,7 +184,7 @@ export default function ResidentFeedbackPage() {
                           size="sm"
                           className="text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30"
                         >
-                          Xem tiến trình & Trao đổi ➔
+                          Xem tiến trình & Trao đổi →
                         </Button>
                       </Link>
                       {isResolved && !hasRated && (
@@ -278,6 +279,19 @@ export default function ResidentFeedbackPage() {
               required
             />
           </div>
+
+          {/* AI Incident Classification Recommendation */}
+          <IncidentClassifierCard
+            title={formData.title}
+            content={formData.content}
+            onApplySuggestion={(suggestion) => {
+              setFormData((prev) => ({
+                ...prev,
+                category: (suggestion.category as TicketCategory) || prev.category,
+                priority: (suggestion.priority as TicketPriority) || prev.priority,
+              }));
+            }}
+          />
         </div>
       </FormDialog>
 
@@ -293,13 +307,13 @@ export default function ResidentFeedbackPage() {
         submitText="Gửi đánh giá"
       >
         <div className="space-y-4 text-center py-2">
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex justify-center gap-2">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
-                key={star}
                 type="button"
+                key={star}
                 onClick={() => setRatingForm({ ...ratingForm, rating: star })}
-                className="p-1 text-2xl cursor-pointer hover:scale-110 transition-transform"
+                className="p-1 hover:scale-110 transition-transform"
               >
                 <Star
                   className={`h-8 w-8 ${
@@ -312,16 +326,19 @@ export default function ResidentFeedbackPage() {
             ))}
           </div>
 
-          <div className="space-y-1 text-left">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Nhận xét thêm (tùy chọn)
-            </label>
-            <Input
-              placeholder="Nhân viên kỹ thuật xử lý nhanh, nhiệt tình..."
-              value={ratingForm.ratingComment}
-              onChange={(e) => setRatingForm({ ...ratingForm, ratingComment: e.target.value })}
-            />
-          </div>
+          <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
+            {ratingForm.rating === 5 && 'Rất hài lòng - Xử lý chuyên nghiệp & nhanh chóng'}
+            {ratingForm.rating === 4 && 'Hài lòng - Đạt yêu cầu'}
+            {ratingForm.rating === 3 && 'Bình thường - Cần cải thiện thêm'}
+            {ratingForm.rating <= 2 && 'Chưa hài lòng - Cần xử lý triệt để hơn'}
+          </p>
+
+          <textarea
+            className="w-full min-h-[80px] p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+            placeholder="Để lại lời nhắn hoặc góp ý thêm cho kỹ thuật viên..."
+            value={ratingForm.ratingComment}
+            onChange={(e) => setRatingForm({ ...ratingForm, ratingComment: e.target.value })}
+          />
         </div>
       </FormDialog>
     </div>

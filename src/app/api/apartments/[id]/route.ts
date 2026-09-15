@@ -43,7 +43,12 @@ export async function PUT(
     const { id } = await params;
     const body = await req.json();
     const validated = apartmentSchema.partial().parse(body);
-    const updated = await apartmentService.updateApartment(id, validated);
+    const updated = await apartmentService.updateApartment(id, validated, {
+      id: session.user.id,
+      email: session.user.email,
+      role: session.user.role,
+      name: session.user.name || undefined,
+    });
     return apiSuccess(updated, 'Cập nhật thông tin căn hộ thành công');
   } catch (error: any) {
     if (error.name === 'ZodError') {
@@ -63,9 +68,15 @@ export async function DELETE(
     if (session.user.role === 'RESIDENT') return apiForbidden();
 
     const { id } = await params;
-    await apartmentService.deleteApartment(id);
+    await apartmentService.deleteApartment(id, {
+      id: session.user.id,
+      email: session.user.email,
+      role: session.user.role,
+      name: session.user.name || undefined,
+    });
     return apiSuccess(null, 'Xóa căn hộ thành công');
   } catch (error: any) {
     return apiError(error.message || 'Xóa căn hộ thất bại', 'DELETE_FAILED', 400);
   }
 }
+
