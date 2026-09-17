@@ -33,6 +33,7 @@ import {
   ChevronRight,
   X,
   Search,
+  Crown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -56,57 +57,117 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
   const { isCollapsed, toggleCollapse, isMobileOpen, setIsMobileOpen, setIsCommandOpen } = useShell();
 
   // =========================================================================
-  // 1. BAN QUẢN LÝ (Admin & Manager) Navigation
+  // 1. QUẢN TRỊ VIÊN CẤP CAO TOÀN HỆ THỐNG (SUPER ADMIN) Navigation
   // =========================================================================
-  const managementGroups: NavGroup[] = [
+  const adminGroups: NavGroup[] = [
     {
-      groupName: 'Tổng quan',
+      groupName: 'Quản trị Tối cao',
       items: [
-        { name: 'Bảng điều khiển', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Bảng điều khiển hệ thống', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Phân quyền & Managers', href: '/settings/access-control', icon: KeyRound, badge: 'Admin' },
+        { name: 'Cấu hình Biểu phí Chuẩn', href: '/fees', icon: Receipt, badge: 'Toàn cục' },
+        { name: 'Giám sát Vận hành IoT', href: '/smart-operations', icon: Zap },
+      ],
+    },
+    {
+      groupName: 'Bất động sản & Cư dân',
+      items: [
+        { name: 'Căn hộ & Khối nhà', href: '/apartments', icon: Building2 },
+        { name: 'Hồ sơ Cư dân', href: '/residents', icon: Users },
+        { name: 'Hợp đồng Thuê & Mua', href: '/contracts', icon: FileText },
+      ],
+    },
+    {
+      groupName: 'Tài chính & Thu phí',
+      items: [
+        { name: 'Hóa đơn toàn hệ thống', href: '/invoices', icon: Receipt },
+        { name: 'Giao dịch thanh toán', href: '/payments', icon: CreditCard },
+      ],
+    },
+    {
+      groupName: 'Kỹ thuật, Bảo trì & Tiện ích',
+      items: [
+        { name: 'Bảo trì & Sự cố', href: '/feedbacks', icon: Wrench },
+        { name: 'Lịch bảo trì định kỳ', href: '/maintenance-schedules', icon: FileClock },
+        { name: 'Tài sản tòa nhà', href: '/assets', icon: Boxes },
+        { name: 'Tiện ích chung cư', href: '/facilities', icon: Sparkles },
+        { name: 'Quản lý Bưu kiện', href: '/parcels', icon: Package },
+      ],
+    },
+    {
+      groupName: 'Phương tiện & An ninh',
+      items: [
+        { name: 'Phương tiện đăng ký', href: '/vehicles', icon: Car },
+        { name: 'Thẻ gửi xe', href: '/parking-cards', icon: KeyRound },
+        { name: 'Lịch sử ra vào xe', href: '/parking-logs', icon: History },
+        { name: 'Kiểm soát Khách thăm', href: '/visitors', icon: UserCheck },
+      ],
+    },
+    {
+      groupName: 'Nhân sự, Truyền thông & Hệ thống',
+      items: [
+        { name: 'Nhân sự vận hành', href: '/staff', icon: ShieldCheck },
+        { name: 'Bản tin thông báo', href: '/announcements', icon: Megaphone },
+        { name: 'Khảo sát ý kiến', href: '/polls', icon: Vote },
+        { name: 'Báo cáo toàn hệ thống', href: '/reports', icon: BarChart3 },
+        { name: 'Thông báo hệ thống', href: '/notifications', icon: Bell },
+        { name: 'Cài đặt hệ thống', href: '/settings', icon: Settings },
+      ],
+    },
+  ];
+
+  // =========================================================================
+  // 1.1 BAN QUẢN LÝ TÒA NHÀ (MANAGER - CẤP VẬN HÀNH) Navigation
+  // =========================================================================
+  const managerGroups: NavGroup[] = [
+    {
+      groupName: 'Vận hành Tòa nhà',
+      items: [
+        { name: 'Bàn làm việc vận hành', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Vận hành thông minh', href: '/smart-operations', icon: Zap },
       ],
     },
     {
       groupName: 'Bất động sản & Cư dân',
       items: [
-        { name: 'Căn hộ', href: '/apartments', icon: Building2 },
-        { name: 'Cư dân', href: '/residents', icon: Users },
-        { name: 'Hợp đồng', href: '/contracts', icon: FileText },
+        { name: 'Căn hộ thuộc tòa', href: '/apartments', icon: Building2 },
+        { name: 'Cư dân thuộc tòa', href: '/residents', icon: Users },
+        { name: 'Hợp đồng thuê', href: '/contracts', icon: FileText },
       ],
     },
     {
-      groupName: 'Tài chính & Thanh toán',
+      groupName: 'Tài chính & Thu phí',
       items: [
-        { name: 'Hóa đơn', href: '/invoices', icon: Receipt },
+        { name: 'Hóa đơn tòa nhà', href: '/invoices', icon: Receipt },
         { name: 'Thanh toán', href: '/payments', icon: CreditCard },
       ],
     },
     {
       groupName: 'Phương tiện & An ninh',
       items: [
-        { name: 'Phương tiện', href: '/vehicles', icon: Car },
+        { name: 'Phương tiện đăng ký', href: '/vehicles', icon: Car },
         { name: 'Thẻ gửi xe', href: '/parking-cards', icon: KeyRound },
         { name: 'Khách ra vào', href: '/visitors', icon: UserCheck },
       ],
     },
     {
-      groupName: 'Vận hành & Tiện ích',
+      groupName: 'Bảo trì & Tiện ích',
       items: [
         { name: 'Bảo trì & Sự cố', href: '/feedbacks', icon: Wrench },
-        { name: 'Tài sản', href: '/assets', icon: Boxes },
+        { name: 'Lịch bảo dưỡng', href: '/maintenance-schedules', icon: FileClock },
+        { name: 'Tài sản tòa nhà', href: '/assets', icon: Boxes },
         { name: 'Tiện ích', href: '/facilities', icon: Sparkles },
         { name: 'Bưu kiện', href: '/parcels', icon: Package },
       ],
     },
     {
-      groupName: 'Cộng đồng & Quản trị',
+      groupName: 'Cộng đồng & Đội ngũ',
       items: [
         { name: 'Bản tin tòa nhà', href: '/announcements', icon: Megaphone },
         { name: 'Khảo sát ý kiến', href: '/polls', icon: Vote },
-        { name: 'Thông báo hệ thống', href: '/notifications', icon: Bell },
-        { name: 'Nhân viên', href: '/staff', icon: ShieldCheck },
-        { name: 'Báo cáo & Thống kê', href: '/reports', icon: BarChart3 },
-        { name: 'Cài đặt', href: '/settings', icon: Settings },
+        { name: 'Thông báo', href: '/notifications', icon: Bell },
+        { name: 'Nhân viên trực tòa', href: '/staff', icon: ShieldCheck },
+        { name: 'Báo cáo vận hành', href: '/reports', icon: BarChart3 },
       ],
     },
   ];
@@ -191,7 +252,8 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
 
   // Resolve active nav groups by role
   let navGroups = residentGroups;
-  if (role === 'ADMIN' || role === 'MANAGER') navGroups = managementGroups;
+  if (role === 'ADMIN') navGroups = adminGroups;
+  else if (role === 'MANAGER') navGroups = managerGroups;
   else if (role === 'STAFF_TECHNICIAN') navGroups = technicianGroups;
   else if (role === 'STAFF_SECURITY') navGroups = securityGroups;
   else if (role === 'STAFF_RECEPTIONIST') navGroups = receptionistGroups;
@@ -228,18 +290,24 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
                 <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-slate-100 uppercase">
                   Tòa Nhà Thông Minh
                 </span>
-                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold tracking-wider uppercase">
-                  {role === 'ADMIN'
-                    ? 'Quản trị viên cấp cao'
-                    : role === 'MANAGER'
-                    ? 'Ban quản lý'
-                    : role === 'STAFF_TECHNICIAN'
-                    ? 'Kỹ thuật viên'
-                    : role === 'STAFF_SECURITY'
-                    ? 'An ninh bảo vệ'
-                    : role === 'STAFF_RECEPTIONIST'
-                    ? 'Lễ tân'
-                    : 'Cổng thông tin cư dân'}
+                <span className="text-[10px] font-bold tracking-wider uppercase flex items-center gap-1">
+                  {role === 'ADMIN' ? (
+                    <span className="text-purple-600 dark:text-purple-400 font-extrabold flex items-center gap-1">
+                      <Crown className="h-3 w-3 text-amber-500 inline" /> Super Admin
+                    </span>
+                  ) : role === 'MANAGER' ? (
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">
+                      🏢 Ban Quản Lý Tòa Nhà
+                    </span>
+                  ) : role === 'STAFF_TECHNICIAN' ? (
+                    'Kỹ thuật viên'
+                  ) : role === 'STAFF_SECURITY' ? (
+                    'An ninh bảo vệ'
+                  ) : role === 'STAFF_RECEPTIONIST' ? (
+                    'Lễ tân'
+                  ) : (
+                    'Cổng thông tin cư dân'
+                  )}
                 </span>
               </div>
             )}

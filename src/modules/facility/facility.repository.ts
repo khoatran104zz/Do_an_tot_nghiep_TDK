@@ -34,7 +34,11 @@ export class FacilityRepository {
     }
 
     if (type) where.type = type;
-    if (buildingId) where.buildingId = buildingId;
+    if (buildingId) {
+      where.buildingId = buildingId;
+    } else if (filter.buildingIds && filter.buildingIds.length > 0) {
+      where.buildingId = { in: filter.buildingIds };
+    }
 
     if (search && search.trim()) {
       const q = search.trim();
@@ -386,7 +390,7 @@ export class FacilityRepository {
   // ==========================================
 
   async findBookings(filter: BookingFilter = {}) {
-    const { facilityId, userId, apartmentId, status, date, page = 1, limit = 20 } = filter;
+    const { facilityId, userId, apartmentId, buildingId, buildingIds, status, date, page = 1, limit = 20 } = filter;
     const skip = (page - 1) * limit;
 
     const where: Prisma.FacilityBookingWhereInput = {};
@@ -395,6 +399,12 @@ export class FacilityRepository {
     if (userId) where.userId = userId;
     if (apartmentId) where.apartmentId = apartmentId;
     if (status) where.status = status;
+
+    if (buildingId) {
+      where.facility = { buildingId };
+    } else if (buildingIds && buildingIds.length > 0) {
+      where.facility = { buildingId: { in: buildingIds } };
+    }
 
     if (date) {
       const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
@@ -460,10 +470,18 @@ export class FacilityRepository {
   // 5. DASHBOARD STATS & UTILIZATION
   // ==========================================
 
-  async getDashboardStats(): Promise<FacilityDashboardStats> {
+  async getDashboardStats(buildingIds?: string[]): Promise<FacilityDashboardStats> {
     const todayStr = new Date().toISOString().split('T')[0];
     const todayStart = new Date(`${todayStr}T00:00:00.000Z`);
     const todayEnd = new Date(`${todayStr}T23:59:59.999Z`);
+
+    const hasBuildingScope = buildingIds && buildingIds.length > 0;
+    const facilityWhere: Prisma.FacilityWhereInput = hasBuildingScope
+      ? { buildingId: { in: buildingIds } }
+      : {};
+    const bookingFacilityFilter = hasBuildingScope
+      ? { facility: { buildingId: { in: buildingIds } } }
+      : {};
 
     const [
       totalFacilities,
@@ -473,22 +491,25 @@ export class FacilityRepository {
       bookingsByFacility,
       revenueResult,
     ] = await Promise.all([
-      prisma.facility.count(),
-      prisma.facility.count({ where: { status: FacilityStatus.ACTIVE } }),
+      prisma.facility.count({ where: facilityWhere }),
+      prisma.facility.count({ where: { ...facilityWhere, status: FacilityStatus.ACTIVE } }),
       prisma.facilityBooking.count({
         where: {
+          ...bookingFacilityFilter,
           bookingDate: { gte: todayStart, lte: todayEnd },
           status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.COMPLETED] },
         },
       }),
       prisma.facilityBooking.count({
         where: {
+          ...bookingFacilityFilter,
           status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.COMPLETED] },
         },
       }),
       prisma.facilityBooking.groupBy({
         by: ['facilityId'],
         where: {
+          ...bookingFacilityFilter,
           status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.COMPLETED] },
         },
         _count: { id: true },
@@ -497,6 +518,7 @@ export class FacilityRepository {
       }),
       prisma.facilityBooking.aggregate({
         where: {
+          ...bookingFacilityFilter,
           status: { in: [BookingStatus.CONFIRMED, BookingStatus.COMPLETED] },
         },
         _sum: { totalFee: true },

@@ -4,30 +4,54 @@ import { Prisma } from '@prisma/client';
 
 export class ResidentRepository {
   async findAll(filter: ResidentFilter) {
-    const { search, apartmentId, relationshipToOwner, status, page = 1, limit = 10 } = filter;
+    const { search, apartmentId, buildingId, buildingIds, relationshipToOwner, status, page = 1, limit = 10 } = filter;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ResidentWhereInput = {};
+    const andClauses: Prisma.ResidentWhereInput[] = [];
 
     if (search) {
-      where.OR = [
-        { fullName: { contains: search, mode: 'insensitive' } },
-        { identityCard: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
-      ];
+      andClauses.push({
+        OR: [
+          { fullName: { contains: search, mode: 'insensitive' } },
+          { identityCard: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
+        ],
+      });
     }
 
     if (apartmentId) {
-      where.apartmentId = apartmentId;
+      andClauses.push({ apartmentId });
+    }
+
+    if (buildingIds && buildingIds.length > 0) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId: { in: buildingIds } },
+            { block: { buildingId: { in: buildingIds } } },
+          ],
+        },
+      });
+    } else if (buildingId) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId },
+            { block: { buildingId } },
+          ],
+        },
+      });
     }
 
     if (relationshipToOwner) {
-      where.relationshipToOwner = relationshipToOwner;
+      andClauses.push({ relationshipToOwner });
     }
 
     if (status) {
-      where.status = status;
+      andClauses.push({ status });
     }
+
+    const where: Prisma.ResidentWhereInput = andClauses.length > 0 ? { AND: andClauses } : {};
 
     const [items, total] = await Promise.all([
       prisma.resident.findMany({

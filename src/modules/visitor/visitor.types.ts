@@ -3,6 +3,8 @@ import { VisitorStatus } from '@prisma/client';
 export interface VisitorPassFilter {
   search?: string;
   apartmentId?: string;
+  buildingId?: string;
+  buildingIds?: string[];
   status?: VisitorStatus;
   date?: string | Date;
   page?: number;

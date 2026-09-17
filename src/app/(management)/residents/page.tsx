@@ -52,10 +52,12 @@ import {
   ResidenceRequestStatus,
   ResidenceRequestType,
 } from '@prisma/client';
+import { useBuildingContext } from '@/context/BuildingContext';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function ResidentsPage() {
+  const { selectedBuildingId } = useBuildingContext();
   // Main Tab: RESIDENTS or PENDING_REQUESTS
   const [mainTab, setMainTab] = useState<'RESIDENTS' | 'PENDING_REQUESTS'>('RESIDENTS');
 
@@ -101,13 +103,17 @@ export default function ResidentsPage() {
   // Queries
   const { data: response, isLoading, isError, error, refetch } = useResidents({
     search: search || undefined,
+    buildingId: selectedBuildingId || undefined,
     relationshipToOwner: (relationshipFilter as ResidentRelationship) || undefined,
     status: (statusFilter as ResidentStatus) || undefined,
     page,
     limit: 10,
   });
 
-  const { data: apartmentsRes } = useApartments({ limit: 100 });
+  const { data: apartmentsRes } = useApartments({
+    limit: 100,
+    buildingId: selectedBuildingId || undefined,
+  });
   const apartmentOptions = apartmentsRes?.data || [];
 
   // Residence Requests query
@@ -117,6 +123,7 @@ export default function ResidentsPage() {
     refetch: refetchRequests,
   } = useResidenceRequests({
     search: requestSearch || undefined,
+    buildingId: selectedBuildingId || undefined,
     status: (requestStatusFilter as ResidenceRequestStatus) || undefined,
     type: (requestTypeFilter as ResidenceRequestType) || undefined,
     page: requestPage,
@@ -126,6 +133,7 @@ export default function ResidentsPage() {
   // Pending count badge query
   const { data: pendingOnlyRes } = useResidenceRequests({
     status: ResidenceRequestStatus.PENDING,
+    buildingId: selectedBuildingId || undefined,
     limit: 100,
   });
   const pendingCount = pendingOnlyRes?.meta?.total ?? 0;

@@ -33,6 +33,7 @@ import {
   Car,
   Bike,
   KeyRound,
+  Crown,
 } from 'lucide-react';
 
 type StatusType =
@@ -293,14 +294,22 @@ export function StatusBadge({
     switch (status) {
       case 'ADMIN':
         return (
-          <Badge variant="default" size={size} dot className={className}>
-            Quản trị viên
+          <Badge
+            variant="outline"
+            size={size}
+            className={cn(
+              'bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800 font-bold gap-1',
+              className
+            )}
+          >
+            <Crown className="h-3 w-3 text-amber-500 inline shrink-0" />
+            Quản trị viên Cấp cao
           </Badge>
         );
       case 'MANAGER':
         return (
           <Badge variant="info" size={size} dot className={className}>
-            Ban Quản Lý
+            Quản lý Tòa nhà
           </Badge>
         );
       case 'STAFF_TECHNICIAN':

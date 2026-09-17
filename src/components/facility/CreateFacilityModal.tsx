@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateFacility, useUpdateFacility } from '@/hooks/use-facilities';
+import { useBuildingContext } from '@/context/BuildingContext';
 import { FacilityType, FacilityStatus } from '@prisma/client';
 import {
   FACILITY_TYPE_LABELS,
@@ -30,6 +31,7 @@ export function CreateFacilityModal({
   onOpenChange,
   facilityToEdit,
 }: CreateFacilityModalProps) {
+  const { selectedBuildingId } = useBuildingContext();
   const createMutation = useCreateFacility();
   const updateMutation = useUpdateFacility();
 
@@ -102,6 +104,7 @@ export function CreateFacilityModal({
         name: name.trim(),
         type,
         location: location.trim(),
+        buildingId: selectedBuildingId || undefined,
         openTime,
         closeTime,
         slotDuration: Number(slotDuration),

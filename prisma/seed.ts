@@ -311,13 +311,100 @@ async function main() {
 
   const managerUser = await prisma.user.upsert({
     where: { email: 'manager@building.com' },
-    update: { passwordHash: managerPassword },
+    update: { passwordHash: managerPassword, role: Role.MANAGER },
     create: {
       email: 'manager@building.com',
       passwordHash: managerPassword,
-      fullName: 'Trần Minh Đức (Trưởng BQL)',
+      fullName: 'Trần Minh Đức (Trưởng BQL SmartCity)',
       phone: '0912345678',
       role: Role.MANAGER,
+    },
+  });
+
+  const manager2User = await prisma.user.upsert({
+    where: { email: 'manager2@building.com' },
+    update: { passwordHash: managerPassword, role: Role.MANAGER },
+    create: {
+      email: 'manager2@building.com',
+      passwordHash: managerPassword,
+      fullName: 'Lê Thị Thu Thảo (Quản lý Sunrise Tower)',
+      phone: '0918765432',
+      role: Role.MANAGER,
+    },
+  });
+
+  // Second Building for Multi-Property & Scope Verification
+  const sunriseBuilding = await prisma.building.upsert({
+    where: { code: 'SUNRISE-TOWER' },
+    update: {},
+    create: {
+      code: 'SUNRISE-TOWER',
+      name: 'Tòa nhà Sunrise Tower',
+      address: 'Số 25 Đường Lê Duẩn, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+      description: 'Khu căn hộ dịch vụ cao cấp Sunrise Tower',
+    },
+  });
+
+  // Assign Managers to respective Buildings
+  await prisma.managerBuilding.upsert({
+    where: { managerId_buildingId: { managerId: managerUser.id, buildingId: masterBuilding.id } },
+    update: {},
+    create: {
+      managerId: managerUser.id,
+      buildingId: masterBuilding.id,
+    },
+  });
+
+  await prisma.managerBuilding.upsert({
+    where: { managerId_buildingId: { managerId: manager2User.id, buildingId: sunriseBuilding.id } },
+    update: {},
+    create: {
+      managerId: manager2User.id,
+      buildingId: sunriseBuilding.id,
+    },
+  });
+
+  // Seed sample block & apartment for Sunrise Tower
+  const sunriseBlock = await prisma.block.upsert({
+    where: { buildingId_code: { buildingId: sunriseBuilding.id, code: 'BLOCK-S1' } },
+    update: {},
+    create: {
+      buildingId: sunriseBuilding.id,
+      code: 'BLOCK-S1',
+      name: 'Tháp Sunrise S1',
+      totalFloors: 10,
+    },
+  });
+
+  const sunriseFloor = await prisma.floor.upsert({
+    where: { blockId_floorNumber: { blockId: sunriseBlock.id, floorNumber: 5 } },
+    update: {},
+    create: {
+      blockId: sunriseBlock.id,
+      floorNumber: 5,
+      name: 'Tầng 05',
+    },
+  });
+
+  await prisma.apartment.upsert({
+    where: { code: 'SR-0501' },
+    update: {
+      buildingId: sunriseBuilding.id,
+      blockId: sunriseBlock.id,
+      floorId: sunriseFloor.id,
+    },
+    create: {
+      code: 'SR-0501',
+      building: sunriseBuilding.name,
+      floor: 5,
+      bedrooms: 2,
+      bathrooms: 2,
+      area: 82.5,
+      status: ApartmentStatus.OCCUPIED,
+      note: 'Căn hộ view công viên Tao Đàn',
+      buildingId: sunriseBuilding.id,
+      blockId: sunriseBlock.id,
+      floorId: sunriseFloor.id,
     },
   });
 

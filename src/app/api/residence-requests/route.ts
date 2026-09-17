@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || undefined;
     let apartmentId = searchParams.get('apartmentId') || undefined;
+    const buildingId = searchParams.get('buildingId') || undefined;
     const status = (searchParams.get('status') as ResidenceRequestStatus) || undefined;
     const type = (searchParams.get('type') as ResidenceRequestType) || undefined;
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -33,10 +34,29 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    let assignedBuildingIds: string[] | undefined = undefined;
+    if (session.user.role === 'MANAGER') {
+      const { getUserAssignedBuildingIds } = await import('@/lib/building-scope');
+      assignedBuildingIds = await getUserAssignedBuildingIds(session.user.id);
+      if (assignedBuildingIds.length === 0) {
+        return apiSuccess([], 'Lấy danh sách yêu cầu cư trú thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 1,
+        });
+      }
+      if (buildingId && !assignedBuildingIds.includes(buildingId)) {
+        return apiForbidden('Bạn không có quyền truy cập dữ liệu tòa nhà này');
+      }
+    }
+
     const result = await householdService.getRequests({
       search,
       apartmentId,
       requesterId,
+      buildingId,
+      buildingIds: assignedBuildingIds,
       status,
       type,
       page,

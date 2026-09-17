@@ -3,6 +3,8 @@ import { ResidentRelationship, ResidentStatus } from '@prisma/client';
 export interface ResidentFilter {
   search?: string;
   apartmentId?: string;
+  buildingId?: string;
+  buildingIds?: string[];
   relationshipToOwner?: ResidentRelationship;
   status?: ResidentStatus;
   page?: number;

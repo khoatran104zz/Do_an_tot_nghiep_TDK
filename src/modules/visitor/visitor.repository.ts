@@ -9,37 +9,63 @@ import {
 
 export class VisitorRepository {
   async findPasses(filter: VisitorPassFilter = {}, scopedApartmentId?: string) {
-    const { search, apartmentId, status, date, page = 1, limit = 20 } = filter;
+    const { search, apartmentId, buildingId, buildingIds, status, date, page = 1, limit = 20 } = filter;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.VisitorPassWhereInput = {};
+    const andClauses: Prisma.VisitorPassWhereInput[] = [];
 
     // IDOR Protection: If scopedApartmentId provided (for residents), enforce it
     if (scopedApartmentId) {
-      where.apartmentId = scopedApartmentId;
+      andClauses.push({ apartmentId: scopedApartmentId });
     } else if (apartmentId) {
-      where.apartmentId = apartmentId;
+      andClauses.push({ apartmentId });
     }
 
-    if (status) where.status = status;
+    if (buildingIds && buildingIds.length > 0) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId: { in: buildingIds } },
+            { block: { buildingId: { in: buildingIds } } },
+          ],
+        },
+      });
+    } else if (buildingId) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId },
+            { block: { buildingId } },
+          ],
+        },
+      });
+    }
+
+    if (status) andClauses.push({ status });
 
     if (date) {
       const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
-      where.visitDate = {
-        gte: new Date(`${dateStr}T00:00:00.000Z`),
-        lte: new Date(`${dateStr}T23:59:59.999Z`),
-      };
+      andClauses.push({
+        visitDate: {
+          gte: new Date(`${dateStr}T00:00:00.000Z`),
+          lte: new Date(`${dateStr}T23:59:59.999Z`),
+        },
+      });
     }
 
     if (search && search.trim()) {
       const q = search.trim();
-      where.OR = [
-        { passCode: { contains: q, mode: 'insensitive' } },
-        { visitorName: { contains: q, mode: 'insensitive' } },
-        { visitorPhone: { contains: q, mode: 'insensitive' } },
-        { licensePlate: { contains: q, mode: 'insensitive' } },
-      ];
+      andClauses.push({
+        OR: [
+          { passCode: { contains: q, mode: 'insensitive' } },
+          { visitorName: { contains: q, mode: 'insensitive' } },
+          { visitorPhone: { contains: q, mode: 'insensitive' } },
+          { licensePlate: { contains: q, mode: 'insensitive' } },
+        ],
+      });
     }
+
+    const where: Prisma.VisitorPassWhereInput = andClauses.length > 0 ? { AND: andClauses } : {};
 
     const [items, total] = await Promise.all([
       prisma.visitorPass.findMany({
@@ -273,25 +299,39 @@ export class VisitorRepository {
     });
   }
 
-  async getStats(): Promise<VisitorDashboardStats> {
+  async getStats(buildingIds?: string[]): Promise<VisitorDashboardStats> {
     const todayStr = new Date().toISOString().split('T')[0];
     const todayStart = new Date(`${todayStr}T00:00:00.000Z`);
     const todayEnd = new Date(`${todayStr}T23:59:59.999Z`);
 
+    const buildingScope: Prisma.VisitorPassWhereInput =
+      buildingIds && buildingIds.length > 0
+        ? {
+            apartment: {
+              OR: [
+                { buildingId: { in: buildingIds } },
+                { block: { buildingId: { in: buildingIds } } },
+              ],
+            },
+          }
+        : {};
+
     const [activeVisitors, todayTotal, pendingToday, checkedOutToday] = await Promise.all([
       // Currently inside building
       prisma.visitorPass.count({
-        where: { status: VisitorStatus.CHECKED_IN },
+        where: { ...buildingScope, status: VisitorStatus.CHECKED_IN },
       }),
       // Scheduled / visited today
       prisma.visitorPass.count({
         where: {
+          ...buildingScope,
           visitDate: { gte: todayStart, lte: todayEnd },
         },
       }),
       // Expected today but not arrived yet
       prisma.visitorPass.count({
         where: {
+          ...buildingScope,
           visitDate: { gte: todayStart, lte: todayEnd },
           status: VisitorStatus.PENDING,
         },
@@ -299,6 +339,7 @@ export class VisitorRepository {
       // Checked out today
       prisma.visitorPass.count({
         where: {
+          ...buildingScope,
           checkOutAt: { gte: todayStart, lte: todayEnd },
           status: VisitorStatus.CHECKED_OUT,
         },

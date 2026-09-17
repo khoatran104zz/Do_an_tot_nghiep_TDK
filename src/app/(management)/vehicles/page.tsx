@@ -52,6 +52,7 @@ import {
 } from '@/hooks/use-vehicles';
 import { useApartments } from '@/hooks/use-apartments';
 import { useResidents } from '@/hooks/use-residents';
+import { useBuildingContext } from '@/context/BuildingContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VehicleType, VehicleStatus, ParkingCardStatus } from '@prisma/client';
 import { toast } from 'sonner';
@@ -59,6 +60,7 @@ import { toast } from 'sonner';
 function VehiclesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { selectedBuildingId } = useBuildingContext();
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'MANAGER';
   const canManage = userRole === 'ADMIN' || userRole === 'MANAGER';
@@ -115,6 +117,7 @@ function VehiclesContent() {
   // Queries
   const { data: response, isLoading, isError, error, refetch } = useVehicles({
     search: search || undefined,
+    buildingId: selectedBuildingId || undefined,
     building: buildingFilter || undefined,
     apartmentId: apartmentFilter || undefined,
     type: (typeFilter as VehicleType) || undefined,
@@ -124,7 +127,10 @@ function VehiclesContent() {
     limit: 10,
   });
 
-  const { data: apartmentsRes } = useApartments({ limit: 150 });
+  const { data: apartmentsRes } = useApartments({
+    limit: 150,
+    buildingId: selectedBuildingId || undefined,
+  });
   const apartments = apartmentsRes?.data || [];
 
   // Filter residents based on selected apartment in form

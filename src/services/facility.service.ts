@@ -15,8 +15,10 @@ export const facilityClientService = {
     return apiClient('/facilities', { params: filter as any });
   },
 
-  async getFacilityStats() {
-    return apiClient('/facilities/stats');
+  async getFacilityStats(buildingId?: string) {
+    return apiClient('/facilities/stats', {
+      params: buildingId ? { buildingId } : undefined,
+    });
   },
 
   async getFacilityById(id: string) {

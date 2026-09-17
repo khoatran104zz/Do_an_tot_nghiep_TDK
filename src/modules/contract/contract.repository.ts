@@ -4,41 +4,67 @@ import { Prisma } from '@prisma/client';
 
 export class ContractRepository {
   async findAll(filter: ContractFilter) {
-    const { search, apartmentId, type, status, expiringSoon, page = 1, limit = 10 } = filter;
+    const { search, apartmentId, buildingId, buildingIds, type, status, expiringSoon, page = 1, limit = 10 } = filter;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ContractWhereInput = {};
+    const andClauses: Prisma.ContractWhereInput[] = [];
 
     if (search) {
-      where.OR = [
-        { contractCode: { contains: search, mode: 'insensitive' } },
-        { apartment: { code: { contains: search, mode: 'insensitive' } } },
-        { resident: { fullName: { contains: search, mode: 'insensitive' } } },
-      ];
+      andClauses.push({
+        OR: [
+          { contractCode: { contains: search, mode: 'insensitive' } },
+          { apartment: { code: { contains: search, mode: 'insensitive' } } },
+          { resident: { fullName: { contains: search, mode: 'insensitive' } } },
+        ],
+      });
     }
 
     if (apartmentId) {
-      where.apartmentId = apartmentId;
+      andClauses.push({ apartmentId });
+    }
+
+    if (buildingIds && buildingIds.length > 0) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId: { in: buildingIds } },
+            { block: { buildingId: { in: buildingIds } } },
+          ],
+        },
+      });
+    } else if (buildingId) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId },
+            { block: { buildingId } },
+          ],
+        },
+      });
     }
 
     if (type) {
-      where.type = type;
+      andClauses.push({ type });
     }
 
     if (status) {
-      where.status = status;
+      andClauses.push({ status });
     }
 
     if (expiringSoon) {
       const now = new Date();
       const in30Days = new Date();
       in30Days.setDate(now.getDate() + 30);
-      where.endDate = {
-        gte: now,
-        lte: in30Days,
-      };
-      where.status = 'ACTIVE';
+      andClauses.push({
+        endDate: {
+          gte: now,
+          lte: in30Days,
+        },
+        status: 'ACTIVE',
+      });
     }
+
+    const where: Prisma.ContractWhereInput = andClauses.length > 0 ? { AND: andClauses } : {};
 
     const [items, total] = await Promise.all([
       prisma.contract.findMany({

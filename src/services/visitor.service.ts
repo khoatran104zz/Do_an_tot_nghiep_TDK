@@ -11,8 +11,10 @@ export const visitorClientService = {
     return apiClient('/visitors', { params: filter as any });
   },
 
-  async getVisitorStats() {
-    return apiClient('/visitors/stats');
+  async getVisitorStats(buildingId?: string) {
+    return apiClient('/visitors/stats', {
+      params: buildingId ? { buildingId } : undefined,
+    });
   },
 
   async getVisitorPassById(id: string) {

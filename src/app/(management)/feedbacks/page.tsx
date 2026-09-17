@@ -13,12 +13,14 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { MessageSquareWarning, Wrench, ShieldAlert, CheckCircle2, Clock, Eye, Send, Star, Building, User, Tag } from 'lucide-react';
 import { useFeedbacks, useRespondFeedback } from '@/hooks/use-feedbacks';
+import { useBuildingContext } from '@/context/BuildingContext';
 import { TicketCategory, TicketPriority, TicketStatus } from '@prisma/client';
 import { formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function FeedbacksPage() {
   const router = useRouter();
+  const { selectedBuildingId } = useBuildingContext();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -39,6 +41,7 @@ export default function FeedbacksPage() {
 
   const { data: response, isLoading, isError, error, refetch } = useFeedbacks({
     search: search || undefined,
+    buildingId: selectedBuildingId || undefined,
     category: (categoryFilter as TicketCategory) || undefined,
     status: (statusFilter as TicketStatus) || undefined,
     page,

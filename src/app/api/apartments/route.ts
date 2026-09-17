@@ -4,7 +4,11 @@ import { apartmentSchema } from '@/modules/apartment/apartment.schema';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getVerifiedResidentInfo } from '@/lib/authorization';
+import {
+  getVerifiedResidentInfo,
+  getManagerAssignedBuildingIds,
+  authorizeBuildingAccess,
+} from '@/lib/authorization';
 
 export async function GET(req: NextRequest) {
   try {
@@ -44,10 +48,30 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Manager Scope Guard: Restrict query to assigned buildings
+    let finalBuildingId = buildingId;
+    let finalBuildingIds: string[] | undefined = undefined;
+
+    if (session.user.role === 'MANAGER') {
+      const assignedIds = session.user.assignedBuildingIds?.length
+        ? session.user.assignedBuildingIds
+        : await getManagerAssignedBuildingIds(session.user.id);
+
+      if (buildingId) {
+        if (!assignedIds.includes(buildingId)) {
+          return apiForbidden('Bạn không có quyền truy cập căn hộ của tòa nhà này');
+        }
+        finalBuildingId = buildingId;
+      } else {
+        finalBuildingIds = assignedIds;
+      }
+    }
+
     const result = await apartmentService.getApartments({
       search,
       building,
-      buildingId,
+      buildingId: finalBuildingId,
+      buildingIds: finalBuildingIds,
       block,
       blockId,
       floor,
@@ -76,6 +100,16 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validated = apartmentSchema.parse(body);
+
+    // Manager Scope Guard: Can only create apartment in assigned building
+    if (session.user.role === 'MANAGER') {
+      if (validated.buildingId) {
+        const authCheck = await authorizeBuildingAccess(session.user, validated.buildingId);
+        if (!authCheck.allowed) {
+          return apiForbidden(authCheck.error || 'Bạn không có quyền tạo căn hộ tại tòa nhà này');
+        }
+      }
+    }
     const item = await apartmentService.createApartment(validated, {
       id: session.user.id,
       email: session.user.email,

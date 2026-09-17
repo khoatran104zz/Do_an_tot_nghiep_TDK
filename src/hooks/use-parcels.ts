@@ -15,10 +15,10 @@ export function useParcels(filter: ParcelFilter = {}) {
   });
 }
 
-export function useParcelStats() {
+export function useParcelStats(buildingId?: string) {
   return useQuery({
-    queryKey: ['parcel-stats'],
-    queryFn: () => parcelClientService.getParcelStats(),
+    queryKey: ['parcel-stats', buildingId],
+    queryFn: () => parcelClientService.getParcelStats(buildingId),
     refetchInterval: 30000, // Tự động làm mới mỗi 30s
   });
 }

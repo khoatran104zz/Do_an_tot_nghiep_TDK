@@ -28,8 +28,10 @@ import {
 } from '@/modules/asset/asset.constants';
 import { CreateAssetModal } from '@/components/asset/CreateAssetModal';
 import { CreateScheduleModal } from '@/components/asset/CreateScheduleModal';
+import { useBuildingContext } from '@/context/BuildingContext';
 
 export default function AssetsManagementPage() {
+  const { selectedBuildingId } = useBuildingContext();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<AssetCategory | ''>('');
   const [selectedStatus, setSelectedStatus] = useState<AssetStatus | ''>('');
@@ -39,9 +41,12 @@ export default function AssetsManagementPage() {
   const [schedulePreselectedAssetId, setSchedulePreselectedAssetId] = useState<string | undefined>();
 
   // Fetch stats & assets list
-  const { data: statsData, isLoading: isStatsLoading } = useAssetStats();
+  const { data: statsData, isLoading: isStatsLoading } = useAssetStats(
+    selectedBuildingId || undefined
+  );
   const { data: assetsData, isLoading: isAssetsLoading } = useAssets({
     search: search || undefined,
+    buildingId: selectedBuildingId || undefined,
     category: selectedCategory || undefined,
     status: selectedStatus || undefined,
     limit: 50,

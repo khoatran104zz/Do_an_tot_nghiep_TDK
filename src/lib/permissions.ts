@@ -94,10 +94,29 @@ export type Permission =
   | 'dashboard:security'
   | 'dashboard:receptionist'
   | 'dashboard:resident'
+  // Building (Property)
+  | 'building:read'
+  | 'building:create'
+  | 'building:update'
+  | 'building:delete'
+  | 'building:assign_manager'
+  // Manager Management
+  | 'manager:read'
+  | 'manager:create'
+  | 'manager:update'
+  | 'manager:delete'
+  | 'manager:assign'
+  // Staff Management
+  | 'staff:read'
+  | 'staff:create'
+  | 'staff:update'
+  | 'staff:delete'
   // Reports
   | 'report:read'
   | 'report:export'
-  // System Administration
+  // Access Control & System Administration
+  | 'access_control:manage'
+  | 'audit:read'
   | 'system:manage'
   | 'system:users:manage';
 
@@ -108,6 +127,9 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ADMIN: ['*'],
 
   MANAGER: [
+    // Building (Scoped to assigned)
+    'building:read',
+    'building:update',
     // Apartment
     'apartment:read',
     'apartment:create',
@@ -123,6 +145,10 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'contract:create',
     'contract:update',
     'contract:delete',
+    // Staff (Scoped operational staff only)
+    'staff:read',
+    'staff:create',
+    'staff:update',
     // Financial
     'fee:read',
     'fee:manage',
@@ -298,3 +324,12 @@ export const isSecurityRole = (role: Role | string | undefined | null): boolean 
 
 export const isReceptionistRole = (role: Role | string | undefined | null): boolean =>
   role === Role.ADMIN || role === Role.MANAGER || role === Role.STAFF_RECEPTIONIST;
+
+export const isAdmin = (role: Role | string | undefined | null): boolean =>
+  role === Role.ADMIN || role === 'ADMIN';
+
+export const isManager = (role: Role | string | undefined | null): boolean =>
+  role === Role.MANAGER || role === 'MANAGER';
+
+export const can = (role: Role | string | undefined | null, permission: Permission): boolean =>
+  hasPermission(role, permission);

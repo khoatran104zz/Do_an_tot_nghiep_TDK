@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateAsset } from '@/hooks/use-assets';
+import { useBuildingContext } from '@/context/BuildingContext';
 import { AssetCategory, AssetStatus } from '@prisma/client';
 import { ASSET_CATEGORY_LABELS, ASSET_STATUS_LABELS } from '@/modules/asset/asset.constants';
 import { Loader2, Plus, Wrench } from 'lucide-react';
@@ -23,12 +24,13 @@ interface CreateAssetModalProps {
 }
 
 export function CreateAssetModal({ open, onOpenChange, buildings = [] }: CreateAssetModalProps) {
+  const { selectedBuildingId } = useBuildingContext();
   const createAsset = useCreateAsset();
 
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [category, setCategory] = useState<AssetCategory>('ELEVATOR');
-  const [buildingId, setBuildingId] = useState('');
+  const [buildingId, setBuildingId] = useState(selectedBuildingId || '');
   const [location, setLocation] = useState('');
   const [supplier, setSupplier] = useState('');
   const [installDate, setInstallDate] = useState('');

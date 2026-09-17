@@ -15,6 +15,8 @@ export class VehicleError extends Error {
 export interface VehicleFilter {
   search?: string;
   building?: string;
+  buildingId?: string;
+  buildingIds?: string[];
   apartmentId?: string;
   residentId?: string;
   type?: VehicleType;
@@ -60,6 +62,8 @@ export interface ParkingCardFilter {
   search?: string;
   vehicleId?: string;
   apartmentId?: string;
+  buildingId?: string;
+  buildingIds?: string[];
   status?: ParkingCardStatus;
   page?: number;
   limit?: number;

@@ -18,10 +18,10 @@ export function useFacilities(filter: FacilityFilter = {}) {
   });
 }
 
-export function useFacilityStats() {
+export function useFacilityStats(buildingId?: string) {
   return useQuery({
-    queryKey: ['facility-stats'],
-    queryFn: () => facilityClientService.getFacilityStats(),
+    queryKey: ['facility-stats', buildingId],
+    queryFn: () => facilityClientService.getFacilityStats(buildingId),
   });
 }
 

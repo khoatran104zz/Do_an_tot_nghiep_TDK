@@ -42,17 +42,22 @@ import { VisitorStatus } from '@prisma/client';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { useBuildingContext } from '@/context/BuildingContext';
 
 export default function VisitorsManagementPage() {
+  const { selectedBuildingId } = useBuildingContext();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [dateFilter, setDateFilter] = useState<string>('');
   const [selectedPass, setSelectedPass] = useState<any | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
 
-  const { data: statsData, isLoading: isStatsLoading } = useVisitorStats();
+  const { data: statsData, isLoading: isStatsLoading } = useVisitorStats(
+    selectedBuildingId || undefined
+  );
   const { data: passesData, isLoading: isPassesLoading, refetch } = useVisitorPasses({
     search: searchTerm.trim() || undefined,
+    buildingId: selectedBuildingId || undefined,
     status: statusFilter === 'ALL' ? undefined : (statusFilter as VisitorStatus),
     date: dateFilter || undefined,
   });

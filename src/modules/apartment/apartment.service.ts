@@ -377,8 +377,8 @@ export class ApartmentService {
     return apartmentRepository.getBuildings();
   }
 
-  async getHierarchy() {
-    return apartmentRepository.getHierarchy();
+  async getHierarchy(buildingIds?: string[]) {
+    return apartmentRepository.getHierarchy(buildingIds);
   }
 
   async bootstrapHierarchy() {

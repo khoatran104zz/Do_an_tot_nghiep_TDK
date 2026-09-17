@@ -4,6 +4,7 @@ export interface ApartmentFilter {
   search?: string;
   building?: string;
   buildingId?: string;
+  buildingIds?: string[];
   block?: string;
   blockId?: string;
   floor?: number;

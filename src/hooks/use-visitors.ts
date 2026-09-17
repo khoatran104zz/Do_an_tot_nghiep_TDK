@@ -14,10 +14,10 @@ export function useVisitorPasses(filter: VisitorFilter = {}) {
   });
 }
 
-export function useVisitorStats() {
+export function useVisitorStats(buildingId?: string) {
   return useQuery({
-    queryKey: ['visitor-stats'],
-    queryFn: () => visitorClientService.getVisitorStats(),
+    queryKey: ['visitor-stats', buildingId],
+    queryFn: () => visitorClientService.getVisitorStats(buildingId),
   });
 }
 

@@ -11,39 +11,64 @@ export class ParcelRepository {
     const limit = Math.min(100, Math.max(1, filter.limit || 20));
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ParcelDeliveryWhereInput = {};
+    const andClauses: Prisma.ParcelDeliveryWhereInput[] = [];
 
     // IDOR Protection: resident scoped strictly to their own apartment
     if (scopedApartmentId) {
-      where.apartmentId = scopedApartmentId;
+      andClauses.push({ apartmentId: scopedApartmentId });
     } else if (filter.apartmentId) {
-      where.apartmentId = filter.apartmentId;
+      andClauses.push({ apartmentId: filter.apartmentId });
+    }
+
+    if (filter.buildingIds && filter.buildingIds.length > 0) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId: { in: filter.buildingIds } },
+            { block: { buildingId: { in: filter.buildingIds } } },
+          ],
+        },
+      });
+    } else if (filter.buildingId) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId: filter.buildingId },
+            { block: { buildingId: filter.buildingId } },
+          ],
+        },
+      });
     }
 
     if (filter.status) {
-      where.status = filter.status;
+      andClauses.push({ status: filter.status });
     }
 
     if (filter.carrier) {
-      where.carrier = { contains: filter.carrier, mode: 'insensitive' };
+      andClauses.push({ carrier: { contains: filter.carrier, mode: 'insensitive' } });
     }
 
     if (filter.search) {
       const search = filter.search.trim();
-      where.OR = [
-        { trackingNumber: { contains: search, mode: 'insensitive' } },
-        { recipientName: { contains: search, mode: 'insensitive' } },
-        { recipientPhone: { contains: search, mode: 'insensitive' } },
-        { pickupCode: { contains: search, mode: 'insensitive' } },
-        { apartment: { code: { contains: search, mode: 'insensitive' } } },
-      ];
+      andClauses.push({
+        OR: [
+          { trackingNumber: { contains: search, mode: 'insensitive' } },
+          { recipientName: { contains: search, mode: 'insensitive' } },
+          { recipientPhone: { contains: search, mode: 'insensitive' } },
+          { pickupCode: { contains: search, mode: 'insensitive' } },
+          { apartment: { code: { contains: search, mode: 'insensitive' } } },
+        ],
+      });
     }
 
     if (filter.startDate || filter.endDate) {
-      where.receivedAt = {};
-      if (filter.startDate) where.receivedAt.gte = new Date(filter.startDate);
-      if (filter.endDate) where.receivedAt.lte = new Date(filter.endDate);
+      const receivedAtClause: Prisma.DateTimeFilter = {};
+      if (filter.startDate) receivedAtClause.gte = new Date(filter.startDate);
+      if (filter.endDate) receivedAtClause.lte = new Date(filter.endDate);
+      andClauses.push({ receivedAt: receivedAtClause });
     }
+
+    const where: Prisma.ParcelDeliveryWhereInput = andClauses.length > 0 ? { AND: andClauses } : {};
 
     const [total, items] = await Promise.all([
       prisma.parcelDelivery.count({ where }),
@@ -195,7 +220,7 @@ export class ParcelRepository {
     await prisma.parcelDelivery.delete({ where: { id } });
   }
 
-  async getStats(scopedApartmentId?: string) {
+  async getStats(scopedApartmentId?: string, buildingIds?: string[]) {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -203,6 +228,14 @@ export class ParcelRepository {
 
     const baseWhere: Prisma.ParcelDeliveryWhereInput = {};
     if (scopedApartmentId) baseWhere.apartmentId = scopedApartmentId;
+    if (buildingIds && buildingIds.length > 0) {
+      baseWhere.apartment = {
+        OR: [
+          { buildingId: { in: buildingIds } },
+          { block: { buildingId: { in: buildingIds } } },
+        ],
+      };
+    }
 
     const [totalPending, receivedToday, collectedToday, overdueCount, totalMonthly] = await Promise.all([
       prisma.parcelDelivery.count({

@@ -10,6 +10,7 @@ declare module 'next-auth' {
       avatarUrl?: string | null;
       residentId?: string | null;
       apartmentId?: string | null;
+      assignedBuildingIds?: string[];
     } & DefaultSession['user'];
   }
 
@@ -20,6 +21,7 @@ declare module 'next-auth' {
     avatarUrl?: string | null;
     residentId?: string | null;
     apartmentId?: string | null;
+    assignedBuildingIds?: string[];
   }
 }
 
@@ -31,5 +33,6 @@ declare module 'next-auth/jwt' {
     avatarUrl?: string | null;
     residentId?: string | null;
     apartmentId?: string | null;
+    assignedBuildingIds?: string[];
   }
 }

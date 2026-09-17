@@ -26,8 +26,8 @@ export function UserMenu() {
   const notificationsHref = role === 'RESIDENT' ? '/resident/notifications' : '/notifications';
 
   const roleLabels: Record<string, string> = {
-    ADMIN: 'Quản trị viên',
-    MANAGER: 'Ban Quản Lý',
+    ADMIN: 'Quản trị viên Cấp cao (Super Admin)',
+    MANAGER: 'Quản lý Tòa nhà (BQL)',
     STAFF_TECHNICIAN: 'Kỹ thuật viên',
     STAFF_SECURITY: 'Nhân viên An ninh',
     STAFF_RECEPTIONIST: 'Nhân viên Lễ tân',
@@ -51,7 +51,7 @@ export function UserMenu() {
             <span className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
               {user?.name || 'Người dùng'}
             </span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5 font-medium">
               {roleLabels[role] || 'Người dùng'}
             </span>
           </div>
@@ -78,7 +78,11 @@ export function UserMenu() {
 
         <Link href={homeHref}>
           <DropdownItem icon={<Home className="h-4 w-4" />}>
-            {role === 'RESIDENT' ? 'Trang chủ Cư dân' : 'Bảng điều khiển BQL'}
+            {role === 'ADMIN'
+              ? 'Trung tâm Điều hành Hệ thống'
+              : role === 'RESIDENT'
+              ? 'Trang chủ Cư dân'
+              : 'Bàn làm việc Tòa nhà'}
           </DropdownItem>
         </Link>
 

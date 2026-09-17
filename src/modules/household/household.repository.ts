@@ -103,22 +103,46 @@ export class HouseholdRepository {
     } = filter;
 
     const skip = (page - 1) * limit;
-    const where: Prisma.ResidenceRequestWhereInput = {};
+    const andClauses: Prisma.ResidenceRequestWhereInput[] = [];
 
-    if (apartmentId) where.apartmentId = apartmentId;
-    if (requesterId) where.requesterId = requesterId;
-    if (status) where.status = status;
-    if (type) where.type = type;
+    if (apartmentId) andClauses.push({ apartmentId });
+    if (requesterId) andClauses.push({ requesterId });
+    if (status) andClauses.push({ status });
+    if (type) andClauses.push({ type });
 
     if (search) {
-      where.OR = [
-        { code: { contains: search, mode: 'insensitive' } },
-        { fullName: { contains: search, mode: 'insensitive' } },
-        { identityCard: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
-        { apartment: { code: { contains: search, mode: 'insensitive' } } },
-      ];
+      andClauses.push({
+        OR: [
+          { code: { contains: search, mode: 'insensitive' } },
+          { fullName: { contains: search, mode: 'insensitive' } },
+          { identityCard: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
+          { apartment: { code: { contains: search, mode: 'insensitive' } } },
+        ],
+      });
     }
+
+    if (filter.buildingId) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId: filter.buildingId },
+            { block: { buildingId: filter.buildingId } },
+          ],
+        },
+      });
+    } else if (filter.buildingIds && filter.buildingIds.length > 0) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId: { in: filter.buildingIds } },
+            { block: { buildingId: { in: filter.buildingIds } } },
+          ],
+        },
+      });
+    }
+
+    const where: Prisma.ResidenceRequestWhereInput = andClauses.length > 0 ? { AND: andClauses } : {};
 
     const [items, total] = await Promise.all([
       prisma.residenceRequest.findMany({

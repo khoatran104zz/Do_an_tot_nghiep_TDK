@@ -17,12 +17,31 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validated = generateMonthlyInvoicesSchema.parse(body);
-    const result = await invoiceService.generateMonthlyInvoices(validated, {
-      actorId: session.user.id,
-      actorEmail: session.user.email,
-      actorRole: session.user.role,
-      ipAddress: req.headers.get('x-forwarded-for') || '127.0.0.1',
-    });
+
+    let assignedBuildingIds: string[] | undefined = undefined;
+    if (session.user.role === 'MANAGER') {
+      const { getUserAssignedBuildingIds } = await import('@/lib/building-scope');
+      assignedBuildingIds = await getUserAssignedBuildingIds(session.user.id);
+      if (assignedBuildingIds.length === 0) {
+        return apiForbidden('Bạn chưa được phân công quản lý tòa nhà nào');
+      }
+      if (validated.buildingId && !assignedBuildingIds.includes(validated.buildingId)) {
+        return apiForbidden('Bạn không có quyền phát hành hóa đơn cho tòa nhà này');
+      }
+    }
+
+    const result = await invoiceService.generateMonthlyInvoices(
+      {
+        ...validated,
+        buildingIds: assignedBuildingIds,
+      },
+      {
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        actorRole: session.user.role,
+        ipAddress: req.headers.get('x-forwarded-for') || '127.0.0.1',
+      }
+    );
 
     return apiSuccess(
       result,

@@ -84,9 +84,11 @@ import {
   FloorFormModal,
   ApartmentFormModal,
 } from '@/components/property/PropertyModals';
+import { useBuildingContext } from '@/context/BuildingContext';
 
 export default function ApartmentsPage() {
   const router = useRouter();
+  const { selectedBuildingId } = useBuildingContext();
   // View mode switcher: 'TREE', 'FLOOR_PLAN', 'LIST'
   const [viewMode, setViewMode] = useState<'TREE' | 'FLOOR_PLAN' | 'LIST'>('TREE');
 
@@ -160,6 +162,7 @@ export default function ApartmentsPage() {
     refetch: refetchList,
   } = useApartments({
     search: search || undefined,
+    buildingId: selectedBuildingId || undefined,
     building: blockFilter ? (blockFilter.includes('A') ? 'Tòa A' : blockFilter.includes('B') ? 'Tòa B' : 'Tòa C') : undefined,
     block: blockFilter || undefined,
     floor: floorFilter ? parseInt(floorFilter, 10) : undefined,
@@ -169,7 +172,9 @@ export default function ApartmentsPage() {
   });
 
   // Hierarchy query
-  const { data: hierarchyResponse, refetch: refetchHierarchy } = useApartmentHierarchy();
+  const { data: hierarchyResponse, refetch: refetchHierarchy } = useApartmentHierarchy(
+    selectedBuildingId || undefined
+  );
 
   // History query for inspecting apartment
   const {

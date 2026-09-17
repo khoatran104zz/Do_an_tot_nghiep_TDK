@@ -41,6 +41,13 @@ export async function PUT(
     if (session.user.role === 'RESIDENT') return apiForbidden();
 
     const { id } = await params;
+
+    // Scope check: Manager can only update apartments in assigned buildings
+    const authCheck = await authorizeApartmentAccess(session.user, id);
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error || 'Bạn không có quyền cập nhật căn hộ này');
+    }
+
     const body = await req.json();
     const validated = apartmentSchema.partial().parse(body);
     const updated = await apartmentService.updateApartment(id, validated, {
@@ -68,6 +75,12 @@ export async function DELETE(
     if (session.user.role === 'RESIDENT') return apiForbidden();
 
     const { id } = await params;
+
+    // Scope check: Manager can only delete apartments in assigned buildings
+    const authCheck = await authorizeApartmentAccess(session.user, id);
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error || 'Bạn không có quyền xóa căn hộ này');
+    }
     await apartmentService.deleteApartment(id, {
       id: session.user.id,
       email: session.user.email,

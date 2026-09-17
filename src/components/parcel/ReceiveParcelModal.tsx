@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useReceiveParcel } from '@/hooks/use-parcels';
 import { useApartments } from '@/hooks/use-apartments';
+import { useBuildingContext } from '@/context/BuildingContext';
 import { POPULAR_CARRIERS, PARCEL_LOCATIONS } from '@/modules/parcel/parcel.constants';
 import { ReceiveParcelDto } from '@/modules/parcel/parcel.types';
 
@@ -31,6 +32,7 @@ export const ReceiveParcelModal: React.FC<ReceiveParcelModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { selectedBuildingId } = useBuildingContext();
   const [formData, setFormData] = useState<ReceiveParcelDto>({
     apartmentId: '',
     recipientId: '',
@@ -49,7 +51,10 @@ export const ReceiveParcelModal: React.FC<ReceiveParcelModalProps> = ({
   const [createdParcel, setCreatedParcel] = useState<any>(null);
 
   const receiveMutation = useReceiveParcel();
-  const { data: aptData, isLoading: isLoadingApts } = useApartments({ limit: 100 });
+  const { data: aptData, isLoading: isLoadingApts } = useApartments({
+    limit: 100,
+    buildingId: selectedBuildingId || undefined,
+  });
   const apartments = aptData?.data || [];
 
   // Reset when opened

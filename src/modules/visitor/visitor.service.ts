@@ -160,8 +160,8 @@ export class VisitorService {
     return cancelled;
   }
 
-  async getStats() {
-    return visitorRepository.getStats();
+  async getStats(buildingIds?: string[]) {
+    return visitorRepository.getStats(buildingIds);
   }
 }
 

@@ -19,11 +19,13 @@ import {
   useGenerateMonthlyInvoices,
   useDeleteInvoice,
 } from '@/hooks/use-invoices';
+import { useBuildingContext } from '@/context/BuildingContext';
 import { InvoiceStatus } from '@prisma/client';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function InvoicesPage() {
+  const { selectedBuildingId } = useBuildingContext();
   const [search, setSearch] = useState('');
   const [billingMonthFilter, setBillingMonthFilter] = useState('2026-08');
   const [statusFilter, setStatusFilter] = useState('');
@@ -48,6 +50,7 @@ export default function InvoicesPage() {
   // Queries
   const { data: response, isLoading, isError, error, refetch } = useInvoices({
     search: search || undefined,
+    buildingId: selectedBuildingId || undefined,
     billingMonth: billingMonthFilter || undefined,
     status: (statusFilter as InvoiceStatus) || undefined,
     page,
@@ -78,12 +81,18 @@ export default function InvoicesPage() {
 
   const handleGenerateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    generateMutation.mutate(generateForm, {
-      onSuccess: () => {
-        setIsGenerateOpen(false);
-        toast.success(`Đã phát hành hàng loạt hóa đơn cho kỳ ${generateForm.billingMonth}`);
+    generateMutation.mutate(
+      {
+        ...generateForm,
+        buildingId: selectedBuildingId || undefined,
       },
-    });
+      {
+        onSuccess: () => {
+          setIsGenerateOpen(false);
+          toast.success(`Đã phát hành hàng loạt hóa đơn cho kỳ ${generateForm.billingMonth}`);
+        },
+      }
+    );
   };
 
   const handleDeleteConfirm = () => {

@@ -63,12 +63,26 @@ import {
   Cell,
 } from 'recharts';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
+import { AdminDashboardView } from '@/components/dashboard/AdminDashboardView';
+import { ManagerDashboardView } from '@/components/dashboard/ManagerDashboardView';
 
 export default function SmartApartmentOperationsDashboard() {
   const router = useRouter();
   const { data: session } = useSession();
   const user = session?.user;
 
+  // 1. Role-specific Dashboards:
+  // Admin: Platform & Cross-Building Overview
+  if (user?.role === 'ADMIN') {
+    return <AdminDashboardView />;
+  }
+
+  // Manager: Building-Scoped Operations Dashboard
+  if (user?.role === 'MANAGER') {
+    return <ManagerDashboardView />;
+  }
+
+  // Operational Staff & Fallback View
   // Selected duration for Revenue Analytics: 6 or 12 months
   const [revenueMonths, setRevenueMonths] = useState<6 | 12>(6);
 

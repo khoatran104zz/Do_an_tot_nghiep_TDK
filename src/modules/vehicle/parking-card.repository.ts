@@ -7,26 +7,54 @@ export class ParkingCardRepository {
     const { search, vehicleId, apartmentId, status, page = 1, limit = 10 } = filter;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ParkingCardWhereInput = {};
+    const andClauses: Prisma.ParkingCardWhereInput[] = [];
 
     if (search) {
-      where.OR = [
-        { cardCode: { contains: search, mode: 'insensitive' } },
-        { vehicle: { licensePlate: { contains: search, mode: 'insensitive' } } },
-      ];
+      andClauses.push({
+        OR: [
+          { cardCode: { contains: search, mode: 'insensitive' } },
+          { vehicle: { licensePlate: { contains: search, mode: 'insensitive' } } },
+        ],
+      });
     }
 
     if (vehicleId) {
-      where.vehicleId = vehicleId;
+      andClauses.push({ vehicleId });
     }
 
     if (apartmentId) {
-      where.vehicle = { apartmentId };
+      andClauses.push({ vehicle: { apartmentId } });
     }
 
     if (status) {
-      where.status = status;
+      andClauses.push({ status });
     }
+
+    if (filter.buildingId) {
+      andClauses.push({
+        vehicle: {
+          apartment: {
+            OR: [
+              { buildingId: filter.buildingId },
+              { block: { buildingId: filter.buildingId } },
+            ],
+          },
+        },
+      });
+    } else if (filter.buildingIds && filter.buildingIds.length > 0) {
+      andClauses.push({
+        vehicle: {
+          apartment: {
+            OR: [
+              { buildingId: { in: filter.buildingIds } },
+              { block: { buildingId: { in: filter.buildingIds } } },
+            ],
+          },
+        },
+      });
+    }
+
+    const where: Prisma.ParkingCardWhereInput = andClauses.length > 0 ? { AND: andClauses } : {};
 
     const [items, total] = await Promise.all([
       prisma.parkingCard.findMany({

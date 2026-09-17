@@ -187,8 +187,8 @@ export class FacilityService {
     return updated;
   }
 
-  async getDashboardMetrics() {
-    return facilityRepository.getDashboardStats();
+  async getDashboardMetrics(buildingIds?: string[]) {
+    return facilityRepository.getDashboardStats(buildingIds);
   }
 }
 

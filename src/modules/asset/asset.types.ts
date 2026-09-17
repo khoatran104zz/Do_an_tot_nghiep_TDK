@@ -10,6 +10,7 @@ export interface AssetFilter {
   category?: AssetCategory;
   status?: AssetStatus;
   buildingId?: string;
+  buildingIds?: string[];
   technicianId?: string;
   page?: number;
   limit?: number;
@@ -36,6 +37,8 @@ export interface ScheduleFilter {
   search?: string;
   assetId?: string;
   technicianId?: string;
+  buildingId?: string;
+  buildingIds?: string[];
   status?: MaintenanceStatus;
   cycle?: MaintenanceCycle;
   startDate?: Date;

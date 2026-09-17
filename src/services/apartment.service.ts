@@ -42,8 +42,10 @@ export const apartmentClientService = {
     });
   },
 
-  async getHierarchy() {
-    return apiClient('/apartments/hierarchy');
+  async getHierarchy(buildingId?: string) {
+    return apiClient('/apartments/hierarchy', {
+      params: buildingId ? { buildingId } : undefined,
+    });
   },
 
   async bootstrapHierarchy() {

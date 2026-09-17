@@ -4,7 +4,12 @@ import { createInvoiceSchema } from '@/modules/invoice/invoice.schema';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getVerifiedResidentInfo, requirePermission } from '@/lib/authorization';
+import {
+  getVerifiedResidentInfo,
+  requirePermission,
+  getManagerAssignedBuildingIds,
+  authorizeApartmentAccess,
+} from '@/lib/authorization';
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,6 +19,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || undefined;
     let apartmentId = searchParams.get('apartmentId') || undefined;
+    const buildingId = searchParams.get('buildingId') || undefined;
     const billingMonth = searchParams.get('billingMonth') || undefined;
     const status = (searchParams.get('status') as any) || undefined;
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -36,9 +42,38 @@ export async function GET(req: NextRequest) {
       if (!permCheck.allowed) return apiForbidden(permCheck.error);
     }
 
+    let finalBuildingId = buildingId;
+    let finalBuildingIds: string[] | undefined = undefined;
+
+    if (session.user.role === 'MANAGER') {
+      const assignedIds = session.user.assignedBuildingIds?.length
+        ? session.user.assignedBuildingIds
+        : await getManagerAssignedBuildingIds(session.user.id);
+
+      if (assignedIds.length === 0) {
+        return apiSuccess([], 'Lấy danh sách hóa đơn thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        });
+      }
+
+      if (buildingId) {
+        if (!assignedIds.includes(buildingId)) {
+          return apiForbidden('Bạn không có quyền truy cập hóa đơn của tòa nhà này');
+        }
+        finalBuildingId = buildingId;
+      } else {
+        finalBuildingIds = assignedIds;
+      }
+    }
+
     const result = await invoiceService.getInvoices({
       search,
       apartmentId,
+      buildingId: finalBuildingId,
+      buildingIds: finalBuildingIds,
       billingMonth,
       status,
       page,
@@ -66,6 +101,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validated = createInvoiceSchema.parse(body);
+
+    if (session.user.role === 'MANAGER') {
+      const aptAuth = await authorizeApartmentAccess(session.user, validated.apartmentId);
+      if (!aptAuth.allowed) {
+        return apiForbidden(aptAuth.error || 'Bạn không có quyền tạo hóa đơn cho căn hộ thuộc tòa nhà khác');
+      }
+    }
 
     const item = await invoiceService.createInvoice(validated, {
       actorId: session.user.id,

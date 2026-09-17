@@ -25,8 +25,10 @@ import { ParcelStatus } from '@prisma/client';
 import { ReceiveParcelModal } from '@/components/parcel/ReceiveParcelModal';
 import { CollectParcelModal } from '@/components/parcel/CollectParcelModal';
 import { ParcelDetailModal } from '@/components/parcel/ParcelDetailModal';
+import { useBuildingContext } from '@/context/BuildingContext';
 
 export default function ParcelsPage() {
+  const { selectedBuildingId } = useBuildingContext();
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -40,11 +42,14 @@ export default function ParcelsPage() {
   const [detailParcel, setDetailParcel] = useState<ParcelWithRelations | null>(null);
 
   // Queries
-  const { data: statsData, isLoading: isLoadingStats, refetch: refetchStats } = useParcelStats();
+  const { data: statsData, isLoading: isLoadingStats, refetch: refetchStats } = useParcelStats(
+    selectedBuildingId || undefined
+  );
   const stats = statsData?.data;
 
   const { data: parcelsData, isLoading, isFetching, refetch } = useParcels({
     search: search || undefined,
+    buildingId: selectedBuildingId || undefined,
     status: statusFilter !== 'ALL' ? (statusFilter as ParcelStatus) : undefined,
     carrier: carrierFilter !== 'ALL' ? carrierFilter : undefined,
     page,

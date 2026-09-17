@@ -39,6 +39,7 @@ import {
   useUpdateParkingCard,
   useDeleteParkingCard,
 } from '@/hooks/use-parking-cards';
+import { useBuildingContext } from '@/context/BuildingContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ParkingCardStatus } from '@prisma/client';
 import { toast } from 'sonner';
@@ -46,6 +47,7 @@ import { toast } from 'sonner';
 function ParkingCardsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { selectedBuildingId } = useBuildingContext();
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role || 'MANAGER';
   const canManage = userRole === 'ADMIN' || userRole === 'MANAGER';
@@ -74,6 +76,7 @@ function ParkingCardsContent() {
   // Queries
   const { data: response, isLoading, isError, error, refetch } = useParkingCards({
     search: search || undefined,
+    buildingId: selectedBuildingId || undefined,
     status: (statusFilter as ParkingCardStatus) || undefined,
     page,
     limit: 10,

@@ -4,7 +4,11 @@ import { residentSchema } from '@/modules/resident/resident.schema';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getVerifiedResidentInfo } from '@/lib/authorization';
+import {
+  getVerifiedResidentInfo,
+  getManagerAssignedBuildingIds,
+  authorizeApartmentAccess,
+} from '@/lib/authorization';
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,6 +18,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || undefined;
     let apartmentId = searchParams.get('apartmentId') || undefined;
+    const buildingId = searchParams.get('buildingId') || undefined;
     const relationshipToOwner = (searchParams.get('relationshipToOwner') as any) || undefined;
     const status = (searchParams.get('status') as any) || undefined;
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -33,9 +38,38 @@ export async function GET(req: NextRequest) {
       apartmentId = residentInfo.apartmentId;
     }
 
+    let finalBuildingId = buildingId;
+    let finalBuildingIds: string[] | undefined = undefined;
+
+    if (session.user.role === 'MANAGER') {
+      const assignedIds = session.user.assignedBuildingIds?.length
+        ? session.user.assignedBuildingIds
+        : await getManagerAssignedBuildingIds(session.user.id);
+
+      if (assignedIds.length === 0) {
+        return apiSuccess([], 'Lấy danh sách cư dân thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        });
+      }
+
+      if (buildingId) {
+        if (!assignedIds.includes(buildingId)) {
+          return apiForbidden('Bạn không có quyền truy cập cư dân của tòa nhà này');
+        }
+        finalBuildingId = buildingId;
+      } else {
+        finalBuildingIds = assignedIds;
+      }
+    }
+
     const result = await residentService.getResidents({
       search,
       apartmentId,
+      buildingId: finalBuildingId,
+      buildingIds: finalBuildingIds,
       relationshipToOwner,
       status,
       page,
@@ -53,7 +87,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -62,6 +95,14 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validated = residentSchema.parse(body);
+
+    if (session.user.role === 'MANAGER' && validated.apartmentId) {
+      const aptAuth = await authorizeApartmentAccess(session.user, validated.apartmentId);
+      if (!aptAuth.allowed) {
+        return apiForbidden(aptAuth.error || 'Bạn không có quyền thêm cư dân vào căn hộ thuộc tòa nhà khác');
+      }
+    }
+
     const item = await residentService.createResident(validated);
     return apiSuccess(item, 'Thêm mới cư dân thành công', undefined, 201);
   } catch (error: any) {

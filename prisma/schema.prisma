@@ -254,6 +254,7 @@ model User {
   receivedParcels         ParcelDelivery[]    @relation("ReceivedParcels")
   handedOverParcels       ParcelDelivery[]    @relation("HandedOverParcels")
   createdPolls            Poll[]              @relation("CreatedPolls")
+  managedBuildings        ManagerBuilding[]   @relation("ManagedBuildings")
 
   @@map("users")
 }
@@ -272,8 +273,24 @@ model Building {
   apartments  Apartment[]
   assets      Asset[]
   facilities  Facility[]
+  managers    ManagerBuilding[] @relation("BuildingManagers")
 
   @@map("buildings")
+}
+
+// 2.0 Manager-to-Building Assignment (Scope Enforcement)
+model ManagerBuilding {
+  id         String   @id @default(cuid())
+  managerId  String
+  manager    User     @relation("ManagedBuildings", fields: [managerId], references: [id], onDelete: Cascade)
+  buildingId String
+  building   Building @relation("BuildingManagers", fields: [buildingId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+
+  @@unique([managerId, buildingId])
+  @@index([managerId])
+  @@index([buildingId])
+  @@map("manager_buildings")
 }
 
 model Block {

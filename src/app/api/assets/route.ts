@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { assetService } from '@/modules/asset/asset.service';
 import { createAssetSchema } from '@/modules/asset/asset.schema';
+import { getUserAssignedBuildingIds } from '@/lib/building-scope';
 import { AssetCategory, AssetStatus } from '@prisma/client';
 
 const ALLOWED_VIEW_ROLES = ['ADMIN', 'MANAGER', 'STAFF_TECHNICIAN'];
@@ -26,6 +27,22 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
 
+    let assignedBuildingIds: string[] | undefined = undefined;
+    if (session.user.role === 'MANAGER') {
+      assignedBuildingIds = await getUserAssignedBuildingIds(session.user.id);
+      if (assignedBuildingIds.length === 0) {
+        return apiSuccess([], 'Lấy danh sách tài sản thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 1,
+        });
+      }
+      if (buildingId && !assignedBuildingIds.includes(buildingId)) {
+        return apiForbidden('Bạn không có quyền truy cập dữ liệu tòa nhà này');
+      }
+    }
+
     // If STAFF_TECHNICIAN, scope to assigned technician assets
     const technicianId = session.user.role === 'STAFF_TECHNICIAN' ? session.user.id : undefined;
 
@@ -35,6 +52,7 @@ export async function GET(req: NextRequest) {
         category,
         status,
         buildingId,
+        buildingIds: assignedBuildingIds,
         technicianId,
         page,
         limit,
@@ -69,6 +87,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validated = createAssetSchema.parse(body);
+
+    if (session.user.role === 'MANAGER' && validated.buildingId) {
+      const assigned = await getUserAssignedBuildingIds(session.user.id);
+      if (!assigned.includes(validated.buildingId)) {
+        return apiForbidden('Bạn không có quyền thêm tài sản cho tòa nhà này');
+      }
+    }
 
     const asset = await assetService.createAsset(validated, {
       id: session.user.id,

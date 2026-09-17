@@ -23,7 +23,7 @@ function AppShellContent({
   role: propRole,
 }: AppShellProps) {
   const { data: session } = useSession();
-  const role = propRole || (session?.user?.role as any) || 'MANAGER';
+  const role = propRole || (session?.user?.role as any) || 'ADMIN';
 
   const maxWidthClasses = {
     '5xl': 'max-w-5xl',

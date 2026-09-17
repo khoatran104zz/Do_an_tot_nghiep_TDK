@@ -51,6 +51,15 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Mật khẩu không chính xác');
         }
 
+        let assignedBuildingIds: string[] = [];
+        if (user.role === 'MANAGER') {
+          const managed = await prisma.managerBuilding.findMany({
+            where: { managerId: user.id },
+            select: { buildingId: true },
+          });
+          assignedBuildingIds = managed.map((m) => m.buildingId);
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -60,6 +69,7 @@ export const authOptions: NextAuthOptions = {
           avatarUrl: user.avatarUrl,
           residentId: user.residentProfile?.id || null,
           apartmentId: user.residentProfile?.apartmentId || null,
+          assignedBuildingIds,
         };
       },
     }),
@@ -73,6 +83,7 @@ export const authOptions: NextAuthOptions = {
         token.avatarUrl = (user as any).avatarUrl;
         token.residentId = (user as any).residentId;
         token.apartmentId = (user as any).apartmentId;
+        token.assignedBuildingIds = (user as any).assignedBuildingIds || [];
       }
       return token;
     },
@@ -84,6 +95,7 @@ export const authOptions: NextAuthOptions = {
         session.user.avatarUrl = token.avatarUrl as string | undefined;
         session.user.residentId = token.residentId as string | null | undefined;
         session.user.apartmentId = token.apartmentId as string | null | undefined;
+        session.user.assignedBuildingIds = (token.assignedBuildingIds as string[]) || [];
       }
       return session;
     },

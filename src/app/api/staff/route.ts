@@ -57,6 +57,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = createStaffSchema.parse(body);
 
+    // Business rule: Manager CANNOT create another Manager or Admin
+    if (
+      session.user.role === 'MANAGER' &&
+      (validated.role === Role.MANAGER || (validated.role as string) === 'ADMIN')
+    ) {
+      return apiForbidden('Quản lý tòa nhà không có quyền tạo tài khoản Quản lý hoặc Quản trị viên');
+    }
+
     const staff = await staffService.createStaff(validated, {
       id: session.user.id,
       email: session.user.email,

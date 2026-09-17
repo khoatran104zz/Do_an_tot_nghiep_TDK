@@ -8,6 +8,7 @@ import { Breadcrumb } from './Breadcrumb';
 import { NotificationBell } from './NotificationBell';
 import { UserMenu } from './UserMenu';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { BuildingSwitcher } from './BuildingSwitcher';
 import { useShell } from './ShellContext';
 
 export function Topbar() {
@@ -17,7 +18,7 @@ export function Topbar() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 px-4 sm:px-6 backdrop-blur-md shadow-2xs">
-      {/* Left side: Mobile Toggle & Breadcrumbs */}
+      {/* Left side: Mobile Toggle, Breadcrumbs & BuildingSwitcher */}
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -30,7 +31,12 @@ export function Topbar() {
         </Button>
 
         {/* Dynamic Breadcrumbs */}
-        <Breadcrumb className="hidden sm:flex" />
+        <Breadcrumb className="hidden md:flex" />
+
+        {/* Property / Building Scope Switcher */}
+        <div className="hidden sm:block">
+          <BuildingSwitcher />
+        </div>
       </div>
 
       {/* Right side: Global Search, ThemeToggle, Notification, UserMenu */}

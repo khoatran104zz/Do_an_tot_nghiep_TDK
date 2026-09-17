@@ -201,7 +201,7 @@ export class ParcelService {
     return parcelRepository.update(id, dto);
   }
 
-  async getStats(user: { id: string; role: string }) {
+  async getStats(user: { id: string; role: string }, buildingIds?: string[]) {
     let scopedApartmentId: string | undefined = undefined;
     if (user.role === Role.RESIDENT) {
       const resident = await prisma.resident.findFirst({
@@ -213,7 +213,7 @@ export class ParcelService {
       }
     }
 
-    return parcelRepository.getStats(scopedApartmentId);
+    return parcelRepository.getStats(scopedApartmentId, buildingIds);
   }
 }
 

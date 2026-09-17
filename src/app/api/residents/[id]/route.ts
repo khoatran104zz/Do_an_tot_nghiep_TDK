@@ -43,6 +43,15 @@ export async function PUT(
     if (session.user.role === 'RESIDENT') return apiForbidden();
 
     const { id } = await params;
+    const current = await residentService.getResidentById(id);
+    const authCheck = await authorizeResidentProfileAccess(session.user, {
+      id: current.id,
+      apartmentId: current.apartmentId,
+    });
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error || 'Bạn không có quyền cập nhật cư dân này');
+    }
+
     const body = await req.json();
     const validated = residentSchema.partial().parse(body);
     const updated = await residentService.updateResident(id, validated);
@@ -65,6 +74,15 @@ export async function DELETE(
     if (session.user.role === 'RESIDENT') return apiForbidden();
 
     const { id } = await params;
+    const current = await residentService.getResidentById(id);
+    const authCheck = await authorizeResidentProfileAccess(session.user, {
+      id: current.id,
+      apartmentId: current.apartmentId,
+    });
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error || 'Bạn không có quyền xóa cư dân này');
+    }
+
     await residentService.deleteResident(id);
     return apiSuccess(null, 'Xóa thông tin cư dân thành công');
   } catch (error: any) {

@@ -5,6 +5,7 @@ export interface FacilityFilter {
   type?: FacilityType;
   status?: FacilityStatus;
   buildingId?: string;
+  buildingIds?: string[];
   page?: number;
   limit?: number;
 }
@@ -31,6 +32,8 @@ export interface BookingFilter {
   facilityId?: string;
   userId?: string;
   apartmentId?: string;
+  buildingId?: string;
+  buildingIds?: string[];
   status?: BookingStatus;
   startDate?: string | Date;
   endDate?: string | Date;

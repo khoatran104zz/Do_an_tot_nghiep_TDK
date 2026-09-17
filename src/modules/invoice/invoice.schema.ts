@@ -20,6 +20,7 @@ export const createInvoiceSchema = z.object({
 export const generateMonthlyInvoicesSchema = z.object({
   billingMonth: z.string().min(6, 'Tháng dạng YYYY-MM'),
   dueDate: z.string().min(1, 'Hạn thanh toán là bắt buộc'),
+  buildingId: z.string().optional(),
 });
 
 export const processPaymentSchema = z.object({

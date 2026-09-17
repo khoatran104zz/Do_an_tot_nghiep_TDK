@@ -264,7 +264,11 @@ export class InvoiceService {
     const { startOfMonth, endOfMonth } = parseBillingMonthRange(billingMonth);
 
     // Fetch apartments and active fee categories
-    const apartmentsRes = await apartmentRepository.findAll({ limit: 1000 });
+    const apartmentsRes = await apartmentRepository.findAll({
+      limit: 1000,
+      buildingId: dto.buildingId,
+      buildingIds: dto.buildingIds,
+    });
     const feeCategories = await feeCategoryRepository.findAll();
 
     const parkingAuditRecords: Array<{

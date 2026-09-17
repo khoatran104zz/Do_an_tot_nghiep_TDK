@@ -6,6 +6,8 @@ export interface FeedbackFilter {
   priority?: TicketPriority;
   status?: TicketStatus;
   apartmentId?: string;
+  buildingId?: string;
+  buildingIds?: string[];
   residentId?: string;
   page?: number;
   limit?: number;

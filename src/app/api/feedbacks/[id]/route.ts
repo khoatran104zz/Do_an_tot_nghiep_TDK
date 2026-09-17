@@ -43,6 +43,15 @@ export async function DELETE(
     if (!session) return apiUnauthorized();
 
     const { id } = await params;
+    const item = await ticketWorkflowService.getTicketDetail(id, session.user);
+    const authCheck = await authorizeFeedbackAccess(session.user, {
+      residentId: item.residentId,
+      apartmentId: item.apartmentId,
+    });
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error || 'Bạn không có quyền xóa phản ánh này');
+    }
+
     await feedbackService.deleteFeedback(id);
     return apiSuccess(null, 'Xóa phản ánh thành công');
   } catch (error: any) {

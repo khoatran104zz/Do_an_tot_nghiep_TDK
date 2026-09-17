@@ -4,29 +4,53 @@ import { Prisma, InvoiceStatus } from '@prisma/client';
 
 export class InvoiceRepository {
   async findAll(filter: InvoiceFilter) {
-    const { search, apartmentId, billingMonth, status, page = 1, limit = 10 } = filter;
+    const { search, apartmentId, buildingId, buildingIds, billingMonth, status, page = 1, limit = 10 } = filter;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.InvoiceWhereInput = {};
+    const andClauses: Prisma.InvoiceWhereInput[] = [];
 
     if (search) {
-      where.OR = [
-        { code: { contains: search, mode: 'insensitive' } },
-        { apartment: { code: { contains: search, mode: 'insensitive' } } },
-      ];
+      andClauses.push({
+        OR: [
+          { code: { contains: search, mode: 'insensitive' } },
+          { apartment: { code: { contains: search, mode: 'insensitive' } } },
+        ],
+      });
     }
 
     if (apartmentId) {
-      where.apartmentId = apartmentId;
+      andClauses.push({ apartmentId });
+    }
+
+    if (buildingIds && buildingIds.length > 0) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId: { in: buildingIds } },
+            { block: { buildingId: { in: buildingIds } } },
+          ],
+        },
+      });
+    } else if (buildingId) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId },
+            { block: { buildingId } },
+          ],
+        },
+      });
     }
 
     if (billingMonth) {
-      where.billingMonth = billingMonth;
+      andClauses.push({ billingMonth });
     }
 
     if (status) {
-      where.status = status;
+      andClauses.push({ status });
     }
+
+    const where: Prisma.InvoiceWhereInput = andClauses.length > 0 ? { AND: andClauses } : {};
 
     const [items, total] = await Promise.all([
       prisma.invoice.findMany({

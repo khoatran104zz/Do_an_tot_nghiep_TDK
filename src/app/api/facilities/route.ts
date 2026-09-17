@@ -6,6 +6,11 @@ import { facilityService } from '@/modules/facility/facility.service';
 import { createFacilitySchema } from '@/modules/facility/facility.schema';
 import { FacilityType, FacilityStatus } from '@prisma/client';
 
+import {
+  getManagerAssignedBuildingIds,
+  authorizeBuildingAccess,
+} from '@/lib/authorization';
+
 const ALLOWED_MANAGE_ROLES = ['ADMIN', 'MANAGER'];
 
 export async function GET(req: NextRequest) {
@@ -21,8 +26,35 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
+    let finalBuildingId = buildingId;
+    let finalBuildingIds: string[] | undefined = undefined;
+
+    if (session.user.role === 'MANAGER') {
+      const assignedIds = session.user.assignedBuildingIds?.length
+        ? session.user.assignedBuildingIds
+        : await getManagerAssignedBuildingIds(session.user.id);
+
+      if (assignedIds.length === 0) {
+        return apiSuccess([], 'Lấy danh sách tiện ích thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        });
+      }
+
+      if (buildingId) {
+        if (!assignedIds.includes(buildingId)) {
+          return apiForbidden('Bạn không có quyền truy cập tiện ích của tòa nhà này');
+        }
+        finalBuildingId = buildingId;
+      } else {
+        finalBuildingIds = assignedIds;
+      }
+    }
+
     const result = await facilityService.getFacilities(
-      { search, type, status, buildingId, page, limit },
+      { search, type, status, buildingId: finalBuildingId, buildingIds: finalBuildingIds, page, limit },
       {
         id: session.user.id,
         email: session.user.email,
@@ -53,6 +85,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validated = createFacilitySchema.parse(body);
+
+    if (session.user.role === 'MANAGER' && validated.buildingId) {
+      const bAuth = await authorizeBuildingAccess(session.user, validated.buildingId);
+      if (!bAuth.allowed) {
+        return apiForbidden(bAuth.error || 'Bạn không có quyền tạo tiện ích cho tòa nhà khác');
+      }
+    }
 
     const facility = await facilityService.createFacility(validated, {
       id: session.user.id,

@@ -87,8 +87,22 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
-  // 5. ADMIN & MANAGER have full access to all manager routes
-  if (role === 'ADMIN' || role === 'MANAGER') {
+  // 5. Access Control & System Admin-only Routes Guard
+  const isAdminOnlyRoute =
+    pathname.startsWith('/settings/access-control') ||
+    pathname.startsWith('/managers');
+
+  if (isAdminOnlyRoute && role !== 'ADMIN') {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+
+  // 5.1 ADMIN has full access to all platform routes
+  if (role === 'ADMIN') {
+    return NextResponse.next();
+  }
+
+  // 5.2 MANAGER has operational access
+  if (role === 'MANAGER') {
     return NextResponse.next();
   }
 
@@ -170,6 +184,7 @@ export const config = {
     '/reports/:path*',
     '/smart-operations/:path*',
     '/settings/:path*',
+    '/managers/:path*',
     '/vehicles/:path*',
     '/parking-cards/:path*',
     '/parking-logs/:path*',

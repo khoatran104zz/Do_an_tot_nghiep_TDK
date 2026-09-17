@@ -127,12 +127,12 @@ export class AssetService {
     return result;
   }
 
-  async getDashboardStats() {
-    return assetRepository.getAssetDashboardStats();
+  async getDashboardStats(buildingIds?: string[]) {
+    return assetRepository.getAssetDashboardStats(buildingIds);
   }
 
-  async getDashboardMetrics(buildingId?: string) {
-    return this.getDashboardStats();
+  async getDashboardMetrics(buildingIds?: string[]) {
+    return this.getDashboardStats(buildingIds);
   }
 }
 

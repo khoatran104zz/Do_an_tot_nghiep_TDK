@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { apiSuccess, apiError, apiUnauthorized } from '@/lib/api-response';
+import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { facilityService } from '@/modules/facility/facility.service';
 import { createBookingSchema } from '@/modules/facility/facility.schema';
+import { getUserAssignedBuildingIds } from '@/lib/building-scope';
 import { BookingStatus } from '@prisma/client';
 
 export async function GET(req: NextRequest) {
@@ -13,13 +14,30 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const facilityId = searchParams.get('facilityId') || undefined;
+    const buildingId = searchParams.get('buildingId') || undefined;
     const status = (searchParams.get('status') as BookingStatus) || undefined;
     const date = searchParams.get('date') || undefined;
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
+    let assignedBuildingIds: string[] | undefined = undefined;
+    if (session.user.role === 'MANAGER') {
+      assignedBuildingIds = await getUserAssignedBuildingIds(session.user.id);
+      if (assignedBuildingIds.length === 0) {
+        return apiSuccess([], 'Lấy danh sách đặt chỗ thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 1,
+        });
+      }
+      if (buildingId && !assignedBuildingIds.includes(buildingId)) {
+        return apiForbidden('Bạn không có quyền truy cập dữ liệu tòa nhà này');
+      }
+    }
+
     const result = await facilityService.getBookings(
-      { facilityId, status, date, page, limit },
+      { facilityId, buildingId, buildingIds: assignedBuildingIds, status, date, page, limit },
       {
         id: session.user.id,
         email: session.user.email,

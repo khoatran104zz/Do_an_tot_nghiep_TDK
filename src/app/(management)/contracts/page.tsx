@@ -20,11 +20,13 @@ import {
 } from '@/hooks/use-contracts';
 import { useApartments } from '@/hooks/use-apartments';
 import { useResidents } from '@/hooks/use-residents';
+import { useBuildingContext } from '@/context/BuildingContext';
 import { ContractStatus, ContractType } from '@prisma/client';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function ContractsPage() {
+  const { selectedBuildingId } = useBuildingContext();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -59,6 +61,7 @@ export default function ContractsPage() {
   // Queries
   const { data: response, isLoading, isError, error, refetch } = useContracts({
     search: search || undefined,
+    buildingId: selectedBuildingId || undefined,
     type: (typeFilter as ContractType) || undefined,
     status: (statusFilter as ContractStatus) || undefined,
     expiringSoon: expiringSoonFilter,
@@ -66,8 +69,14 @@ export default function ContractsPage() {
     limit: 10,
   });
 
-  const { data: apartmentsRes } = useApartments({ limit: 100 });
-  const { data: residentsRes } = useResidents({ limit: 100 });
+  const { data: apartmentsRes } = useApartments({
+    limit: 100,
+    buildingId: selectedBuildingId || undefined,
+  });
+  const { data: residentsRes } = useResidents({
+    limit: 100,
+    buildingId: selectedBuildingId || undefined,
+  });
 
   const apartments = apartmentsRes?.data || [];
   const residents = residentsRes?.data || [];

@@ -63,7 +63,11 @@ export class AssetRepository {
 
     if (category) where.category = category;
     if (status) where.status = status;
-    if (buildingId) where.buildingId = buildingId;
+    if (buildingId) {
+      where.buildingId = buildingId;
+    } else if (filter.buildingIds && filter.buildingIds.length > 0) {
+      where.buildingId = { in: filter.buildingIds };
+    }
 
     // Technician Scoping: Only see assets with tasks assigned to them or in general operational pool
     if (userRole === Role.STAFF_TECHNICIAN && userId) {
@@ -216,6 +220,12 @@ export class AssetRepository {
     if (status) where.status = status;
     if (cycle) where.cycle = cycle;
 
+    if (filter.buildingId) {
+      where.asset = { buildingId: filter.buildingId };
+    } else if (filter.buildingIds && filter.buildingIds.length > 0) {
+      where.asset = { buildingId: { in: filter.buildingIds } };
+    }
+
     // Technician Scoping
     if (userRole === Role.STAFF_TECHNICIAN && userId) {
       where.technicianId = userId;
@@ -360,9 +370,17 @@ export class AssetRepository {
     return { workOrder, schedule: updatedSchedule };
   }
 
-  async getAssetDashboardStats(): Promise<AssetDashboardStats> {
+  async getAssetDashboardStats(buildingIds?: string[]): Promise<AssetDashboardStats> {
     const now = new Date();
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 3600 * 1000);
+
+    const hasBuildingScope = buildingIds && buildingIds.length > 0;
+    const assetBaseWhere: Prisma.AssetWhereInput = hasBuildingScope
+      ? { buildingId: { in: buildingIds } }
+      : {};
+    const scheduleAssetFilter = hasBuildingScope
+      ? { asset: { buildingId: { in: buildingIds } } }
+      : {};
 
     const [
       totalAssets,
@@ -372,13 +390,14 @@ export class AssetRepository {
       upcomingMaintenance,
       overdueMaintenance,
     ] = await Promise.all([
-      prisma.asset.count(),
-      prisma.asset.count({ where: { status: AssetStatus.OPERATIONAL } }),
-      prisma.asset.count({ where: { status: AssetStatus.MAINTENANCE } }),
-      prisma.asset.count({ where: { status: AssetStatus.BROKEN } }),
+      prisma.asset.count({ where: assetBaseWhere }),
+      prisma.asset.count({ where: { ...assetBaseWhere, status: AssetStatus.OPERATIONAL } }),
+      prisma.asset.count({ where: { ...assetBaseWhere, status: AssetStatus.MAINTENANCE } }),
+      prisma.asset.count({ where: { ...assetBaseWhere, status: AssetStatus.BROKEN } }),
       // Upcoming: nextMaintenance within 3 days and not completed
       prisma.maintenanceSchedule.count({
         where: {
+          ...scheduleAssetFilter,
           status: { in: [MaintenanceStatus.PENDING, MaintenanceStatus.IN_PROGRESS] },
           nextMaintenance: { gte: now, lte: threeDaysFromNow },
         },
@@ -386,6 +405,7 @@ export class AssetRepository {
       // Overdue: nextMaintenance past due and not completed
       prisma.maintenanceSchedule.count({
         where: {
+          ...scheduleAssetFilter,
           OR: [
             { status: MaintenanceStatus.OVERDUE },
             {

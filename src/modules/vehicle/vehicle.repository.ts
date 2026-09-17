@@ -5,48 +5,74 @@ import { normalizeLicensePlate } from './vehicle.schema';
 
 export class VehicleRepository {
   async findAll(filter: VehicleFilter) {
-    const { search, building, apartmentId, residentId, type, status, parkingCardStatus, page = 1, limit = 10 } = filter;
+    const { search, building, buildingId, buildingIds, apartmentId, residentId, type, status, parkingCardStatus, page = 1, limit = 10 } = filter;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.VehicleWhereInput = {};
+    const andClauses: Prisma.VehicleWhereInput[] = [];
 
     if (search) {
-      where.OR = [
-        { licensePlate: { contains: search, mode: 'insensitive' } },
-        { brand: { contains: search, mode: 'insensitive' } },
-        { model: { contains: search, mode: 'insensitive' } },
-        { apartment: { is: { code: { contains: search, mode: 'insensitive' } } } },
-        { resident: { is: { fullName: { contains: search, mode: 'insensitive' } } } },
-      ];
+      andClauses.push({
+        OR: [
+          { licensePlate: { contains: search, mode: 'insensitive' } },
+          { brand: { contains: search, mode: 'insensitive' } },
+          { model: { contains: search, mode: 'insensitive' } },
+          { apartment: { is: { code: { contains: search, mode: 'insensitive' } } } },
+          { resident: { is: { fullName: { contains: search, mode: 'insensitive' } } } },
+        ],
+      });
     }
 
-    if (building) {
-      where.apartment = {
-        is: {
-          building,
+    if (buildingIds && buildingIds.length > 0) {
+      andClauses.push({
+        apartment: {
+          is: {
+            OR: [
+              { buildingId: { in: buildingIds } },
+              { block: { buildingId: { in: buildingIds } } },
+            ],
+          },
         },
-      };
+      });
+    } else if (buildingId) {
+      andClauses.push({
+        apartment: {
+          is: {
+            OR: [
+              { buildingId },
+              { block: { buildingId } },
+            ],
+          },
+        },
+      });
+    } else if (building) {
+      andClauses.push({
+        apartment: {
+          is: { building },
+        },
+      });
     }
 
     if (apartmentId) {
-      where.apartmentId = apartmentId;
+      andClauses.push({ apartmentId });
     }
 
     if (residentId) {
-      where.residentId = residentId;
+      andClauses.push({ residentId });
     }
 
     if (type) {
-      where.type = type;
+      andClauses.push({ type });
     }
 
     if (status) {
-      where.status = status;
+      andClauses.push({ status });
     }
 
     if (parkingCardStatus) {
-      where.parkingCards = { some: { status: parkingCardStatus } };
+      andClauses.push({ parkingCards: { some: { status: parkingCardStatus } } });
     }
+
+    const where: Prisma.VehicleWhereInput = andClauses.length > 0 ? { AND: andClauses } : {};
 
     const [items, total] = await Promise.all([
       prisma.vehicle.findMany({

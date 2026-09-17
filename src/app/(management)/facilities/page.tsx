@@ -37,6 +37,7 @@ import {
   useBookings,
   useCancelBooking,
 } from '@/hooks/use-facilities';
+import { useBuildingContext } from '@/context/BuildingContext';
 import { CreateFacilityModal } from '@/components/facility/CreateFacilityModal';
 import { FacilityType, FacilityStatus, BookingStatus } from '@prisma/client';
 import {
@@ -46,6 +47,7 @@ import {
 } from '@/modules/facility/facility.constants';
 
 export default function FacilitiesManagementPage() {
+  const { selectedBuildingId } = useBuildingContext();
   const [activeTab, setActiveTab] = useState<'directory' | 'bookings'>('directory');
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState<FacilityType | ''>('');
@@ -65,9 +67,12 @@ export default function FacilitiesManagementPage() {
   const [cancelReason, setCancelReason] = useState('');
 
   // Queries & Mutations
-  const { data: statsData, isLoading: isStatsLoading } = useFacilityStats();
+  const { data: statsData, isLoading: isStatsLoading } = useFacilityStats(
+    selectedBuildingId || undefined
+  );
   const { data: facilitiesData, isLoading: isFacilitiesLoading } = useFacilities({
     search: search || undefined,
+    buildingId: selectedBuildingId || undefined,
     type: selectedType || undefined,
     status: selectedStatus || undefined,
     limit: 50,
@@ -76,6 +81,7 @@ export default function FacilitiesManagementPage() {
   const { data: bookingsData, isLoading: isBookingsLoading } = useBookings({
     date: bookingDate || undefined,
     facilityId: bookingFacilityId || undefined,
+    buildingId: selectedBuildingId || undefined,
     limit: 100,
   });
 

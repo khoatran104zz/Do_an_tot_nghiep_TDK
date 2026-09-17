@@ -33,10 +33,10 @@ export function useApartment(id: string) {
   });
 }
 
-export function useApartmentHierarchy() {
+export function useApartmentHierarchy(buildingId?: string) {
   return useQuery({
-    queryKey: ['apartment-hierarchy'],
-    queryFn: () => apartmentClientService.getHierarchy(),
+    queryKey: ['apartment-hierarchy', buildingId],
+    queryFn: () => apartmentClientService.getHierarchy(buildingId),
   });
 }
 

@@ -3,6 +3,8 @@ import { ParcelDelivery, ParcelStatus } from '@prisma/client';
 export interface ParcelFilter {
   search?: string;
   apartmentId?: string;
+  buildingId?: string;
+  buildingIds?: string[];
   carrier?: string;
   status?: ParcelStatus;
   startDate?: string;

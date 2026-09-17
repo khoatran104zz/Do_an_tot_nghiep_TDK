@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { assetService } from '@/modules/asset/asset.service';
 import { createMaintenanceScheduleSchema } from '@/modules/asset/asset.schema';
+import { getUserAssignedBuildingIds } from '@/lib/building-scope';
 import { MaintenanceCycle, MaintenanceStatus } from '@prisma/client';
 
 const ALLOWED_VIEW_ROLES = ['ADMIN', 'MANAGER', 'STAFF_TECHNICIAN'];
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const assetId = searchParams.get('assetId') || undefined;
+    const buildingId = searchParams.get('buildingId') || undefined;
     const status = (searchParams.get('status') as MaintenanceStatus) || undefined;
     const cycle = (searchParams.get('cycle') as MaintenanceCycle) || undefined;
     const startDate = searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined;
@@ -27,12 +29,30 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
 
+    let assignedBuildingIds: string[] | undefined = undefined;
+    if (session.user.role === 'MANAGER') {
+      assignedBuildingIds = await getUserAssignedBuildingIds(session.user.id);
+      if (assignedBuildingIds.length === 0) {
+        return apiSuccess([], 'Lấy danh sách lịch bảo trì thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 1,
+        });
+      }
+      if (buildingId && !assignedBuildingIds.includes(buildingId)) {
+        return apiForbidden('Bạn không có quyền truy cập dữ liệu tòa nhà này');
+      }
+    }
+
     // If STAFF_TECHNICIAN, scope to assigned technician
     const technicianId = session.user.role === 'STAFF_TECHNICIAN' ? session.user.id : (searchParams.get('technicianId') || undefined);
 
     const result = await assetService.getMaintenanceSchedules(
       {
         assetId,
+        buildingId,
+        buildingIds: assignedBuildingIds,
         technicianId,
         status,
         cycle,
@@ -71,6 +91,16 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validated = createMaintenanceScheduleSchema.parse(body);
+
+    if (session.user.role === 'MANAGER') {
+      const targetAsset = await assetService.getAssetById(validated.assetId);
+      if (targetAsset?.buildingId) {
+        const assigned = await getUserAssignedBuildingIds(session.user.id);
+        if (!assigned.includes(targetAsset.buildingId)) {
+          return apiForbidden('Bạn không có quyền tạo lịch bảo trì cho tài sản thuộc tòa nhà khác');
+        }
+      }
+    }
 
     const schedule = await assetService.createSchedule(validated, {
       id: session.user.id,

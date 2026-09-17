@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden, apiNotFound } from '@/lib/api-response';
 import { apartmentService } from '@/modules/apartment/apartment.service';
 import { buildingSchema } from '@/modules/apartment/apartment.schema';
+import { authorizeBuildingAccess } from '@/lib/authorization';
+import { isAdmin, isManager } from '@/lib/permissions';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   req: NextRequest,
@@ -14,6 +17,13 @@ export async function GET(
     if (!session) return apiUnauthorized();
 
     const { id } = await params;
+
+    // Scope check: Admin gets all, Manager gets assigned only
+    const authCheck = await authorizeBuildingAccess(session.user, id);
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error || 'Bạn không có quyền truy cập tòa nhà này');
+    }
+
     const building = await apartmentService.getBuildingById(id);
     return apiSuccess(building, 'Chi tiết tòa nhà');
   } catch (error: any) {
@@ -28,13 +38,23 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER') {
-      return apiForbidden('Chỉ Ban Quản Trị mới có quyền cập nhật tòa nhà');
-    }
 
     const { id } = await params;
+
+    // Scope check: Admin full access; Manager only if assigned
+    const authCheck = await authorizeBuildingAccess(session.user, id);
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error || 'Bạn không có quyền cập nhật tòa nhà này');
+    }
+
     const body = await req.json();
     const validated = buildingSchema.partial().parse(body);
+
+    // If manager, protect critical fields (code cannot be altered by manager)
+    if (isManager(session.user.role)) {
+      delete validated.code;
+    }
+
     const updated = await apartmentService.updateBuilding(id, validated, {
       id: session.user.id,
       email: session.user.email,
@@ -57,11 +77,28 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER') {
-      return apiForbidden('Chỉ Ban Quản Trị mới có quyền xóa tòa nhà');
+
+    // STRICTLY ADMIN ONLY - Managers CANNOT delete buildings!
+    if (!isAdmin(session.user.role)) {
+      return apiForbidden('Chỉ Quản trị viên cấp cao (Admin) mới có quyền xóa tòa nhà');
     }
 
     const { id } = await params;
+
+    // Safety check: Prevent deletion if active blocks or apartments exist
+    const [apartmentCount, blockCount] = await Promise.all([
+      prisma.apartment.count({ where: { buildingId: id } }),
+      prisma.block.count({ where: { buildingId: id } }),
+    ]);
+
+    if (apartmentCount > 0 || blockCount > 0) {
+      return apiError(
+        `Không thể xóa tòa nhà vì đang tồn tại ${blockCount} khối nhà và ${apartmentCount} căn hộ liên kết. Vui lòng di chuyển hoặc xóa dữ liệu con trước.`,
+        'SAFETY_CHECK_FAILED',
+        400
+      );
+    }
+
     await apartmentService.deleteBuilding(id, {
       id: session.user.id,
       email: session.user.email,

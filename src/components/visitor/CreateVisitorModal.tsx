@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useCreateVisitorPass } from '@/hooks/use-visitors';
 import { useApartments } from '@/hooks/use-apartments';
+import { useBuildingContext } from '@/context/BuildingContext';
 import { CreateVisitorPassDto } from '@/modules/visitor/visitor.types';
 import { format } from 'date-fns';
 import { Dialog } from '@/components/ui/dialog';
@@ -33,6 +34,7 @@ export const CreateVisitorModal: React.FC<CreateVisitorModalProps> = ({
   onSuccess,
   defaultApartmentId,
 }) => {
+  const { selectedBuildingId } = useBuildingContext();
   const { data: session } = useSession();
   const isResident = session?.user?.role === 'RESIDENT';
 
@@ -53,6 +55,7 @@ export const CreateVisitorModal: React.FC<CreateVisitorModalProps> = ({
   // Fetch apartments list if management needs to pick an apartment
   const { data: apartmentsResponse } = useApartments({
     limit: 300,
+    buildingId: selectedBuildingId || undefined,
   });
   const apartments = apartmentsResponse?.data || [];
 

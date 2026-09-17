@@ -3,6 +3,8 @@ import { InvoiceStatus, PaymentMethod } from '@prisma/client';
 export interface InvoiceFilter {
   search?: string;
   apartmentId?: string;
+  buildingId?: string;
+  buildingIds?: string[];
   billingMonth?: string;
   status?: InvoiceStatus;
   page?: number;
@@ -28,6 +30,8 @@ export interface CreateInvoiceDto {
 export interface GenerateMonthlyInvoicesDto {
   billingMonth: string; // "YYYY-MM"
   dueDate: string;
+  buildingId?: string;
+  buildingIds?: string[];
 }
 
 export interface ProcessPaymentDto {

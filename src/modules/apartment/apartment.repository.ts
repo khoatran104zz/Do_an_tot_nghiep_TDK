@@ -19,6 +19,7 @@ export class ApartmentRepository {
       search,
       building,
       buildingId,
+      buildingIds,
       block,
       blockId,
       floor,
@@ -30,46 +31,63 @@ export class ApartmentRepository {
     } = filter;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ApartmentWhereInput = {};
+    const andClauses: Prisma.ApartmentWhereInput[] = [];
 
     if (search) {
-      where.OR = [
-        { code: { contains: search, mode: 'insensitive' } },
-        { building: { contains: search, mode: 'insensitive' } },
-        { note: { contains: search, mode: 'insensitive' } },
-        { residents: { some: { fullName: { contains: search, mode: 'insensitive' } } } },
-      ];
+      andClauses.push({
+        OR: [
+          { code: { contains: search, mode: 'insensitive' } },
+          { building: { contains: search, mode: 'insensitive' } },
+          { note: { contains: search, mode: 'insensitive' } },
+          { residents: { some: { fullName: { contains: search, mode: 'insensitive' } } } },
+        ],
+      });
     }
 
-    if (buildingId) {
-      where.buildingId = buildingId;
+    if (buildingIds && buildingIds.length > 0) {
+      andClauses.push({
+        OR: [
+          { buildingId: { in: buildingIds } },
+          { block: { buildingId: { in: buildingIds } } },
+        ],
+      });
+    } else if (buildingId) {
+      andClauses.push({
+        OR: [
+          { buildingId },
+          { block: { buildingId } },
+        ],
+      });
     } else if (building) {
-      where.building = building;
+      andClauses.push({ building });
     }
 
     if (blockId) {
-      where.blockId = blockId;
+      andClauses.push({ blockId });
     } else if (block) {
-      where.OR = [
-        ...(where.OR || []),
-        { building: { contains: block, mode: 'insensitive' } },
-        { block: { code: { contains: block, mode: 'insensitive' } } },
-        { block: { name: { contains: block, mode: 'insensitive' } } },
-      ];
+      andClauses.push({
+        OR: [
+          { building: { contains: block, mode: 'insensitive' } },
+          { block: { code: { contains: block, mode: 'insensitive' } } },
+          { block: { name: { contains: block, mode: 'insensitive' } } },
+        ],
+      });
     }
 
     if (floorId) {
-      where.floorId = floorId;
+      andClauses.push({ floorId });
     } else {
       const targetFloor = floorNumber !== undefined ? floorNumber : floor;
       if (targetFloor !== undefined && !isNaN(targetFloor)) {
-        where.floor = targetFloor;
+        andClauses.push({ floor: targetFloor });
       }
     }
 
     if (status) {
-      where.status = status;
+      andClauses.push({ status });
     }
+
+    const where: Prisma.ApartmentWhereInput = andClauses.length > 0 ? { AND: andClauses } : {};
 
     const [rawItems, total] = await Promise.all([
       prisma.apartment.findMany({
@@ -528,9 +546,13 @@ export class ApartmentRepository {
     return result.map((r) => r.building);
   }
 
-  async getHierarchy() {
+  async getHierarchy(buildingIds?: string[]) {
     // Pure Read-only query
+    const where: Prisma.BuildingWhereInput =
+      buildingIds && buildingIds.length > 0 ? { id: { in: buildingIds } } : {};
+
     const buildings = await prisma.building.findMany({
+      where,
       include: {
         blocks: {
           orderBy: { code: 'asc' },
@@ -561,7 +583,7 @@ export class ApartmentRepository {
       },
     });
 
-    if (buildings.length > 0) {
+    if (buildings.length > 0 || (buildingIds && buildingIds.length > 0)) {
       return buildings;
     }
 

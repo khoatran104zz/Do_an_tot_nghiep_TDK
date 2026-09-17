@@ -10,6 +10,8 @@ export interface ResidenceRequestFilter {
   search?: string;
   apartmentId?: string;
   requesterId?: string;
+  buildingId?: string;
+  buildingIds?: string[];
   status?: ResidenceRequestStatus;
   type?: ResidenceRequestType;
   page?: number;

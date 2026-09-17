@@ -39,9 +39,13 @@ export async function DELETE(
     if (!session) return apiUnauthorized();
 
     const permCheck = requirePermission(session.user, 'invoice:cancel');
-    if (!permCheck.allowed) return apiForbidden(permCheck.error);
-
     const { id } = await params;
+    const item = await invoiceService.getInvoiceById(id);
+    const authCheck = await authorizeInvoiceAccess(session.user, item.apartmentId);
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error || 'Bạn không có quyền xóa hóa đơn này');
+    }
+
     await invoiceService.deleteInvoice(id);
     return apiSuccess(null, 'Xóa hóa đơn thành công');
   } catch (error: any) {

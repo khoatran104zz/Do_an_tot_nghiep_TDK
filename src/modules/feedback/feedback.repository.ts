@@ -4,25 +4,49 @@ import { Prisma } from '@prisma/client';
 
 export class FeedbackRepository {
   async findAll(filter: FeedbackFilter) {
-    const { search, category, priority, status, apartmentId, residentId, page = 1, limit = 10 } = filter;
+    const { search, category, priority, status, apartmentId, buildingId, buildingIds, residentId, page = 1, limit = 10 } = filter;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.FeedbackWhereInput = {};
+    const andClauses: Prisma.FeedbackWhereInput[] = [];
 
     if (search) {
-      where.OR = [
-        { code: { contains: search, mode: 'insensitive' } },
-        { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } },
-        { apartment: { code: { contains: search, mode: 'insensitive' } } },
-      ];
+      andClauses.push({
+        OR: [
+          { code: { contains: search, mode: 'insensitive' } },
+          { title: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } },
+          { apartment: { code: { contains: search, mode: 'insensitive' } } },
+        ],
+      });
     }
 
-    if (category) where.category = category;
-    if (priority) where.priority = priority;
-    if (status) where.status = status;
-    if (apartmentId) where.apartmentId = apartmentId;
-    if (residentId) where.residentId = residentId;
+    if (category) andClauses.push({ category });
+    if (priority) andClauses.push({ priority });
+    if (status) andClauses.push({ status });
+    if (apartmentId) andClauses.push({ apartmentId });
+    if (residentId) andClauses.push({ residentId });
+
+    if (buildingIds && buildingIds.length > 0) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId: { in: buildingIds } },
+            { block: { buildingId: { in: buildingIds } } },
+          ],
+        },
+      });
+    } else if (buildingId) {
+      andClauses.push({
+        apartment: {
+          OR: [
+            { buildingId },
+            { block: { buildingId } },
+          ],
+        },
+      });
+    }
+
+    const where: Prisma.FeedbackWhereInput = andClauses.length > 0 ? { AND: andClauses } : {};
 
     const [items, total] = await Promise.all([
       prisma.feedback.findMany({

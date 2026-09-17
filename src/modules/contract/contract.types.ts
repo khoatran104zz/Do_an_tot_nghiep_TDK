@@ -3,6 +3,8 @@ import { ContractStatus, ContractType } from '@prisma/client';
 export interface ContractFilter {
   search?: string;
   apartmentId?: string;
+  buildingId?: string;
+  buildingIds?: string[];
   type?: ContractType;
   status?: ContractStatus;
   expiringSoon?: boolean; // contracts expiring in 30 days

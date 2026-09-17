@@ -2,10 +2,14 @@ import { NextRequest } from 'next/server';
 import { feedbackService } from '@/modules/feedback/feedback.service';
 import { ticketWorkflowService } from '@/modules/feedback/ticket-workflow.service';
 import { createFeedbackSchema } from '@/modules/feedback/feedback.schema';
-import { apiSuccess, apiError, apiUnauthorized } from '@/lib/api-response';
+import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getVerifiedResidentInfo } from '@/lib/authorization';
+import {
+  getVerifiedResidentInfo,
+  getManagerAssignedBuildingIds,
+  authorizeApartmentAccess,
+} from '@/lib/authorization';
 import { rateLimiter } from '@/lib/rate-limiter';
 
 export async function GET(req: NextRequest) {
@@ -19,6 +23,7 @@ export async function GET(req: NextRequest) {
     const priority = (searchParams.get('priority') as any) || undefined;
     const status = (searchParams.get('status') as any) || undefined;
     let apartmentId = searchParams.get('apartmentId') || undefined;
+    const buildingId = searchParams.get('buildingId') || undefined;
     let residentId = searchParams.get('residentId') || undefined;
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
@@ -38,12 +43,41 @@ export async function GET(req: NextRequest) {
       apartmentId = residentInfo.apartmentId || undefined;
     }
 
+    let finalBuildingId = buildingId;
+    let finalBuildingIds: string[] | undefined = undefined;
+
+    if (session.user.role === 'MANAGER') {
+      const assignedIds = session.user.assignedBuildingIds?.length
+        ? session.user.assignedBuildingIds
+        : await getManagerAssignedBuildingIds(session.user.id);
+
+      if (assignedIds.length === 0) {
+        return apiSuccess([], 'Lấy danh sách phản ánh thành công', {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        });
+      }
+
+      if (buildingId) {
+        if (!assignedIds.includes(buildingId)) {
+          return apiForbidden('Bạn không có quyền truy cập phản ánh của tòa nhà này');
+        }
+        finalBuildingId = buildingId;
+      } else {
+        finalBuildingIds = assignedIds;
+      }
+    }
+
     const result = await feedbackService.getFeedbacks({
       search,
       category,
       priority,
       status,
       apartmentId,
+      buildingId: finalBuildingId,
+      buildingIds: finalBuildingIds,
       residentId,
       page,
       limit,
@@ -91,6 +125,12 @@ export async function POST(req: NextRequest) {
     } else {
       // Staff/Manager creating on behalf of resident
       residentId = session.user.id;
+      if (session.user.role === 'MANAGER' && apartmentId) {
+        const aptAuth = await authorizeApartmentAccess(session.user, apartmentId);
+        if (!aptAuth.allowed) {
+          return apiForbidden(aptAuth.error || 'Bạn không có quyền tạo sự cố cho căn hộ thuộc tòa nhà khác');
+        }
+      }
     }
 
     if (!apartmentId || !residentId) {

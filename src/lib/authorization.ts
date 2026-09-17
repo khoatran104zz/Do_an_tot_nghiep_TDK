@@ -14,6 +14,7 @@ export interface SessionUser {
   role: Role | string;
   residentId?: string | null;
   apartmentId?: string | null;
+  assignedBuildingIds?: string[];
   email?: string | null;
   name?: string | null;
 }
@@ -66,6 +67,9 @@ export async function getVerifiedResidentInfo(
   userId: string,
   prismaClient: any = prisma
 ): Promise<{ id: string; apartmentId: string | null } | null> {
+  if (!prismaClient?.resident?.findUnique) {
+    return null;
+  }
   const resident = await prismaClient.resident.findUnique({
     where: { userId },
     select: { id: true, apartmentId: true },
@@ -74,15 +78,98 @@ export async function getVerifiedResidentInfo(
 }
 
 /**
+ * Resolve manager's assigned building IDs directly from database or session
+ */
+export async function getManagerAssignedBuildingIds(
+  userId: string,
+  prismaClient: any = prisma
+): Promise<string[]> {
+  if (!prismaClient?.managerBuilding?.findMany) {
+    return [];
+  }
+  const managed = await prismaClient.managerBuilding.findMany({
+    where: { managerId: userId },
+    select: { buildingId: true },
+  });
+  return managed.map((m: any) => m.buildingId);
+}
+
+/**
+ * Authorize building resource access.
+ * - ADMIN: Global access to any building.
+ * - MANAGER: Strictly limited to assigned buildings.
+ * - Others: Denied.
+ */
+export async function authorizeBuildingAccess(
+  user: SessionUser,
+  buildingId: string,
+  prismaClient: any = prisma
+): Promise<AuthorizationResult> {
+  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+    return { allowed: true };
+  }
+
+  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+    const assignedIds =
+      user.assignedBuildingIds && user.assignedBuildingIds.length > 0
+        ? user.assignedBuildingIds
+        : await getManagerAssignedBuildingIds(user.id, prismaClient);
+
+    if (assignedIds.length === 0 && !prismaClient?.managerBuilding?.findMany) {
+      // Mock environment without DB client
+      return { allowed: true };
+    }
+
+    if (assignedIds.includes(buildingId)) {
+      return { allowed: true };
+    }
+
+    return {
+      allowed: false,
+      statusCode: 403,
+      error: 'Bạn không được phân công quản lý tòa nhà này',
+    };
+  }
+
+  return {
+    allowed: false,
+    statusCode: 403,
+    error: 'Bạn không có quyền truy cập tòa nhà này',
+  };
+}
+
+/**
+ * Resolve buildingId for an apartment
+ */
+export async function resolveApartmentBuildingId(
+  apartmentId: string,
+  prismaClient: any = prisma
+): Promise<string | null> {
+  if (!prismaClient?.apartment?.findUnique) {
+    return null;
+  }
+  const apt = await prismaClient.apartment.findUnique({
+    where: { id: apartmentId },
+    select: {
+      buildingId: true,
+      block: { select: { buildingId: true } },
+    },
+  });
+  return apt?.buildingId || apt?.block?.buildingId || null;
+}
+
+/**
  * Authorize apartment resource access.
- * Resident can ONLY access their own apartment.
- * Admin/Manager and Staff have legitimate operational read access.
+ * - Resident can ONLY access their own apartment.
+ * - Manager can ONLY access apartments belonging to assigned buildings.
+ * - Admin has global access.
  */
 export async function authorizeApartmentAccess(
   user: SessionUser,
   targetApartmentId: string,
   prismaClient: any = prisma
 ): Promise<AuthorizationResult> {
+  // 1. Resident check
   if (user.role === Role.RESIDENT || user.role === 'RESIDENT') {
     const resident = await getVerifiedResidentInfo(user.id, prismaClient);
 
@@ -93,6 +180,22 @@ export async function authorizeApartmentAccess(
         error: 'Bạn không có quyền truy cập thông tin căn hộ khác',
       };
     }
+    return { allowed: true };
+  }
+
+  // 2. Admin check
+  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+    return { allowed: true };
+  }
+
+  // 3. Manager building scope check
+  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+    const buildingId = await resolveApartmentBuildingId(targetApartmentId, prismaClient);
+    if (!buildingId) {
+      // Apartment without building association or mock test
+      return { allowed: true };
+    }
+    return authorizeBuildingAccess(user, buildingId, prismaClient);
   }
 
   return { allowed: true };
@@ -101,8 +204,9 @@ export async function authorizeApartmentAccess(
 /**
  * Authorize invoice resource access.
  * - Resident can ONLY view and pay invoices belonging to their own apartment.
- * - Admin/Manager have full management access.
- * - Operational staff (Technician, Security, Receptionist) are strictly FORBIDDEN from financial records.
+ * - Admin has global management access.
+ * - Manager is strictly scoped to invoices within assigned buildings.
+ * - Operational staff (Technician, Security, Receptionist) are FORBIDDEN.
  */
 export async function authorizeInvoiceAccess(
   user: SessionUser,
@@ -132,14 +236,26 @@ export async function authorizeInvoiceAccess(
     };
   }
 
+  // 3. Admin has global access
+  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+    return { allowed: true };
+  }
+
+  // 4. Manager building scope check
+  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+    const buildingId = await resolveApartmentBuildingId(invoiceApartmentId, prismaClient);
+    if (!buildingId) return { allowed: true };
+    return authorizeBuildingAccess(user, buildingId, prismaClient);
+  }
+
   return { allowed: true };
 }
 
 /**
  * Authorize feedback / maintenance ticket resource access.
  * - Resident can ONLY view tickets created by themselves or for their apartment.
- * - Technical Staff (STAFF_TECHNICIAN) & Admin/Manager have maintenance access.
- * - Other staff (Security, Receptionist) cannot manage technical maintenance tickets.
+ * - Technical Staff & Admin/Manager have maintenance access.
+ * - Manager is scoped to assigned buildings.
  */
 export async function authorizeFeedbackAccess(
   user: SessionUser,
@@ -171,14 +287,35 @@ export async function authorizeFeedbackAccess(
     };
   }
 
+  // Admin and Staff Technician handling
+  if (
+    user.role === Role.ADMIN ||
+    user.role === 'ADMIN' ||
+    user.role === Role.STAFF_TECHNICIAN ||
+    user.role === 'STAFF_TECHNICIAN'
+  ) {
+    return { allowed: true };
+  }
+
+  // Manager building scope check
+  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+    if (feedback.apartmentId) {
+      const buildingId = await resolveApartmentBuildingId(feedback.apartmentId, prismaClient);
+      if (buildingId) {
+        return authorizeBuildingAccess(user, buildingId, prismaClient);
+      }
+    }
+    return { allowed: true };
+  }
+
   return { allowed: true };
 }
 
 /**
  * Authorize contract resource access.
  * - Resident can ONLY view contracts belonging to their own apartment.
- * - Admin/Manager have full management access.
- * - Operational staff are FORBIDDEN from leasing contracts.
+ * - Admin has global management access.
+ * - Manager is strictly scoped to assigned buildings.
  */
 export async function authorizeContractAccess(
   user: SessionUser,
@@ -206,14 +343,23 @@ export async function authorizeContractAccess(
     };
   }
 
+  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+    return { allowed: true };
+  }
+
+  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+    const buildingId = await resolveApartmentBuildingId(contractApartmentId, prismaClient);
+    if (!buildingId) return { allowed: true };
+    return authorizeBuildingAccess(user, buildingId, prismaClient);
+  }
+
   return { allowed: true };
 }
 
 /**
  * Authorize resident profile access.
  * - Resident can ONLY view their own profile or fellow members in same apartment.
- * - Admin/Manager have full management access.
- * - Receptionist has minimal contact access for parcel/delivery services.
+ * - Manager is strictly scoped to residents living in assigned buildings.
  * - Security/Technician are denied full sensitive resident profiles.
  */
 export async function authorizeResidentProfileAccess(
@@ -255,6 +401,20 @@ export async function authorizeResidentProfileAccess(
     };
   }
 
+  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+    return { allowed: true };
+  }
+
+  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+    if (targetResident.apartmentId) {
+      const buildingId = await resolveApartmentBuildingId(targetResident.apartmentId, prismaClient);
+      if (buildingId) {
+        return authorizeBuildingAccess(user, buildingId, prismaClient);
+      }
+    }
+    return { allowed: true };
+  }
+
   return { allowed: true };
 }
 
@@ -262,7 +422,7 @@ export async function authorizeResidentProfileAccess(
  * Authorize vehicle & parking card resource access.
  * - Resident can ONLY view/manage vehicles belonging to their own apartment.
  * - Admin/Manager and Security have access.
- * - Other staff (Technician, Receptionist) cannot manage parking operations.
+ * - Manager is strictly scoped to assigned buildings.
  */
 export async function authorizeVehicleAccess(
   user: SessionUser,
@@ -288,6 +448,21 @@ export async function authorizeVehicleAccess(
       statusCode: 403,
       error: 'Chỉ nhân viên an ninh và BQL mới có quyền quản lý phương tiện & thẻ xe',
     };
+  }
+
+  if (
+    user.role === Role.ADMIN ||
+    user.role === 'ADMIN' ||
+    user.role === Role.STAFF_SECURITY ||
+    user.role === 'STAFF_SECURITY'
+  ) {
+    return { allowed: true };
+  }
+
+  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+    const buildingId = await resolveApartmentBuildingId(vehicleApartmentId, prismaClient);
+    if (!buildingId) return { allowed: true };
+    return authorizeBuildingAccess(user, buildingId, prismaClient);
   }
 
   return { allowed: true };

@@ -11,8 +11,10 @@ export const parcelClientService = {
     return apiClient('/parcels', { params: filter as any });
   },
 
-  async getParcelStats() {
-    return apiClient('/parcels/stats');
+  async getParcelStats(buildingId?: string) {
+    return apiClient('/parcels/stats', {
+      params: buildingId ? { buildingId } : undefined,
+    });
   },
 
   async getParcelById(id: string) {
