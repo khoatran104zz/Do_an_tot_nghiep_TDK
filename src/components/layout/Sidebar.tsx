@@ -39,6 +39,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useShell } from './ShellContext';
+import { KHomeIcon } from '@/components/shared/KHomeLogo';
 
 interface NavItem {
   name: string;
@@ -281,34 +282,44 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
       >
         {/* Header Branding */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
-          <Link href={homeHref} className="flex items-center gap-3 overflow-hidden group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20 shrink-0 group-hover:scale-105 transition-transform">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
+          <Link href={homeHref} className="flex items-center gap-2.5 overflow-hidden group">
+            <KHomeIcon className="h-8 w-8 shrink-0 transition-transform group-hover:scale-105" />
             {!isCollapsed && (
               <div className="flex flex-col truncate">
-                <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-slate-100 uppercase">
-                  Tòa Nhà Thông Minh
-                </span>
-                <span className="text-[10px] font-bold tracking-wider uppercase flex items-center gap-1">
-                  {role === 'ADMIN' ? (
-                    <span className="text-purple-600 dark:text-purple-400 font-extrabold flex items-center gap-1">
-                      <Crown className="h-3 w-3 text-amber-500 inline" /> Super Admin
-                    </span>
-                  ) : role === 'MANAGER' ? (
-                    <span className="text-blue-600 dark:text-blue-400 font-bold">
-                      🏢 Ban Quản Lý Tòa Nhà
-                    </span>
-                  ) : role === 'STAFF_TECHNICIAN' ? (
-                    'Kỹ thuật viên'
-                  ) : role === 'STAFF_SECURITY' ? (
-                    'An ninh bảo vệ'
-                  ) : role === 'STAFF_RECEPTIONIST' ? (
-                    'Lễ tân'
-                  ) : (
-                    'Cổng thông tin cư dân'
-                  )}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="font-extrabold text-base tracking-tight text-[#0F6B4F] dark:text-emerald-400 leading-none"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    K-Home
+                  </span>
+                  <span className="text-[9px] font-semibold text-[#0F6B4F] dark:text-emerald-300 bg-[#E8F5ED] dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-[#0F6B4F]/20">
+                    Smart Living
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] font-medium text-[#6B7280] dark:text-slate-400 mt-1 truncate">
+                  <span className="truncate">
+                    {role === 'ADMIN' ? (
+                      <span className="text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-1">
+                        <Crown className="h-3 w-3 text-amber-500 inline" /> Super Admin
+                      </span>
+                    ) : role === 'MANAGER' ? (
+                      <span className="text-[#0F6B4F] dark:text-emerald-400 font-bold">
+                        Ban Quản Lý
+                      </span>
+                    ) : role === 'STAFF_TECHNICIAN' ? (
+                      'Kỹ thuật viên'
+                    ) : role === 'STAFF_SECURITY' ? (
+                      'Đội bảo vệ'
+                    ) : role === 'STAFF_RECEPTIONIST' ? (
+                      'Lễ tân sảnh'
+                    ) : (
+                      'Cư dân'
+                    )}
+                  </span>
+                  <span>·</span>
+                  <span className="text-[9.5px] text-slate-400 dark:text-slate-500">Better Together</span>
+                </div>
               </div>
             )}
           </Link>
@@ -316,7 +327,7 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
           {/* Close on mobile */}
           <button
             onClick={() => setIsMobileOpen(false)}
-            className="md:hidden p-1 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            className="md:hidden p-1 rounded-lg text-slate-500 hover:bg-[#E8F5ED] dark:hover:bg-slate-800 hover:text-[#0F6B4F] cursor-pointer"
             aria-label="Đóng menu"
           >
             <X className="h-5 w-5" />
@@ -328,10 +339,10 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
           <div className="px-3 pt-3 pb-1 shrink-0">
             <button
               onClick={() => setIsCommandOpen(true)}
-              className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700/60 transition-all cursor-pointer shadow-2xs group"
+              className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 hover:bg-[#E8F5ED]/40 dark:hover:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700/60 transition-all cursor-pointer shadow-2xs group"
             >
               <div className="flex items-center gap-2">
-                <Search className="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                <Search className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#0F6B4F] dark:group-hover:text-emerald-400 transition-colors" />
                 <span>Tìm kiếm nhanh...</span>
               </div>
               <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md">
@@ -368,7 +379,7 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
                       className={cn(
                         'flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 relative group cursor-pointer',
                         isActive
-                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 shadow-2xs'
+                          ? 'bg-[#E8F5ED] text-[#0F6B4F] dark:bg-emerald-950/60 dark:text-emerald-300 shadow-2xs'
                           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-100',
                         isCollapsed && 'justify-center px-2 py-2.5'
                       )}
@@ -376,17 +387,17 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
                       <Icon
                         className={cn(
                           'h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-110',
-                          isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                          isActive ? 'text-[#0F6B4F] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-[#0F6B4F] dark:group-hover:text-slate-300'
                         )}
                       />
                       {!isCollapsed && <span className="truncate">{item.name}</span>}
 
                       {isActive && (
-                        <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-blue-600 rounded-r-full" />
+                        <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#0F6B4F] dark:bg-emerald-500 rounded-r-full" />
                       )}
 
                       {!isCollapsed && item.badge && (
-                        <span className="ml-auto bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        <span className="ml-auto bg-[#E8F5ED] dark:bg-emerald-900/60 text-[#0F6B4F] dark:text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                           {item.badge}
                         </span>
                       )}
@@ -412,7 +423,7 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
         <button
           type="button"
           onClick={toggleCollapse}
-          className="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 h-7 w-7 items-center justify-center rounded-full border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500 shadow-md transition-all cursor-pointer hover:scale-110"
+          className="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 h-7 w-7 items-center justify-center rounded-full border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-[#0F6B4F] dark:hover:text-emerald-400 hover:border-[#0F6B4F] shadow-md transition-all cursor-pointer hover:scale-110"
           title={isCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
           aria-label="Thu gọn menu"
         >

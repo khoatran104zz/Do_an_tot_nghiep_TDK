@@ -139,7 +139,7 @@ export default function FacilitiesManagementPage() {
             setEditingFacility(null);
             setIsCreateModalOpen(true);
           }}
-          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+          className="gap-2 bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white shadow-xs"
         >
           <Plus className="h-4 w-4" />
           <span>Thêm tiện ích mới</span>

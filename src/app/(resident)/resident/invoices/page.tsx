@@ -172,7 +172,7 @@ export default function ResidentInvoicesPage() {
                       <Button
                         size="sm"
                         onClick={() => handleOpenPay(inv)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20 gap-1.5"
+                        className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white font-semibold shadow-md shadow-[#0F6B4F]/20 gap-1.5"
                       >
                         <QrCode className="h-3.5 w-3.5" /> Thanh toán QR
                       </Button>

@@ -97,7 +97,7 @@ export default function ParcelsPage() {
 
           <button
             onClick={() => setIsReceiveOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs hover:shadow-md cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-[#0F6B4F] text-white hover:bg-[#0c5942] transition-colors shadow-xs hover:shadow-md cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>+ Tiếp nhận bưu kiện</span>

@@ -340,7 +340,7 @@ export default function ContractsPage() {
         title="Quản lý Hợp đồng"
         description="Theo dõi hợp đồng thuê và mua bán căn hộ, thời hạn hiệu lực, tiền cọc và cảnh báo hết hạn."
       >
-        <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20">
+        <Button onClick={handleOpenCreate} className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-semibold shadow-md shadow-[#0F6B4F]/20">
           <Plus className="mr-1.5 h-4 w-4" /> Tạo Hợp đồng mới
         </Button>
       </PageHeader>
@@ -444,7 +444,7 @@ export default function ContractsPage() {
                 setInspectingItem(null);
                 handleOpenEdit(item);
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-medium"
             >
               <Edit className="h-3.5 w-3.5 mr-1.5" /> Chỉnh sửa
             </Button>

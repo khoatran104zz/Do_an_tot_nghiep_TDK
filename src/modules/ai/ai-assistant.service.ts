@@ -49,8 +49,8 @@ export class AIAssistantService {
     }
 
     try {
-      // 1. Get safe isolated context for this resident
-      const context = await aiSafeContextService.getSafeContextForUser(userId);
+      // 1. Get safe isolated context for this user and their role
+      const context = await aiSafeContextService.getSafeContextForUser(userId, actor?.role);
 
       // 2. Obtain AI Provider
       const provider = AIFactory.getProvider();

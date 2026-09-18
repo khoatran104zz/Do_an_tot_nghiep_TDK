@@ -158,24 +158,24 @@ export class ReportExportService {
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>${data.title}</title>
+  <title>${data.title} - K-Home</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; color: #1e293b; }
-    .header { border-bottom: 2px solid #2563eb; padding-bottom: 15px; margin-bottom: 20px; }
-    .system-title { font-size: 12px; font-weight: bold; color: #2563eb; text-transform: uppercase; letter-spacing: 1px; }
-    .report-title { font-size: 22px; font-weight: bold; margin: 6px 0; color: #0f172a; }
-    .meta { font-size: 11px; color: #64748b; }
+    body { font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; color: #1F2937; }
+    .header { border-bottom: 2px solid #0F6B4F; padding-bottom: 15px; margin-bottom: 20px; }
+    .system-title { font-size: 13px; font-weight: bold; color: #0F6B4F; text-transform: uppercase; letter-spacing: 1px; }
+    .report-title { font-size: 22px; font-weight: bold; margin: 6px 0; color: #0F6B4F; }
+    .meta { font-size: 11px; color: #6B7280; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
-    th { background-color: #f1f5f9; color: #334155; font-weight: 600; text-align: left; padding: 8px 10px; border: 1px solid #cbd5e1; }
+    th { background-color: #E8F5ED; color: #0F6B4F; font-weight: 600; text-align: left; padding: 8px 10px; border: 1px solid #c2e5d0; }
     td { padding: 8px 10px; border: 1px solid #e2e8f0; }
     tr:nth-child(even) { background-color: #f8fafc; }
-    .summary-box { margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; }
-    .footer { margin-top: 40px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+    .summary-box { margin-top: 25px; padding: 15px; background: #E8F5ED; border: 1px solid #c2e5d0; border-radius: 8px; font-size: 12px; color: #0F6B4F; }
+    .footer { margin-top: 40px; font-size: 10px; color: #6B7280; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 10px; }
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="system-title">HỆ THỐNG QUẢN LÝ CHUNG CƯ THÔNG MINH - SMART APARTMENT</div>
+    <div class="system-title">K-HOME - HỆ THỐNG QUẢN LÝ CHUNG CƯ THÔNG MINH | SMART LIVING, BETTER TOGETHER</div>
     <div class="report-title">${data.title}</div>
     <div class="meta">Ngày xuất: ${data.generatedAt} | Tổng số bản ghi: ${data.totalRows} | Định dạng chuẩn A4</div>
   </div>
@@ -207,7 +207,7 @@ export class ReportExportService {
   }
 
   <div class="footer">
-    Báo cáo điện tử được trích xuất tự động từ hệ thống Smart Apartment Management System. Trang 1 / 1
+    Báo cáo điện tử được trích xuất tự động từ hệ thống K-Home (Smart Living, Better Together). Trang 1 / 1
   </div>
 </body>
 </html>`;

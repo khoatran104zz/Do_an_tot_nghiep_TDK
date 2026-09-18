@@ -49,8 +49,8 @@ export function Switch({
         onClick={handleToggle}
         className={cn(
           'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 focus-visible:ring-offset-2',
-          isChecked ? 'bg-blue-600' : 'bg-slate-200',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F6B4F]/30 focus-visible:ring-offset-2',
+          isChecked ? 'bg-[#0F6B4F]' : 'bg-slate-200 dark:bg-slate-700',
           disabled && 'cursor-not-allowed opacity-50'
         )}
       >

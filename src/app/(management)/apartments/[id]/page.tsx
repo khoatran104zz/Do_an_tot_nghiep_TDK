@@ -772,7 +772,7 @@ export default function ApartmentDetailPage() {
                 <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-muted-foreground/20">
                   {historyList.map((h: any) => (
                     <div key={h.id} className="relative group text-xs">
-                      <div className="absolute -left-6 top-0.5 w-3 h-3 rounded-full bg-blue-600 ring-4 ring-background" />
+                      <div className="absolute -left-6 top-0.5 w-3 h-3 rounded-full bg-[#0F6B4F] ring-4 ring-background" />
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-foreground">{h.title}</span>

@@ -89,7 +89,7 @@ export function SmartModulePlaceholder({
         <div className="flex items-center gap-2.5">
           <Button
             onClick={handleAction}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm shadow-blue-600/20 cursor-pointer"
+            className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white font-semibold text-xs shadow-sm shadow-[#0F6B4F]/20 cursor-pointer"
           >
             <ActionIcon className="h-4 w-4 mr-1.5" />
             {buttonText}

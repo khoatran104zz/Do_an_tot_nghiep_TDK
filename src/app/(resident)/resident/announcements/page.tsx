@@ -106,7 +106,7 @@ export default function ResidentAnnouncementsPage() {
             onClick={() => setSelectedCategory(cat.id)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
               selectedCategory === cat.id
-                ? 'bg-blue-600 text-white shadow-sm'
+                ? 'bg-[#0F6B4F] text-white shadow-sm'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >

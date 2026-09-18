@@ -10,6 +10,7 @@ import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 
 import { Role } from '@prisma/client';
+import { ResidentAIAssistant } from '@/components/ai/ResidentAIAssistant';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -52,6 +53,9 @@ function AppShellContent({
 
       {/* Global Quick Command Palette */}
       <CommandSearchDialog />
+
+      {/* Multi-Role K-Home AI Assistant */}
+      <ResidentAIAssistant role={role} />
     </div>
   );
 }

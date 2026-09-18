@@ -57,7 +57,7 @@ export default function ResidentVisitorsPage() {
       >
         <Button
           onClick={() => setIsCreateModalOpen(true)}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md gap-2"
+          className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white shadow-md gap-2"
         >
           <Plus className="h-4 w-4" />
           Tạo Thẻ Khách Mới

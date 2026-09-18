@@ -635,7 +635,7 @@ export default function ApartmentsPage() {
 
           <Button
             onClick={handleOpenCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20 text-xs gap-1.5 h-9"
+            className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-semibold shadow-md shadow-[#0F6B4F]/20 text-xs gap-1.5 h-9"
           >
             <Plus className="h-4 w-4" /> Thêm Căn hộ
           </Button>
@@ -928,10 +928,10 @@ export default function ApartmentsPage() {
                   className="border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden"
                 >
                   {/* Block Header */}
-                  <CardHeader className="p-4 sm:p-5 bg-gradient-to-r from-slate-50 via-blue-50/20 to-slate-50 dark:from-slate-900 dark:via-blue-950/20 dark:to-slate-900 border-b border-slate-200/80 dark:border-slate-800">
+                  <CardHeader className="p-4 sm:p-5 bg-gradient-to-r from-slate-50 via-emerald-50/30 to-slate-50 dark:from-slate-900 dark:via-emerald-950/20 dark:to-slate-900 border-b border-slate-200/80 dark:border-slate-800">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-600/30">
+                        <div className="p-2.5 rounded-xl bg-[#0F6B4F] text-white shadow-sm shadow-[#0F6B4F]/30">
                           <Building2 className="h-5 w-5" />
                         </div>
                         <div>
@@ -951,8 +951,8 @@ export default function ApartmentsPage() {
 
                       {/* Block Quick Stats */}
                       <div className="flex items-center gap-2 text-xs">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-semibold border border-blue-200/60">
-                          <span className="h-2 w-2 rounded-full bg-blue-600" />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E8F5ED] text-[#0F6B4F] dark:bg-[#0F6B4F]/20 dark:text-emerald-300 font-semibold border border-[#0F6B4F]/20">
+                          <span className="h-2 w-2 rounded-full bg-[#0F6B4F]" />
                           {bGroup.stats.occupied} Đang ở
                         </span>
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-semibold border border-slate-200">
@@ -1280,13 +1280,13 @@ export default function ApartmentsPage() {
                         <div className="space-y-3">
                           {/* 👤 Chủ hộ */}
                           {owner ? (
-                            <div className="p-3 rounded-xl border-2 border-blue-500/20 bg-blue-50/30 dark:bg-blue-950/20 space-y-1.5">
+                            <div className="p-3 rounded-xl border-2 border-[#0F6B4F]/20 bg-[#E8F5ED]/40 dark:bg-[#0F6B4F]/10 space-y-1.5">
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-700 dark:text-blue-300">
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F6B4F] dark:text-emerald-300">
                                   <span className="text-base leading-none">👤</span>
                                   <span>Chủ hộ</span>
                                 </div>
-                                <Badge className="bg-blue-600 hover:bg-blue-700 text-white text-[10px]">
+                                <Badge className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white text-[10px]">
                                   CHỦ SỞ HỮU
                                 </Badge>
                               </div>
@@ -1468,7 +1468,7 @@ export default function ApartmentsPage() {
                         const isMoveOut = item.event === 'RESIDENT_MOVE_OUT' || item.event === 'TENANT_MOVE_OUT';
 
                         const dotBg = isOwnerTransfer
-                          ? 'bg-blue-600'
+                          ? 'bg-[#0F6B4F]'
                           : isMoveIn
                           ? 'bg-emerald-600'
                           : isMoveOut

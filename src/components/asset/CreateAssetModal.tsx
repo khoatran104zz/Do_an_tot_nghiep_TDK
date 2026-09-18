@@ -226,7 +226,7 @@ export function CreateAssetModal({ open, onOpenChange, buildings = [] }: CreateA
             </Button>
             <Button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white shadow-xs"
               disabled={createAsset.isPending}
             >
               {createAsset.isPending ? (

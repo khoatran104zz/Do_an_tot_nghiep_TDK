@@ -41,7 +41,7 @@ export default function GlobalErrorPage({
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Button
             onClick={() => reset()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-10 px-5"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white rounded-xl h-10 px-5 shadow-xs"
           >
             <RefreshCw className="h-4 w-4" />
             Thử tải lại

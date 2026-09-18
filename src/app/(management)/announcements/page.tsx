@@ -143,7 +143,7 @@ export default function ManagementAnnouncementsPage() {
       >
         <Button
           onClick={() => setIsCreateOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20"
+          className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-semibold shadow-md shadow-[#0F6B4F]/20"
         >
           <Plus className="h-4 w-4 mr-2" />
           Phát hành thông báo mới
@@ -374,7 +374,7 @@ export default function ManagementAnnouncementsPage() {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Nhập nội dung thông báo đầy đủ gửi tới cư dân..."
               rows={5}
-              className="w-full text-sm rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-sm rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0F6B4F]"
               required
             />
           </div>

@@ -526,11 +526,11 @@ export default function VehicleDetailPage() {
               ) : (
                 <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
                   {timeline.map((event: any) => {
-                    let dotColor = 'bg-blue-600';
+                    let dotColor = 'bg-[#0F6B4F]';
                     let actionText = event.action;
 
                     if (event.action === 'CREATE_VEHICLE') {
-                      dotColor = 'bg-blue-500';
+                      dotColor = 'bg-[#0F6B4F]';
                       actionText = 'Đăng ký phương tiện';
                     } else if (event.action === 'APPROVE_VEHICLE') {
                       dotColor = 'bg-emerald-500';

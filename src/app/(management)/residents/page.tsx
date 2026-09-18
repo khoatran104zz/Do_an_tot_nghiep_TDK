@@ -464,7 +464,7 @@ export default function ResidentsPage() {
           {mainTab === 'RESIDENTS' && (
             <Button
               onClick={handleOpenCreate}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20 text-xs"
+              className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white font-semibold shadow-md shadow-[#0F6B4F]/20 text-xs"
             >
               <Plus className="mr-1.5 h-4 w-4" /> Thêm Cư dân mới
             </Button>

@@ -302,7 +302,7 @@ export function CreateFacilityModal({
             <Button
               type="submit"
               disabled={isPending}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white font-medium shadow-xs"
             >
               {isPending ? (
                 <>

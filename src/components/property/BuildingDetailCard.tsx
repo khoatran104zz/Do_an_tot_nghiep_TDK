@@ -129,7 +129,7 @@ export function BuildingDetailCard({
             <Button
               size="sm"
               onClick={() => onAddBlock(building.id)}
-              className="text-xs gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+              className="text-xs gap-1.5 bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white shadow-xs"
             >
               <Plus className="h-3.5 w-3.5" />
               Thêm Khối Tháp
@@ -227,7 +227,7 @@ export function BuildingDetailCard({
               <Button
                 size="sm"
                 onClick={() => onAddBlock?.(building.id)}
-                className="mt-3 text-xs gap-1.5 bg-blue-600 text-white hover:bg-blue-700"
+                className="mt-3 text-xs gap-1.5 bg-[#0F6B4F] text-white hover:bg-[#0c5942] active:bg-[#094634] shadow-xs"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Thêm Khối Tháp Ngay

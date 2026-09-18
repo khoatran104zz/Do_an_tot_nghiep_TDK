@@ -83,7 +83,7 @@ export function AssignmentDialog({ isOpen, onClose, onSubmit, isLoading }: Assig
             <Button
               type="submit"
               disabled={isLoading || !selectedStaffId}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white shadow-xs"
             >
               {isLoading ? 'Đang phân công...' : 'Xác nhận phân công'}
             </Button>

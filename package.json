@@ -1,6 +1,7 @@
 {
-  "name": "smart-apartment-management",
+  "name": "k-home",
   "version": "0.1.0",
+  "description": "K-Home - Smart Living, Better Together | Hệ thống Quản lý Vận hành Chung cư Thông minh Chuẩn Quốc tế",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -69,24 +69,24 @@ export function ManagerDashboardView() {
   return (
     <div className="space-y-6 pb-12">
       {/* Context Banner: Active Building */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-blue-900 to-indigo-950 text-white shadow-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-[#094634] via-[#0F6B4F] to-[#0c5942] text-white shadow-md">
         <div className="flex items-start gap-3.5">
           <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-            <Building2 className="h-6 w-6 text-blue-300" />
+            <Building2 className="h-6 w-6 text-emerald-300" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-black tracking-tight text-white">
                 {building?.name || 'Tòa nhà quản lý'}
               </h1>
-              <Badge className="bg-blue-500/30 text-blue-200 font-mono text-[10px] border border-blue-400/30">
+              <Badge className="bg-emerald-500/30 text-emerald-100 font-mono text-[10px] border border-emerald-400/30">
                 {building?.code || 'SMART-BUILDING'}
               </Badge>
               <Badge className="bg-amber-400/20 text-amber-200 font-semibold text-[10px] border border-amber-400/30">
                 Phạm vi Vận hành Tòa nhà
               </Badge>
             </div>
-            <p className="text-xs text-blue-200/80 mt-1">
+            <p className="text-xs text-emerald-100/80 mt-1">
               {building?.address || 'Địa chỉ tòa nhà đang quản lý vận hành'} • Bàn làm việc Ban Quản Lý trực thuộc
             </p>
           </div>
@@ -278,25 +278,25 @@ export function ManagerDashboardView() {
       {/* Quick Operational Shortcuts */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Link href="/apartments">
-          <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-blue-500 bg-white dark:bg-slate-900 flex items-center gap-3 transition-colors cursor-pointer group">
-            <Building2 className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform" />
+          <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-[#0F6B4F] bg-white dark:bg-slate-900 flex items-center gap-3 transition-colors cursor-pointer group">
+            <Building2 className="h-4 w-4 text-[#0F6B4F] group-hover:scale-110 transition-transform" />
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Quản lý Căn hộ</span>
           </div>
         </Link>
         <Link href="/invoices">
-          <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-blue-500 bg-white dark:bg-slate-900 flex items-center gap-3 transition-colors cursor-pointer group">
-            <Receipt className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+          <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-[#0F6B4F] bg-white dark:bg-slate-900 flex items-center gap-3 transition-colors cursor-pointer group">
+            <Receipt className="h-4 w-4 text-[#0F6B4F] group-hover:scale-110 transition-transform" />
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Hóa đơn & Thu phí</span>
           </div>
         </Link>
         <Link href="/parcels">
-          <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-blue-500 bg-white dark:bg-slate-900 flex items-center gap-3 transition-colors cursor-pointer group">
+          <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-[#0F6B4F] bg-white dark:bg-slate-900 flex items-center gap-3 transition-colors cursor-pointer group">
             <Package className="h-4 w-4 text-amber-600 group-hover:scale-110 transition-transform" />
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Bưu kiện sảnh</span>
           </div>
         </Link>
         <Link href="/visitors">
-          <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-blue-500 bg-white dark:bg-slate-900 flex items-center gap-3 transition-colors cursor-pointer group">
+          <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-[#0F6B4F] bg-white dark:bg-slate-900 flex items-center gap-3 transition-colors cursor-pointer group">
             <UserCheck className="h-4 w-4 text-purple-600 group-hover:scale-110 transition-transform" />
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Khách ra vào</span>
           </div>

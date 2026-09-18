@@ -75,13 +75,13 @@ export function MobileBottomNav({ role = 'MANAGER' }: { role?: string }) {
               href={item.href}
               className={cn(
                 'flex flex-col items-center justify-center min-h-[48px] min-w-[56px] py-1 px-2 rounded-xl transition-all select-none',
-                isActive ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+                isActive ? 'text-[#0F6B4F] dark:text-emerald-400 font-bold' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
               )}
             >
               <div
                 className={cn(
                   'p-1 rounded-lg transition-colors',
-                  isActive ? 'bg-blue-50 text-blue-600' : 'text-slate-500'
+                  isActive ? 'bg-[#E8F5ED] text-[#0F6B4F] dark:bg-emerald-950/60 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-400'
                 )}
               >
                 <Icon className="h-5 w-5" />

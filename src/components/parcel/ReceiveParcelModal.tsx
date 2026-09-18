@@ -203,14 +203,14 @@ export const ReceiveParcelModal: React.FC<ReceiveParcelModalProps> = ({
                       photoUrl: '',
                     }));
                   }}
-                  className="px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-xl transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold text-[#0F6B4F] bg-[#E8F5ED] hover:bg-[#d8eedf] dark:bg-emerald-950/40 dark:text-emerald-300 rounded-xl transition-colors cursor-pointer border border-[#0F6B4F]/20"
                 >
                   + Nhận tiếp kiện khác
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="px-5 py-2 text-xs font-semibold text-white bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   Hoàn tất
                 </button>
@@ -329,7 +329,7 @@ export const ReceiveParcelModal: React.FC<ReceiveParcelModalProps> = ({
                         onClick={() => handleCarrierSelect(c)}
                         className={`text-xs px-2.5 py-1.5 rounded-xl border transition-all ${
                           isSelected
-                            ? 'bg-blue-600 text-white border-blue-600 font-semibold shadow-xs'
+                            ? 'bg-[#0F6B4F] text-white border-[#0F6B4F] font-semibold shadow-xs'
                             : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
                         }`}
                       >
@@ -448,7 +448,7 @@ export const ReceiveParcelModal: React.FC<ReceiveParcelModalProps> = ({
               type="submit"
               form="receive-parcel-form"
               disabled={receiveMutation.isPending}
-              className="flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               {receiveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               Tiếp nhận & Tạo mã nhận hàng

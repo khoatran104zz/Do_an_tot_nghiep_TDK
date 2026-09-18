@@ -90,7 +90,7 @@ export default function AssetsManagementPage() {
           </Link>
           <Button
             onClick={() => setIsCreateAssetOpen(true)}
-            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+            className="gap-2 bg-[#0F6B4F] hover:bg-[#0c5942] text-white shadow-sm"
           >
             <Plus className="h-4 w-4" />
             <span>Thêm thiết bị mới</span>
@@ -103,7 +103,7 @@ export default function AssetsManagementPage() {
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500">Tổng thiết bị</span>
-            <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+            <div className="p-1.5 rounded-lg bg-[#E8F5ED] text-[#0F6B4F]">
               <Boxes className="h-4 w-4" />
             </div>
           </div>
@@ -201,7 +201,7 @@ export default function AssetsManagementPage() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value as AssetCategory | '')}
-              className="h-9 px-3 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              className="h-9 px-3 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0F6B4F] font-medium"
             >
               <option value="">-- Tất cả danh mục --</option>
               {Object.entries(ASSET_CATEGORY_LABELS).map(([cat, label]) => (
@@ -214,7 +214,7 @@ export default function AssetsManagementPage() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value as AssetStatus | '')}
-              className="h-9 px-3 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              className="h-9 px-3 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0F6B4F] font-medium"
             >
               <option value="">-- Tất cả trạng thái --</option>
               <option value="OPERATIONAL">Hoạt động tốt</option>

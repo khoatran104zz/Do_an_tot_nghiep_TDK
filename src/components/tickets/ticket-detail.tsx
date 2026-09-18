@@ -280,7 +280,7 @@ export function TicketDetail({ ticketId, mode, backUrl }: TicketDetailProps) {
                     <>
                       <Button
                         onClick={() => setIsAssignOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                        className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white gap-1.5 shadow-xs"
                       >
                         <Wrench className="w-4 h-4" /> Phân công kỹ thuật viên
                       </Button>
@@ -533,15 +533,15 @@ export function TicketDetail({ ticketId, mode, backUrl }: TicketDetailProps) {
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">Kỹ thuật viên phụ trách</h3>
 
             {ticket.assignedStaff ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50/70 border border-blue-100">
-                <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-[#E8F5ED]/70 border border-[#0F6B4F]/20">
+                <div className="w-10 h-10 rounded-full bg-[#0F6B4F] text-white flex items-center justify-center font-bold text-sm">
                   {ticket.assignedStaff.fullName.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-blue-950 text-sm truncate">
+                  <h4 className="font-bold text-slate-900 text-sm truncate">
                     {ticket.assignedStaff.fullName}
                   </h4>
-                  <p className="text-xs text-blue-700 flex items-center gap-1">
+                  <p className="text-xs text-[#0F6B4F] flex items-center gap-1 font-medium">
                     <Phone className="w-3 h-3" /> {ticket.assignedStaff.phone || 'N/A'}
                   </p>
                 </div>

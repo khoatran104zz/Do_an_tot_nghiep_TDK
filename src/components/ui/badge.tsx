@@ -7,13 +7,13 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-blue-200 bg-blue-50 text-blue-700',
-        secondary: 'border-slate-200 bg-slate-100 text-slate-700',
-        destructive: 'border-red-200 bg-red-50 text-red-700',
-        success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-        warning: 'border-amber-200 bg-amber-50 text-amber-800',
-        info: 'border-sky-200 bg-sky-50 text-sky-700',
-        outline: 'border-slate-300 bg-white text-slate-700',
+        default: 'border-[#0F6B4F]/20 bg-[#E8F5ED] text-[#0F6B4F] dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40',
+        secondary: 'border-slate-200 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+        destructive: 'border-red-200 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300',
+        success: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+        warning: 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+        info: 'border-sky-200 bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
+        outline: 'border-slate-300 bg-white text-slate-700 dark:bg-slate-900 dark:text-slate-300',
       },
       size: {
         default: 'px-2.5 py-0.5 text-xs',
@@ -29,7 +29,7 @@ const badgeVariants = cva(
 );
 
 const dotColors: Record<string, string> = {
-  default: 'bg-blue-500',
+  default: 'bg-[#0F6B4F]',
   secondary: 'bg-slate-500',
   destructive: 'bg-red-500',
   success: 'bg-emerald-500',

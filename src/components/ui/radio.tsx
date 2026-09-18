@@ -23,15 +23,15 @@ const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
             onChange={onChange}
             disabled={disabled}
             className={cn(
-              'peer h-4.5 w-4.5 appearance-none rounded-full border border-slate-300 bg-white transition-all cursor-pointer',
-              'checked:border-blue-600 checked:bg-white',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/20 focus-visible:ring-offset-1',
-              'disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100',
+              'peer h-4.5 w-4.5 appearance-none rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 transition-all cursor-pointer',
+              'checked:border-[#0F6B4F] checked:bg-white dark:checked:bg-slate-900',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F6B4F]/20 focus-visible:ring-offset-1',
+              'disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 dark:disabled:bg-slate-800',
               className
             )}
             {...props}
           />
-          <div className="pointer-events-none absolute h-2 w-2 rounded-full bg-blue-600 opacity-0 transition-opacity peer-checked:opacity-100" />
+          <div className="pointer-events-none absolute h-2 w-2 rounded-full bg-[#0F6B4F] opacity-0 transition-opacity peer-checked:opacity-100" />
         </div>
         {(label || description) && (
           <div className="flex flex-col">

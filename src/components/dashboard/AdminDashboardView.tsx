@@ -86,13 +86,13 @@ export function AdminDashboardView() {
             </Button>
           </Link>
           <Link href="/fees">
-            <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold">
-              <Receipt className="h-3.5 w-3.5 mr-1.5 text-blue-600" />
+            <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold hover:bg-[#E8F5ED] hover:text-[#0F6B4F]">
+              <Receipt className="h-3.5 w-3.5 mr-1.5 text-[#0F6B4F]" />
               Biểu phí Hệ thống
             </Button>
           </Link>
           <Link href="/reports">
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold">
+            <Button size="sm" className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white rounded-xl text-xs font-bold shadow-xs">
               Báo cáo Toàn Hệ thống
             </Button>
           </Link>

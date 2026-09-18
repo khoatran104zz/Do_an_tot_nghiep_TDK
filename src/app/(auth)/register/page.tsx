@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useRegisterUser } from '@/hooks/use-auth';
+import { KHomeLogo } from '@/components/shared/KHomeLogo';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -37,15 +38,13 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 relative overflow-hidden">
-      <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
-      <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl" />
+      <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-[#0F6B4F]/10 blur-3xl" />
+      <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#22C55E]/10 blur-3xl" />
 
       <div className="w-full max-w-md relative z-10 my-8">
-        <div className="text-center mb-6">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/30 mb-2">
-            <ShieldCheck className="h-6 w-6" />
-          </div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">ĐĂNG KÝ TÀI KHOẢN CƯ DÂN</h1>
+        <div className="text-center mb-6 flex flex-col items-center">
+          <KHomeLogo variant="primary" size="lg" className="mb-3" />
+          <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">ĐĂNG KÝ TÀI KHOẢN CƯ DÂN</h1>
           <p className="text-xs text-slate-500 mt-1">Điền thông tin cá nhân để kết nối với căn hộ của bạn</p>
         </div>
 
@@ -156,7 +155,7 @@ export default function RegisterPage() {
 
               <Button
                 type="submit"
-                className="w-full h-10 font-semibold bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 mt-2"
+                className="w-full h-10 font-semibold bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white shadow-md shadow-[#0F6B4F]/20 mt-2 cursor-pointer"
                 disabled={registerMutation.isPending}
               >
                 {registerMutation.isPending ? 'Đang tạo tài khoản...' : 'Hoàn tất đăng ký'}
@@ -166,7 +165,7 @@ export default function RegisterPage() {
 
             <p className="text-center text-xs text-slate-500 pt-4">
               Đã có tài khoản?{' '}
-              <Link href="/login" className="font-semibold text-blue-600 hover:underline">
+              <Link href="/login" className="font-semibold text-[#0F6B4F] hover:underline">
                 Đăng nhập ngay
               </Link>
             </p>

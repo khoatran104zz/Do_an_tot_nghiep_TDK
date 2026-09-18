@@ -68,11 +68,11 @@ export default function ResidentFacilitiesPage() {
         <Button
           variant="outline"
           onClick={() => setIsMyBookingsOpen(true)}
-          className="gap-2 shrink-0 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100/70"
+          className="gap-2 shrink-0 border-[#0F6B4F]/30 text-[#0F6B4F] bg-[#E8F5ED] hover:bg-[#d8eedf]"
         >
-          <Calendar className="h-4 w-4 text-blue-600" />
+          <Calendar className="h-4 w-4 text-[#0F6B4F]" />
           <span>Lịch đặt của tôi</span>
-          <Badge variant="default" className="ml-1 bg-blue-600 text-white text-[11px] px-1.5 py-0">
+          <Badge variant="default" className="ml-1 bg-[#0F6B4F] text-white text-[11px] px-1.5 py-0">
             {myBookings.length}
           </Badge>
         </Button>
@@ -224,7 +224,7 @@ export default function ResidentFacilitiesPage() {
                 <CardFooter className="pt-3 border-t border-slate-100 bg-slate-50/50">
                   <Button
                     onClick={() => setBookingTargetFacility(fac)}
-                    className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
+                    className="w-full gap-2 bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white text-xs font-semibold shadow-xs"
                   >
                     <span>Xem lịch & Đặt chỗ ngay</span>
                     <ChevronRight className="h-4 w-4" />

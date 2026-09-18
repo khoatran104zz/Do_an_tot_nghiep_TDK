@@ -172,7 +172,7 @@ export const CollectParcelModal: React.FC<CollectParcelModalProps> = ({
             <button
               type="submit"
               disabled={collectMutation.isPending}
-              className="flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white bg-[#0F6B4F] hover:bg-[#0c5942] disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               {collectMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               Xác nhận bàn giao

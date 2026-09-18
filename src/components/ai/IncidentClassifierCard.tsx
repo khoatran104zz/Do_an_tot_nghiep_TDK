@@ -130,7 +130,7 @@ export function IncidentClassifierCard({
                     });
                     setIsApplied(true);
                   }}
-                  className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                  className="h-7 text-xs bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white cursor-pointer shadow-xs"
                 >
                   <Check className="h-3 w-3 mr-1" />
                   Áp dụng gợi ý

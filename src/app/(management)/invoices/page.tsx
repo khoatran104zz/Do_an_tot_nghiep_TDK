@@ -243,7 +243,7 @@ export default function InvoicesPage() {
       >
         <Button
           onClick={() => setIsGenerateOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20"
+          className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white font-semibold shadow-md shadow-[#0F6B4F]/20"
         >
           <Zap className="mr-1.5 h-4 w-4" /> Phát hành hàng loạt
         </Button>

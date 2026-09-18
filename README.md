@@ -1,6 +1,26 @@
-# Smart Apartment Management System (Hệ thống Quản lý Chung cư Thông minh)
+# K-Home - Smart Living, Better Together
 
-Hệ thống web quản lý chung cư thông minh full-stack toàn diện dành cho **Ban quản lý (BQL)** và **Cư dân**, được phát triển dựa trên kiến trúc **API-first** với Next.js App Router, PostgreSQL, Prisma ORM, NextAuth.js, TanStack React Query, Zod và shadcn/ui.
+> **Quản lý thông minh · Kiến tạo cộng đồng · Cuộc sống tốt đẹp hơn**  
+> *More Than a Place — A Better Way of Living*
+
+Hệ thống quản lý vận hành chung cư và căn hộ thông minh chuẩn quốc tế **K-Home**, được thiết kế dựa trên kiến trúc **API-first** với Next.js App Router, PostgreSQL, Prisma ORM, NextAuth.js, TanStack React Query, Zod, font Poppins và giao diện chuẩn hóa K-Home Brand Identity.
+
+---
+
+## 🎨 Bộ Nhận Diện Thương Hiệu K-Home (Brand Identity)
+
+- **Tên thương hiệu**: **K-Home**
+- **Khẩu hiệu (Slogans)**:
+  - English: *Smart Living, Better Together*
+  - Tiếng Việt: *Quản lý thông minh · Kiến tạo cộng đồng · Cuộc sống tốt đẹp hơn*
+- **Bảng màu thương hiệu (Color Palette)**:
+  - **Primary (`#0F6B4F`)**: Forest Green - nút bấm chính, active navigation, brand headers.
+  - **Secondary (`#22C55E`)**: Emerald Green - success states, điểm nhấn ô cửa sổ thông minh và badges.
+  - **Background (`#E8F5ED`)**: Soft Mint Tint - nền nhấn dịu mắt, soft buttons, tag nền.
+  - **Text (`#1F2937`)**: Dark Slate - độ tương phản cao, dễ đọc.
+  - **Muted (`#6B7280`)**: Muted Gray - văn bản phụ, icon thứ cấp.
+- **Typography**: **Poppins** (Google Fonts: weights 300, 400, 500, 600, 700, 800) — Hiện đại, Thân thiện và Tinh tế.
+- **Logo Vector**: Icon mái nhà xanh kết hợp chữ 'K' cách điệu và cửa sổ thông minh 4 ô (`/public/brand/` và component `<KHomeLogo />`).
 
 ---
 

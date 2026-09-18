@@ -131,7 +131,7 @@ export default function VisitorsManagementPage() {
             Xuất Báo Cáo
           </Button>
           <Link href="/visitors/scan">
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-md">
+            <Button className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white gap-2 shadow-md">
               <Camera className="h-4 w-4" />
               Máy Quét QR Check-in
             </Button>
@@ -181,7 +181,7 @@ export default function VisitorsManagementPage() {
                 Bao gồm cả đang ở và đã rời
               </p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E8F5ED] text-[#0F6B4F]">
               <Users className="h-6 w-6" />
             </div>
           </CardContent>
@@ -414,7 +414,7 @@ export default function VisitorsManagementPage() {
                                 await checkOutMutation.mutateAsync(p.id);
                                 refetch();
                               }}
-                              className="h-8 text-xs border-blue-500/30 text-blue-600 hover:bg-blue-500/10"
+                              className="h-8 text-xs border-[#0F6B4F]/30 text-[#0F6B4F] hover:bg-[#E8F5ED]"
                             >
                               Check-out
                             </Button>

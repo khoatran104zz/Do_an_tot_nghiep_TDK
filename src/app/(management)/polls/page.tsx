@@ -115,7 +115,7 @@ export default function PollsPage() {
       >
         <button
           onClick={() => setIsCreateOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs hover:shadow-md cursor-pointer"
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-[#0F6B4F] text-white hover:bg-[#0c5942] active:bg-[#094634] transition-colors shadow-xs hover:shadow-md cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           <span>+ Tạo cuộc khảo sát</span>
@@ -383,7 +383,7 @@ export default function PollsPage() {
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-xl bg-[#0F6B4F] text-white hover:bg-[#0c5942] flex items-center gap-1.5"
                 >
                   {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   Công bố cuộc biểu quyết

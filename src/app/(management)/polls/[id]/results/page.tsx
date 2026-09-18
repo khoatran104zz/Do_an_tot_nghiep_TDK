@@ -68,7 +68,7 @@ export default function PollResultsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xs">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600">
+            <div className="p-2.5 rounded-xl bg-[#E8F5ED] dark:bg-[#0F6B4F]/20 text-[#0F6B4F]">
               <Users className="h-5 w-5" />
             </div>
             <div>
@@ -113,7 +113,7 @@ export default function PollResultsPage() {
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-blue-600" />
+            <BarChart3 className="h-4 w-4 text-[#0F6B4F]" />
             Tỷ lệ bình chọn theo từng phương án
           </h3>
           <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusInfo.badgeClass}`}>
@@ -124,7 +124,7 @@ export default function PollResultsPage() {
         <div className="space-y-5">
           {results.options.map((opt: any, index: number) => {
             const colors = [
-              'bg-blue-600',
+              'bg-[#0F6B4F]',
               'bg-emerald-600',
               'bg-amber-500',
               'bg-purple-600',

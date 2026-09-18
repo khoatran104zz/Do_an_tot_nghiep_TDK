@@ -10,6 +10,7 @@ import { UserMenu } from './UserMenu';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { BuildingSwitcher } from './BuildingSwitcher';
 import { useShell } from './ShellContext';
+import { KHomeLogo } from '@/components/shared/KHomeLogo';
 
 export function Topbar() {
   const { data: session } = useSession();
@@ -29,6 +30,11 @@ export function Topbar() {
         >
           <Menu className="h-5 w-5" />
         </Button>
+
+        {/* Mobile Brand Logo */}
+        <div className="md:hidden flex items-center">
+          <KHomeLogo variant="horizontal" size="sm" showSlogan={false} href="/" />
+        </div>
 
         {/* Dynamic Breadcrumbs */}
         <Breadcrumb className="hidden md:flex" />

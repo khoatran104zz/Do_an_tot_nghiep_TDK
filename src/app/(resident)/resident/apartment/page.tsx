@@ -21,11 +21,11 @@ export default function MyApartmentPage() {
 
             {/* Top Overview Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
+                <Card className="border-[#0F6B4F]/20 bg-gradient-to-br from-[#0F6B4F]/5 to-transparent">
                     <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-blue-500 uppercase tracking-wider">Căn hộ</span>
-                            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                            <span className="text-xs font-semibold text-[#0F6B4F] uppercase tracking-wider">Căn hộ</span>
+                            <Badge variant="outline" className="bg-[#E8F5ED] text-[#0F6B4F] border-[#0F6B4F]/20">
                                 Đang cư trú
                             </Badge>
                         </div>

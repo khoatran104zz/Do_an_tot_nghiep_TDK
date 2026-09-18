@@ -7,11 +7,11 @@ export default function NotFoundPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto max-w-md rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-xl">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/50">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#E8F5ED] dark:bg-emerald-950/40 text-[#0F6B4F] dark:text-emerald-400 border border-[#0F6B4F]/25 dark:border-emerald-900/50">
           <Compass className="h-8 w-8 animate-pulse" />
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 mb-3">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E8F5ED] dark:bg-emerald-950/40 text-[#0F6B4F] dark:text-emerald-300 mb-3">
           404 ERROR
         </div>
 
@@ -25,7 +25,7 @@ export default function NotFoundPage() {
 
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link href="/dashboard" className="w-full sm:w-auto">
-            <Button className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-10 px-5">
+            <Button className="w-full flex items-center justify-center gap-2 bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white rounded-xl h-10 px-5 shadow-xs">
               <Home className="h-4 w-4" />
               Bảng điều khiển
             </Button>

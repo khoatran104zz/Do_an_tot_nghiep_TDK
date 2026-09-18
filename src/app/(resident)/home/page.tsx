@@ -427,7 +427,7 @@ export default function ResidentHomePage() {
               <Button
                 size="sm"
                 onClick={() => setIsPayModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 shadow-md shadow-blue-600/20"
+                className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-bold px-4 shadow-md shadow-[#0F6B4F]/20"
               >
                 <QrCode className="h-4 w-4 mr-1.5" /> Thanh toán ngay
               </Button>
@@ -683,7 +683,7 @@ export default function ResidentHomePage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-0.5 min-w-0">
-                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600">
+                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-[#0F6B4F]">
                           {n.title}
                         </p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
@@ -692,7 +692,7 @@ export default function ResidentHomePage() {
                       </div>
 
                       {!n.isRead && (
-                        <span className="h-2 w-2 rounded-full bg-blue-600 shrink-0 mt-1" title="Chưa đọc" />
+                        <span className="h-2 w-2 rounded-full bg-[#0F6B4F] shrink-0 mt-1" title="Chưa đọc" />
                       )}
                     </div>
                     <span className="text-[10px] text-slate-400 mt-1 block">
@@ -707,7 +707,7 @@ export default function ResidentHomePage() {
           <div className="p-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 text-center">
             <Link
               href="/resident/notifications"
-              className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 block py-0.5"
+              className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-[#0F6B4F] block py-0.5"
             >
               Mở hòm thư thông báo đầy đủ
             </Link>
@@ -724,7 +724,7 @@ export default function ResidentHomePage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                <div className="p-2 rounded-xl bg-[#E8F5ED] dark:bg-emerald-950 text-[#0F6B4F] dark:text-emerald-400">
                   <UserCheck className="h-4 w-4" />
                 </div>
                 <div>
@@ -735,7 +735,7 @@ export default function ResidentHomePage() {
                 </div>
               </div>
               <Link href="/resident/visitors">
-                <Button variant="ghost" size="sm" className="text-xs text-blue-600 hover:underline gap-1">
+                <Button variant="ghost" size="sm" className="text-xs text-[#0F6B4F] hover:underline gap-1">
                   Xem tất cả <ChevronRight className="h-3 w-3" />
                 </Button>
               </Link>
@@ -747,14 +747,14 @@ export default function ResidentHomePage() {
                 <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Nguyễn Văn An (Khách cá nhân)</span>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">Hẹn đến: Hôm nay 18:00 - 22:00</p>
               </div>
-              <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20">
+              <Badge variant="outline" className="text-xs bg-[#E8F5ED] text-[#0F6B4F] border-[#0F6B4F]/20">
                 QR sẵn sàng
               </Badge>
             </div>
           </CardContent>
           <div className="p-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex justify-end">
             <Link href="/resident/visitors">
-              <Button size="sm" className="text-xs font-semibold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white">
+              <Button size="sm" className="text-xs font-semibold gap-1.5 bg-[#0F6B4F] hover:bg-[#0c5942] text-white">
                 <Plus className="h-3.5 w-3.5" /> Tạo mã QR đón khách
               </Button>
             </Link>

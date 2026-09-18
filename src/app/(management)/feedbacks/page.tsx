@@ -341,7 +341,7 @@ export default function FeedbacksPage() {
                 setInspectingItem(null);
                 handleOpenRespond(item);
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white font-medium shadow-xs"
             >
               <Send className="h-3.5 w-3.5 mr-1.5" /> Phản hồi & Xử lý
             </Button>

@@ -34,6 +34,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { KHomeIcon } from '@/components/shared/KHomeLogo';
 
 export type UserRole =
   | 'RESIDENT'
@@ -83,13 +84,13 @@ const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
     targetPortal: 'Cổng Dịch Vụ Cư Dân',
     portalPath: '/home',
     theme: {
-      accent: 'text-emerald-600 dark:text-emerald-400',
-      border: 'border-emerald-500/40 dark:border-emerald-500/30',
-      bgBadge: 'bg-emerald-50 dark:bg-emerald-950/60',
-      textBadge: 'text-emerald-700 dark:text-emerald-300',
-      gradientBtn: 'from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 shadow-emerald-600/25',
-      ringColor: 'focus:ring-emerald-500/20 focus:border-emerald-500',
-      glowColor: 'from-emerald-500/20 via-teal-500/10 to-transparent',
+      accent: 'text-[#0F6B4F] dark:text-emerald-400',
+      border: 'border-[#0F6B4F]/30 dark:border-emerald-500/30',
+      bgBadge: 'bg-[#E8F5ED] dark:bg-emerald-950/60',
+      textBadge: 'text-[#0F6B4F] dark:text-emerald-300',
+      gradientBtn: 'bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] shadow-[#0F6B4F]/25',
+      ringColor: 'focus:ring-[#0F6B4F]/25 focus:border-[#0F6B4F]',
+      glowColor: 'from-[#0F6B4F]/20 via-[#22C55E]/10 to-transparent',
     },
     features: [
       'Tra cứu & thanh toán hóa đơn dịch vụ, điện nước trực tuyến',
@@ -104,20 +105,20 @@ const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
     title: 'Ban Quản Lý Tòa Nhà',
     subtitle: 'Dành cho Trưởng Ban Quản Lý, Điều phối viên nghiệp vụ vận hành',
     badge: 'Trưởng BQL',
-    colorName: 'blue',
+    colorName: 'emerald',
     email: 'manager@building.com',
     passwordDefault: 'manager123',
     name: 'Trần Minh Đức (Trưởng BQL)',
     targetPortal: 'Bảng Điều Khiển Vận Hành',
     portalPath: '/dashboard',
     theme: {
-      accent: 'text-blue-600 dark:text-blue-400',
-      border: 'border-blue-500/40 dark:border-blue-500/30',
-      bgBadge: 'bg-blue-50 dark:bg-blue-950/60',
-      textBadge: 'text-blue-700 dark:text-blue-300',
-      gradientBtn: 'from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 shadow-blue-600/25',
-      ringColor: 'focus:ring-blue-500/20 focus:border-blue-500',
-      glowColor: 'from-blue-500/20 via-indigo-500/10 to-transparent',
+      accent: 'text-[#0F6B4F] dark:text-emerald-400',
+      border: 'border-[#0F6B4F]/30 dark:border-emerald-500/30',
+      bgBadge: 'bg-[#E8F5ED] dark:bg-emerald-950/60',
+      textBadge: 'text-[#0F6B4F] dark:text-emerald-300',
+      gradientBtn: 'bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] shadow-[#0F6B4F]/25',
+      ringColor: 'focus:ring-[#0F6B4F]/25 focus:border-[#0F6B4F]',
+      glowColor: 'from-[#0F6B4F]/20 via-[#22C55E]/10 to-transparent',
     },
     features: [
       'Bảng điều hành tổng quan chỉ số KPI, tỷ lệ lấp đầy, thu phí',
@@ -132,20 +133,20 @@ const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
     title: 'Quản Trị Viên Hệ Thống',
     subtitle: 'Quyền hạn tối cao: Cấu hình hệ thống, bảo mật phân quyền & kiểm toán',
     badge: 'Super Admin',
-    colorName: 'purple',
+    colorName: 'emerald',
     email: 'admin@building.com',
     passwordDefault: 'admin123',
     name: 'Quản trị viên Hệ thống',
     targetPortal: 'Hệ Thống Trung Tâm',
     portalPath: '/dashboard',
     theme: {
-      accent: 'text-purple-600 dark:text-purple-400',
-      border: 'border-purple-500/40 dark:border-purple-500/30',
-      bgBadge: 'bg-purple-50 dark:bg-purple-950/60',
-      textBadge: 'text-purple-700 dark:text-purple-300',
-      gradientBtn: 'from-purple-600 via-violet-600 to-indigo-700 hover:from-purple-700 hover:to-violet-800 shadow-purple-600/25',
-      ringColor: 'focus:ring-purple-500/20 focus:border-purple-500',
-      glowColor: 'from-purple-500/20 via-violet-500/10 to-transparent',
+      accent: 'text-[#0F6B4F] dark:text-emerald-400',
+      border: 'border-[#0F6B4F]/30 dark:border-emerald-500/30',
+      bgBadge: 'bg-[#E8F5ED] dark:bg-emerald-950/60',
+      textBadge: 'text-[#0F6B4F] dark:text-emerald-300',
+      gradientBtn: 'bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] shadow-[#0F6B4F]/25',
+      ringColor: 'focus:ring-[#0F6B4F]/25 focus:border-[#0F6B4F]',
+      glowColor: 'from-[#0F6B4F]/20 via-[#22C55E]/10 to-transparent',
     },
     features: [
       'Toàn quyền quản trị phân quyền vai trò (RBAC) & danh mục hệ thống',
@@ -160,20 +161,20 @@ const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
     title: 'Kỹ Thuật Viên Vận Hành',
     subtitle: 'Xử lý sự cố kỹ thuật hạ tầng, bảo trì thiết bị và kiểm soát SLA',
     badge: 'Kỹ Thuật Viên',
-    colorName: 'amber',
+    colorName: 'emerald',
     email: 'technician@building.com',
     passwordDefault: 'tech123',
     name: 'Lê Hoàng Nam (Kỹ thuật Trưởng)',
     targetPortal: 'Phân Hệ Kỹ Thuật & Bảo Trì',
     portalPath: '/feedbacks',
     theme: {
-      accent: 'text-amber-600 dark:text-amber-400',
-      border: 'border-amber-500/40 dark:border-amber-500/30',
-      bgBadge: 'bg-amber-50 dark:bg-amber-950/60',
-      textBadge: 'text-amber-700 dark:text-amber-300',
-      gradientBtn: 'from-amber-600 via-orange-600 to-amber-700 hover:from-amber-700 hover:to-orange-800 shadow-amber-600/25',
-      ringColor: 'focus:ring-amber-500/20 focus:border-amber-500',
-      glowColor: 'from-amber-500/20 via-orange-500/10 to-transparent',
+      accent: 'text-[#0F6B4F] dark:text-emerald-400',
+      border: 'border-[#0F6B4F]/30 dark:border-emerald-500/30',
+      bgBadge: 'bg-[#E8F5ED] dark:bg-emerald-950/60',
+      textBadge: 'text-[#0F6B4F] dark:text-emerald-300',
+      gradientBtn: 'bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] shadow-[#0F6B4F]/25',
+      ringColor: 'focus:ring-[#0F6B4F]/25 focus:border-[#0F6B4F]',
+      glowColor: 'from-[#0F6B4F]/20 via-[#22C55E]/10 to-transparent',
     },
     features: [
       'Tiếp nhận & xử lý phiếu phản ánh sự cố từ cư dân căn hộ',
@@ -188,48 +189,48 @@ const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
     title: 'Đội Ngũ An Ninh & Giữ Xe',
     subtitle: 'Kiểm soát phương tiện ra vào, bãi đỗ xe và quét mã QR khách thăm',
     badge: 'An Ninh / Bảo Vệ',
-    colorName: 'indigo',
+    colorName: 'emerald',
     email: 'security@building.com',
     passwordDefault: 'security123',
     name: 'Hoàng Văn Hùng (Đội trưởng An ninh)',
     targetPortal: 'Kiểm Soát An Ninh & Khách',
     portalPath: '/visitors',
     theme: {
-      accent: 'text-indigo-600 dark:text-indigo-400',
-      border: 'border-indigo-500/40 dark:border-indigo-500/30',
-      bgBadge: 'bg-indigo-50 dark:bg-indigo-950/60',
-      textBadge: 'text-indigo-700 dark:text-indigo-300',
-      gradientBtn: 'from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:to-blue-800 shadow-indigo-600/25',
-      ringColor: 'focus:ring-indigo-500/20 focus:border-indigo-500',
-      glowColor: 'from-indigo-500/20 via-blue-500/10 to-transparent',
+      accent: 'text-[#0F6B4F] dark:text-emerald-400',
+      border: 'border-[#0F6B4F]/30 dark:border-emerald-500/30',
+      bgBadge: 'bg-[#E8F5ED] dark:bg-emerald-950/60',
+      textBadge: 'text-[#0F6B4F] dark:text-emerald-300',
+      gradientBtn: 'bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] shadow-[#0F6B4F]/25',
+      ringColor: 'focus:ring-[#0F6B4F]/25 focus:border-[#0F6B4F]',
+      glowColor: 'from-[#0F6B4F]/20 via-[#22C55E]/10 to-transparent',
     },
     features: [
       'Quét mã QR Thẻ Khách Ra Vào (Check-in / Check-out tức thì)',
       'Quản lý phương tiện đăng ký của cư dân & phát hành thẻ giữ xe',
       'Ghi nhận nhật ký phương tiện ra vào cổng kiểm soát',
-      'Khóa / Mở khóa thẻ xe tức thì khi phát hiện sự cố an ninh',
+      'Xác minh danh tính khách vãng lai và xử lý tình huống khẩn cấp',
     ],
   },
   STAFF_RECEPTIONIST: {
     role: 'STAFF_RECEPTIONIST',
     category: 'OPERATIONS',
-    title: 'Lễ Tân Sảnh Tòa Nhà',
-    subtitle: 'Tiếp đón khách đến tòa nhà, quản lý bưu kiện và hỗ trợ cư dân',
+    title: 'Lễ Tân & Dịch Vụ Sảnh',
+    subtitle: 'Quản lý giao nhận bưu phẩm bưu kiện, đón tiếp khách và hỗ trợ cư dân',
     badge: 'Lễ Tân Sảnh',
-    colorName: 'rose',
+    colorName: 'emerald',
     email: 'receptionist@building.com',
-    passwordDefault: 'recept123',
-    name: 'Đỗ Thị Mai (Lễ tân Sảnh chính)',
-    targetPortal: 'Quầy Lễ Tân & Bưu Kiện',
+    passwordDefault: 'reception123',
+    name: 'Phạm Thu Trang (Lễ tân sảnh A)',
+    targetPortal: 'Quầy Dịch Vụ & Tiếp Đón',
     portalPath: '/parcels',
     theme: {
-      accent: 'text-rose-600 dark:text-rose-400',
-      border: 'border-rose-500/40 dark:border-rose-500/30',
-      bgBadge: 'bg-rose-50 dark:bg-rose-950/60',
-      textBadge: 'text-rose-700 dark:text-rose-300',
-      gradientBtn: 'from-rose-500 via-pink-600 to-rose-600 hover:from-rose-600 hover:to-pink-700 shadow-rose-500/25',
-      ringColor: 'focus:ring-rose-500/20 focus:border-rose-500',
-      glowColor: 'from-rose-500/20 via-pink-500/10 to-transparent',
+      accent: 'text-[#0F6B4F] dark:text-emerald-400',
+      border: 'border-[#0F6B4F]/30 dark:border-emerald-500/30',
+      bgBadge: 'bg-[#E8F5ED] dark:bg-emerald-950/60',
+      textBadge: 'text-[#0F6B4F] dark:text-emerald-300',
+      gradientBtn: 'bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] shadow-[#0F6B4F]/25',
+      ringColor: 'focus:ring-[#0F6B4F]/25 focus:border-[#0F6B4F]',
+      glowColor: 'from-[#0F6B4F]/20 via-[#22C55E]/10 to-transparent',
     },
     features: [
       'Tiếp nhận bưu kiện cư dân & gửi thông báo nhận hàng tức thì',
@@ -332,26 +333,26 @@ function LoginForm() {
             ========================================================================= */}
         <div className="hidden lg:flex lg:col-span-5 relative flex-col justify-between p-8 bg-slate-950 text-white overflow-hidden border-r border-slate-800">
           {/* Ambient Glows */}
-          <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-indigo-600/20 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-emerald-600/20 blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-[#0F6B4F]/30 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-[#22C55E]/20 blur-3xl pointer-events-none" />
 
           {/* Top Brand Header */}
           <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-white/20">
-                <ShieldCheck className="h-6 w-6" />
+            <div className="flex items-center gap-3.5 mb-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0F6B4F] text-white shadow-lg shadow-[#0F6B4F]/30 ring-1 ring-white/20 p-2">
+                <KHomeIcon className="h-8 w-8" inverse />
               </div>
               <div>
-                <span className="text-[11px] font-bold tracking-widest text-blue-400 uppercase">
-                  Enterprise Solution
+                <span className="text-[11px] font-bold tracking-widest text-emerald-400 uppercase">
+                  Smart Living, Better Together
                 </span>
-                <h2 className="text-lg font-extrabold tracking-tight text-white leading-tight">
-                  SMART APARTMENT
+                <h2 className="text-2xl font-extrabold tracking-tight text-white leading-tight">
+                  K-Home
                 </h2>
               </div>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Hệ thống Quản lý Vận hành Chung cư Thông minh Chuẩn Quốc tế
+            <p className="text-xs text-slate-300 leading-relaxed font-medium">
+              Quản lý thông minh · Kiến tạo cộng đồng · Cuộc sống tốt đẹp hơn
             </p>
           </div>
 
@@ -398,7 +399,7 @@ function LoginForm() {
                 <button
                   type="button"
                   onClick={fillCurrentDemoAccount}
-                  className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/30 transition-all cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#0F6B4F]/40 hover:bg-[#0F6B4F]/60 text-emerald-300 border border-[#0F6B4F]/40 transition-all cursor-pointer"
                 >
                   Tự điền
                 </button>
@@ -410,7 +411,7 @@ function LoginForm() {
           <div className="relative z-10 pt-4 border-t border-slate-800/80">
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="flex items-center gap-2 text-slate-400">
-                <Building2 className="h-3.5 w-3.5 text-blue-400" />
+                <Building2 className="h-3.5 w-3.5 text-emerald-400" />
                 <span>202 Căn hộ</span>
               </div>
               <div className="flex items-center gap-2 text-slate-400">
@@ -436,15 +437,15 @@ function LoginForm() {
           <div>
             {/* Mobile Brand Bar (Visible only on small screens) */}
             <div className="lg:hidden flex items-center gap-3 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md">
-                <ShieldCheck className="h-5 w-5" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0F6B4F] text-white shadow-md p-1.5">
+                <KHomeIcon className="h-8 w-8" inverse />
               </div>
               <div>
-                <h1 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  SMART APARTMENT
+                <h1 className="text-lg font-extrabold text-[#0F6B4F] dark:text-emerald-400 leading-tight">
+                  K-Home
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Hệ thống Quản lý Chung cư Thông minh
+                  Smart Living, Better Together
                 </p>
               </div>
             </div>
@@ -461,7 +462,7 @@ function LoginForm() {
                   onClick={() => handleSelectCategory('RESIDENT')}
                   className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-xs font-bold transition-all cursor-pointer ${
                     activeCategory === 'RESIDENT'
-                      ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-md ring-1 ring-black/5 dark:ring-white/10'
+                      ? 'bg-white dark:bg-slate-900 text-[#0F6B4F] dark:text-emerald-400 shadow-md ring-1 ring-[#0F6B4F]/20'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
@@ -475,7 +476,7 @@ function LoginForm() {
                   onClick={() => handleSelectCategory('MANAGEMENT')}
                   className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-xs font-bold transition-all cursor-pointer ${
                     activeCategory === 'MANAGEMENT'
-                      ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-md ring-1 ring-black/5 dark:ring-white/10'
+                      ? 'bg-white dark:bg-slate-900 text-[#0F6B4F] dark:text-emerald-400 shadow-md ring-1 ring-[#0F6B4F]/20'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
@@ -489,7 +490,7 @@ function LoginForm() {
                   onClick={() => handleSelectCategory('OPERATIONS')}
                   className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 text-xs font-bold transition-all cursor-pointer ${
                     activeCategory === 'OPERATIONS'
-                      ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-md ring-1 ring-black/5 dark:ring-white/10'
+                      ? 'bg-white dark:bg-slate-900 text-[#0F6B4F] dark:text-emerald-400 shadow-md ring-1 ring-[#0F6B4F]/20'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
@@ -511,11 +512,11 @@ function LoginForm() {
                     onClick={() => handleSelectRole('MANAGER')}
                     className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       selectedRole === 'MANAGER'
-                        ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 font-semibold ring-1 ring-blue-500/20'
+                        ? 'border-[#0F6B4F] bg-[#E8F5ED]/80 dark:bg-emerald-950/50 text-[#0F6B4F] dark:text-emerald-200 font-semibold ring-1 ring-[#0F6B4F]/30'
                         : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <Building2 className="h-4 w-4 text-[#0F6B4F] dark:text-emerald-400 shrink-0" />
                     <div className="min-w-0">
                       <div className="text-xs font-bold truncate">Trưởng BQL</div>
                       <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">manager@building.com</div>
@@ -527,11 +528,11 @@ function LoginForm() {
                     onClick={() => handleSelectRole('ADMIN')}
                     className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       selectedRole === 'ADMIN'
-                        ? 'border-purple-500 bg-purple-50/70 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 font-semibold ring-1 ring-purple-500/20'
+                        ? 'border-[#0F6B4F] bg-[#E8F5ED]/80 dark:bg-emerald-950/50 text-[#0F6B4F] dark:text-emerald-200 font-semibold ring-1 ring-[#0F6B4F]/30'
                         : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    <Crown className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                    <Crown className="h-4 w-4 text-amber-500 shrink-0" />
                     <div className="min-w-0">
                       <div className="text-xs font-bold truncate">Quản Trị Viên</div>
                       <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">admin@building.com</div>
@@ -552,11 +553,11 @@ function LoginForm() {
                     onClick={() => handleSelectRole('STAFF_TECHNICIAN')}
                     className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
                       selectedRole === 'STAFF_TECHNICIAN'
-                        ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-semibold ring-1 ring-amber-500/20'
+                        ? 'border-[#0F6B4F] bg-[#E8F5ED]/80 dark:bg-emerald-950/50 text-[#0F6B4F] dark:text-emerald-200 font-semibold ring-1 ring-[#0F6B4F]/30'
                         : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    <Wrench className="h-4 w-4 text-amber-600 dark:text-amber-400 mb-1" />
+                    <Wrench className="h-4 w-4 text-[#0F6B4F] dark:text-emerald-400 mb-1" />
                     <span className="text-xs font-bold">Kỹ Thuật</span>
                     <span className="text-[10px] text-slate-500 dark:text-slate-400">tech123</span>
                   </button>
@@ -566,11 +567,11 @@ function LoginForm() {
                     onClick={() => handleSelectRole('STAFF_SECURITY')}
                     className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
                       selectedRole === 'STAFF_SECURITY'
-                        ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-semibold ring-1 ring-indigo-500/20'
+                        ? 'border-[#0F6B4F] bg-[#E8F5ED]/80 dark:bg-emerald-950/50 text-[#0F6B4F] dark:text-emerald-200 font-semibold ring-1 ring-[#0F6B4F]/30'
                         : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    <Shield className="h-4 w-4 text-indigo-600 dark:text-indigo-400 mb-1" />
+                    <Shield className="h-4 w-4 text-[#0F6B4F] dark:text-emerald-400 mb-1" />
                     <span className="text-xs font-bold">An Ninh</span>
                     <span className="text-[10px] text-slate-500 dark:text-slate-400">security123</span>
                   </button>
@@ -580,11 +581,11 @@ function LoginForm() {
                     onClick={() => handleSelectRole('STAFF_RECEPTIONIST')}
                     className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
                       selectedRole === 'STAFF_RECEPTIONIST'
-                        ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 font-semibold ring-1 ring-rose-500/20'
+                        ? 'border-[#0F6B4F] bg-[#E8F5ED]/80 dark:bg-emerald-950/50 text-[#0F6B4F] dark:text-emerald-200 font-semibold ring-1 ring-[#0F6B4F]/30'
                         : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    <PhoneCall className="h-4 w-4 text-rose-600 dark:text-rose-400 mb-1" />
+                    <UserCheck className="h-4 w-4 text-[#0F6B4F] dark:text-emerald-400 mb-1" />
                     <span className="text-xs font-bold">Lễ Tân</span>
                     <span className="text-[10px] text-slate-500 dark:text-slate-400">recept123</span>
                   </button>
@@ -643,7 +644,7 @@ function LoginForm() {
                   <button
                     type="button"
                     onClick={() => setIsForgotModalOpen(true)}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
+                    className="text-xs font-medium text-[#0F6B4F] hover:text-[#0c5942] dark:text-emerald-400 hover:underline cursor-pointer"
                   >
                     Quên mật khẩu?
                   </button>
@@ -676,7 +677,7 @@ function LoginForm() {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="h-4 w-4 rounded border-slate-300 text-[#0F6B4F] focus:ring-[#0F6B4F] cursor-pointer"
                   />
                   <span>Ghi nhớ phiên đăng nhập (30 ngày)</span>
                 </label>
@@ -706,7 +707,7 @@ function LoginForm() {
               <span>Chưa có tài khoản cư dân?</span>
               <Link
                 href="/register"
-                className="font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline"
+                className="font-bold text-[#0F6B4F] hover:text-[#0c5942] dark:text-emerald-400 hover:underline"
               >
                 Đăng ký tài khoản căn hộ →
               </Link>
@@ -765,7 +766,7 @@ function LoginForm() {
             <Button
               type="button"
               onClick={() => setIsForgotModalOpen(false)}
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs h-9 px-4"
+              className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white rounded-xl text-xs h-9 px-4"
             >
               Đã hiểu
             </Button>

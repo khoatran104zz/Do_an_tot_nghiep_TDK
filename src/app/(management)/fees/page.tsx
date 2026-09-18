@@ -239,7 +239,7 @@ export default function FeeCategoriesPage() {
         title="Danh mục Biểu phí"
         description="Quản lý các loại định mức phí dịch vụ tòa nhà, phí gửi xe, điện, nước và đơn giá áp dụng."
       >
-        <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20">
+        <Button onClick={handleOpenCreate} className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white font-semibold shadow-md shadow-[#0F6B4F]/20">
           <Plus className="mr-1.5 h-4 w-4" /> Thêm Loại phí mới
         </Button>
       </PageHeader>
@@ -282,7 +282,7 @@ export default function FeeCategoriesPage() {
                 setInspectingItem(null);
                 handleOpenEdit(item);
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white font-medium shadow-xs"
             >
               <Edit className="h-3.5 w-3.5 mr-1.5" /> Chỉnh sửa
             </Button>

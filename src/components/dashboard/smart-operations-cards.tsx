@@ -265,7 +265,7 @@ export function SmartInsightCards() {
             {/* Segmented bar */}
             <div className="w-full h-1.5 rounded-full overflow-hidden flex bg-slate-100">
               <div
-                className="bg-blue-600 h-full"
+                className="bg-[#0F6B4F] h-full"
                 style={{ width: `${occupancy?.occupancyRate || 0}%` }}
               />
               <div

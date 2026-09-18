@@ -444,7 +444,7 @@ export default function VisitorScanPage() {
                           size="lg"
                           disabled={checkOutMutation.isPending}
                           onClick={handleCheckOut}
-                          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold gap-2 px-8 py-6 text-base rounded-xl shadow-lg"
+                          className="w-full sm:w-auto bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white font-bold gap-2 px-8 py-6 text-base rounded-xl shadow-lg shadow-[#0F6B4F]/25"
                         >
                           {checkOutMutation.isPending ? (
                             <>
@@ -461,7 +461,7 @@ export default function VisitorScanPage() {
                       )}
 
                       {pass.status === 'CHECKED_OUT' && (
-                        <div className="w-full p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center text-xs font-semibold text-blue-600 dark:text-blue-400">
+                        <div className="w-full p-3 rounded-xl bg-[#E8F5ED] border border-[#0F6B4F]/20 text-center text-xs font-semibold text-[#0F6B4F] dark:bg-[#0F6B4F]/15 dark:text-emerald-300">
                           Khách đã hoàn tất chuyến thăm và đã rời khỏi tòa nhà.
                         </div>
                       )}

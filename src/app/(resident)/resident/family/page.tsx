@@ -216,7 +216,7 @@ export default function MyFamilyPage() {
         {/* Quick Action Button */}
         <Button
           onClick={() => handleOpenModal('ADD_MEMBER')}
-          className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 font-semibold text-xs shadow-md shadow-blue-600/20 shrink-0"
+          className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white gap-1.5 font-semibold text-xs shadow-md shadow-[#0F6B4F]/20 shrink-0"
         >
           <UserPlus className="h-4 w-4" /> Đăng ký thủ tục cư trú
         </Button>
@@ -314,18 +314,18 @@ export default function MyFamilyPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* 👤 Chủ hộ */}
             {owner && (
-              <Card className="relative overflow-hidden border-2 border-blue-500/30 bg-blue-50/20 dark:bg-blue-950/10 shadow-xs">
-                <div className="h-1.5 w-full bg-blue-600" />
+              <Card className="relative overflow-hidden border-2 border-[#0F6B4F]/30 bg-[#E8F5ED]/20 dark:bg-emerald-950/10 shadow-xs">
+                <div className="h-1.5 w-full bg-[#0F6B4F]" />
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600 mb-1">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F6B4F] mb-1">
                         <span>👤</span>
                         <span>CHỦ HỘ</span>
                       </div>
                       <CardTitle className="text-base font-bold">{owner.fullName}</CardTitle>
                     </div>
-                    <Badge className="bg-blue-600 text-white text-[10px]">Chủ sở hữu</Badge>
+                    <Badge className="bg-[#0F6B4F] text-white text-[10px]">Chủ sở hữu</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2 text-xs">

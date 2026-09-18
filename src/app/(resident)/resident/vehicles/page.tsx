@@ -354,7 +354,7 @@ export default function ResidentVehiclesPage() {
             onClick={() => setActiveTab('ALL')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'ALL'
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-[#0F6B4F] text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
             }`}
           >
@@ -365,7 +365,7 @@ export default function ResidentVehiclesPage() {
             onClick={() => setActiveTab('CAR')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'CAR'
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-[#0F6B4F] text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
             }`}
           >
@@ -376,7 +376,7 @@ export default function ResidentVehiclesPage() {
             onClick={() => setActiveTab('MOTORBIKE')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'MOTORBIKE'
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-[#0F6B4F] text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
             }`}
           >
@@ -438,7 +438,7 @@ export default function ResidentVehiclesPage() {
           </p>
           <Button
             onClick={handleOpenRegister}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 h-9 gap-1.5 rounded-xl"
+            className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white text-xs font-semibold px-4 h-9 gap-1.5 rounded-xl shadow-xs"
           >
             <Plus className="h-4 w-4" /> Đăng ký xe mới
           </Button>

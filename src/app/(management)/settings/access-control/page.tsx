@@ -134,7 +134,7 @@ export default function AccessControlPage() {
         {activeTab === 'managers' && (
           <Button
             onClick={() => setIsCreateOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm shadow-blue-600/20 rounded-xl"
+            className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-bold shadow-sm shadow-[#0F6B4F]/20 rounded-xl"
           >
             <UserPlus className="h-4 w-4 mr-2" />
             Thêm Quản lý Tòa nhà
@@ -631,7 +631,7 @@ export default function AccessControlPage() {
                 <Button
                   type="submit"
                   disabled={createManagerMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl"
+                  className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-bold rounded-xl"
                 >
                   {createManagerMutation.isPending ? 'Đang tạo...' : 'Tạo Quản lý'}
                 </Button>
@@ -675,7 +675,7 @@ export default function AccessControlPage() {
                       }}
                       className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
                         isChecked
-                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-bold'
+                          ? 'bg-[#E8F5ED] text-[#0F6B4F] dark:bg-[#0F6B4F]/20 dark:text-emerald-300 font-bold'
                           : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
                       }`}
                     >
@@ -690,7 +690,7 @@ export default function AccessControlPage() {
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => {}}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-slate-300 text-[#0F6B4F] focus:ring-[#0F6B4F]"
                       />
                     </div>
                   );
@@ -711,7 +711,7 @@ export default function AccessControlPage() {
                 type="button"
                 onClick={handleSaveAssignments}
                 disabled={assignBuildingsMutation.isPending}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl"
+                className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-bold rounded-xl"
               >
                 {assignBuildingsMutation.isPending ? 'Đang lưu...' : 'Lưu phân công'}
               </Button>

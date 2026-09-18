@@ -365,7 +365,7 @@ export function PropertyTree({
                                               className={cn(
                                                 'flex items-center justify-between px-2 py-1 rounded cursor-pointer transition-colors text-[11px]',
                                                 isAptSelected
-                                                  ? 'bg-blue-600 text-white font-medium'
+                                                  ? 'bg-[#0F6B4F] text-white font-medium shadow-2xs'
                                                   : 'hover:bg-muted text-muted-foreground hover:text-foreground'
                                               )}
                                             >

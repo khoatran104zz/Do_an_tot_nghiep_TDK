@@ -463,13 +463,13 @@ export default function SmartApartmentOperationsDashboard() {
             </Link>
 
             <Link href="/notifications">
-              <Button size="sm" variant="outline" className="text-xs h-8 gap-1.5 hover:border-blue-500">
+              <Button size="sm" variant="outline" className="text-xs h-8 gap-1.5 hover:border-[#0F6B4F] hover:text-[#0F6B4F]">
                 <Send className="h-3.5 w-3.5" /> Đăng Thông báo
               </Button>
             </Link>
 
             <Link href="/feedbacks">
-              <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8 gap-1.5">
+              <Button size="sm" className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white text-xs h-8 gap-1.5 shadow-xs">
                 <MessageSquareWarning className="h-3.5 w-3.5" /> Xử lý Sự cố
               </Button>
             </Link>
@@ -633,8 +633,8 @@ export default function SmartApartmentOperationsDashboard() {
                 className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors text-left group cursor-pointer"
               >
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
-                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-blue-600">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#0F6B4F]" />
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-[#0F6B4F]">
                     Đang ở
                   </span>
                 </div>
@@ -858,12 +858,12 @@ export default function SmartApartmentOperationsDashboard() {
 
             <div className="flex items-center gap-2">
               <Link href="/parking-cards">
-                <Button variant="outline" size="sm" className="text-xs h-8 gap-1.5 hover:border-blue-500">
+                <Button variant="outline" size="sm" className="text-xs h-8 gap-1.5 hover:border-[#0F6B4F] hover:text-[#0F6B4F]">
                   <KeyRound className="h-3.5 w-3.5 text-slate-500" /> Thẻ RFID ({parking.activeParkingCards})
                 </Button>
               </Link>
               <Link href="/vehicles">
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8 gap-1.5">
+                <Button size="sm" className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white text-xs h-8 gap-1.5 shadow-xs">
                   Xem tất cả xe <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
@@ -876,11 +876,11 @@ export default function SmartApartmentOperationsDashboard() {
             {/* 1. Total Vehicles */}
             <div
               onClick={() => router.push('/vehicles')}
-              className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group"
+              className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-[#0F6B4F]/40 transition-all cursor-pointer group"
             >
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Tổng phương tiện</span>
-                <Car className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform" />
+                <Car className="h-4 w-4 text-[#0F6B4F] group-hover:scale-110 transition-transform" />
               </div>
               <div className="text-2xl font-black text-slate-900 dark:text-slate-100">
                 <AnimatedNumber value={parking.totalVehicles} />
@@ -891,13 +891,13 @@ export default function SmartApartmentOperationsDashboard() {
             {/* 2. Cars */}
             <div
               onClick={() => router.push('/vehicles?type=CAR')}
-              className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group"
+              className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-[#0F6B4F]/40 transition-all cursor-pointer group"
             >
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Ô tô</span>
-                <span className="h-2 w-2 rounded-full bg-blue-600" />
+                <span className="h-2 w-2 rounded-full bg-[#0F6B4F]" />
               </div>
-              <div className="text-2xl font-black text-blue-600 dark:text-blue-400">
+              <div className="text-2xl font-black text-[#0F6B4F] dark:text-emerald-400">
                 <AnimatedNumber value={parking.cars} />
               </div>
               <span className="text-[11px] text-slate-400">Xe đang hoạt động</span>

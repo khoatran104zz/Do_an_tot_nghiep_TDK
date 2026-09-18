@@ -180,7 +180,7 @@ export default function ResidentPollsPage() {
                       type="button"
                       disabled={!currentSelected}
                       onClick={() => setConfirmingPoll(poll)}
-                      className="px-5 py-2 text-xs font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-xs hover:shadow-md cursor-pointer"
+                      className="px-5 py-2 text-xs font-semibold rounded-xl bg-[#0F6B4F] text-white hover:bg-[#0c5942] active:bg-[#094634] disabled:opacity-50 transition-colors shadow-xs hover:shadow-md cursor-pointer"
                     >
                       Xác nhận biểu quyết
                     </button>
@@ -225,7 +225,7 @@ export default function ResidentPollsPage() {
               <button
                 onClick={handleVoteSubmit}
                 disabled={voteMutation.isPending}
-                className="px-5 py-2 text-xs font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1.5"
+                className="px-5 py-2 text-xs font-semibold rounded-xl bg-[#0F6B4F] text-white hover:bg-[#0c5942] active:bg-[#094634] flex items-center gap-1.5 shadow-xs"
               >
                 {voteMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Xác nhận

@@ -55,8 +55,8 @@ export function NotificationDropdown({ role }: { role?: string }) {
         <Bell className="h-5 w-5" />
         {notifications.length > 0 && (
           <span className="absolute top-2 right-2 flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0F6B4F]"></span>
           </span>
         )}
       </Button>
@@ -115,10 +115,10 @@ export function NotificationDropdown({ role }: { role?: string }) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1">
-                          <p className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                          <p className="text-xs font-bold text-slate-900 truncate group-hover:text-[#0F6B4F] transition-colors">
                             {item.title}
                           </p>
-                          {!isRead && <span className="h-1.5 w-1.5 rounded-full bg-blue-600 shrink-0" />}
+                          {!isRead && <span className="h-1.5 w-1.5 rounded-full bg-[#0F6B4F] shrink-0" />}
                         </div>
                         <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
                           {item.content}
