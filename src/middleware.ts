@@ -23,6 +23,7 @@ export async function middleware(req: NextRequest) {
 
   const isVehicleRoute =
     (pathname.startsWith('/vehicles') && !pathname.startsWith('/resident')) ||
+    (pathname.startsWith('/parking') && !pathname.startsWith('/resident')) ||
     pathname.startsWith('/parking-cards') ||
     pathname.startsWith('/parking-logs');
 
@@ -78,8 +79,13 @@ export async function middleware(req: NextRequest) {
   const role = token.role as string;
 
   // 3. Resident role boundary: Resident cannot access any manager route
-  if (role === 'RESIDENT' && isAnyManagerRoute) {
-    return NextResponse.redirect(new URL('/home', req.url));
+  if (role === 'RESIDENT') {
+    if (pathname === '/parking' || pathname.startsWith('/parking/')) {
+      return NextResponse.redirect(new URL('/resident/parking', req.url));
+    }
+    if (isAnyManagerRoute) {
+      return NextResponse.redirect(new URL('/home', req.url));
+    }
   }
 
   // 4. Staff/Manager accessing resident-only portal (/home, /resident/**)

@@ -34,6 +34,7 @@ import {
   X,
   Search,
   Crown,
+  Compass,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -98,6 +99,7 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     {
       groupName: 'Phương tiện & An ninh',
       items: [
+        { name: 'Sơ đồ & Bãi đỗ xe', href: '/parking', icon: Compass },
         { name: 'Phương tiện đăng ký', href: '/vehicles', icon: Car },
         { name: 'Thẻ gửi xe', href: '/parking-cards', icon: KeyRound },
         { name: 'Lịch sử ra vào xe', href: '/parking-logs', icon: History },
@@ -146,6 +148,7 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     {
       groupName: 'Phương tiện & An ninh',
       items: [
+        { name: 'Sơ đồ & Bãi đỗ xe', href: '/parking', icon: Compass },
         { name: 'Phương tiện đăng ký', href: '/vehicles', icon: Car },
         { name: 'Thẻ gửi xe', href: '/parking-cards', icon: KeyRound },
         { name: 'Khách ra vào', href: '/visitors', icon: UserCheck },
@@ -195,10 +198,11 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
       groupName: 'An ninh & Cổng vào',
       items: [
         { name: 'Bảng điều khiển', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Kiểm soát vào/ra xe', href: '/parking-logs', icon: FileClock },
+        { name: 'Sơ đồ bãi xe', href: '/parking', icon: Compass },
         { name: 'Đón tiếp khách', href: '/visitors/check-in', icon: QrCode },
         { name: 'Lịch sử khách', href: '/visitors/history', icon: History },
         { name: 'Thẻ gửi xe', href: '/parking-cards', icon: KeyRound },
-        { name: 'Lịch sử ra vào xe', href: '/parking-logs', icon: FileClock },
         { name: 'Phương tiện', href: '/vehicles', icon: Car },
         { name: 'Thông báo', href: '/notifications', icon: Bell },
       ],
@@ -234,6 +238,7 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
       groupName: 'Dịch vụ cư dân',
       items: [
         { name: 'Hóa đơn & Thanh toán', href: '/resident/invoices', icon: Receipt },
+        { name: 'Bãi đỗ xe thông minh', href: '/resident/parking', icon: Compass },
         { name: 'Phương tiện', href: '/resident/vehicles', icon: Car },
         { name: 'Yêu cầu bảo trì', href: '/resident/feedback', icon: Wrench },
         { name: 'Đặt tiện ích', href: '/resident/facilities', icon: Sparkles },

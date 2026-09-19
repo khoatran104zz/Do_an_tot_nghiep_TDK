@@ -467,3 +467,63 @@ export async function authorizeVehicleAccess(
 
   return { allowed: true };
 }
+
+/**
+ * Authorize access to a Parking Area (Manager building scope check)
+ */
+export async function authorizeParkingAreaAccess(
+  user: SessionUser,
+  areaId: string,
+  prismaClient: any = prisma
+): Promise<AuthorizationResult> {
+  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+    return { allowed: true };
+  }
+
+  const area = await prismaClient.parkingArea.findUnique({
+    where: { id: areaId },
+    select: { buildingId: true },
+  });
+
+  if (!area) {
+    return { allowed: false, statusCode: 404, error: 'Không tìm thấy khu vực đỗ xe' };
+  }
+
+  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+    return authorizeBuildingAccess(user, area.buildingId, prismaClient);
+  }
+
+  // Residents and Security have read access to parking areas
+  return { allowed: true };
+}
+
+/**
+ * Authorize access to a Parking Slot (Manager building scope check or Resident check)
+ */
+export async function authorizeParkingSlotAccess(
+  user: SessionUser,
+  slotId: string,
+  prismaClient: any = prisma
+): Promise<AuthorizationResult> {
+  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+    return { allowed: true };
+  }
+
+  const slot = await prismaClient.parkingSlot.findUnique({
+    where: { id: slotId },
+    include: {
+      area: { select: { buildingId: true } },
+    },
+  });
+
+  if (!slot) {
+    return { allowed: false, statusCode: 404, error: 'Không tìm thấy vị trí đỗ xe' };
+  }
+
+  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+    return authorizeBuildingAccess(user, slot.area.buildingId, prismaClient);
+  }
+
+  return { allowed: true };
+}
+

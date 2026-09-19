@@ -52,6 +52,12 @@ export type Permission =
   | 'parking_card:read:self'
   | 'parking_access:read'
   | 'parking_access:log'
+  | 'parking:read'
+  | 'parking:manage'
+  | 'parking:request'
+  | 'parking:approve'
+  | 'parking:operate'
+  | 'parking:read:self'
   // Feedback & Maintenance (Technical / Operations)
   | 'feedback:read'
   | 'feedback:create'
@@ -171,6 +177,10 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'parking_card:manage',
     'parking_access:read',
     'parking_access:log',
+    'parking:read',
+    'parking:manage',
+    'parking:approve',
+    'parking:operate',
     // Feedback & Maintenance
     'feedback:read',
     'feedback:create',
@@ -224,6 +234,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'parking_card:read',
     'parking_access:read',
     'parking_access:log',
+    'parking:read',
+    'parking:operate',
     'visitor:manage',
     'visitor:scan',
     'visitor:checkin',
@@ -238,6 +250,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'parcel:collect',
     'resident:read:minimal',
     'apartment:read',
+    'parking:read',
     'visitor:manage',
     'notification:read',
     'notification:create',
@@ -253,6 +266,9 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'vehicle:read:self',
     'vehicle:create:self',
     'parking_card:read:self',
+    'parking:read',
+    'parking:read:self',
+    'parking:request',
     'feedback:read:self',
     'feedback:create:self',
     'feedback:comment:public',

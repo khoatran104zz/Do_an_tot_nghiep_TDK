@@ -142,6 +142,50 @@ enum ParkingCardStatus {
   PENDING
 }
 
+enum SlotVehicleType {
+  CAR
+  MOTORBIKE
+  BICYCLE
+  EV
+  DISABLED
+  VISITOR
+}
+
+enum ParkingSlotStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+  BLOCKED
+  INACTIVE
+}
+
+enum ParkingRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum ParkingAssignmentStatus {
+  ACTIVE
+  EXPIRING_SOON
+  EXPIRED
+  TERMINATED
+}
+
+enum ParkingLogDirection {
+  ENTRY
+  EXIT
+}
+
+enum ParkingLogStatus {
+  SUCCESS
+  REJECTED
+  ALERT
+}
+
 enum StaffShift {
   MORNING   // 06:00 - 14:00
   AFTERNOON // 14:00 - 22:00
@@ -255,6 +299,9 @@ model User {
   handedOverParcels       ParcelDelivery[]    @relation("HandedOverParcels")
   createdPolls            Poll[]              @relation("CreatedPolls")
   managedBuildings        ManagerBuilding[]   @relation("ManagedBuildings")
+  reviewedParkingRequests    ParkingRegistrationRequest[] @relation("ReviewedParkingRequests")
+  assignedParkingAssignments ParkingAssignment[]          @relation("AssignedParkingAssignments")
+  operatedParkingAccessLogs  ParkingAccessLog[]           @relation("OperatedParkingAccessLogs")
 
   @@map("users")
 }
@@ -274,6 +321,7 @@ model Building {
   assets      Asset[]
   facilities  Facility[]
   managers    ManagerBuilding[] @relation("BuildingManagers")
+  parkingAreas ParkingArea[]
 
   @@map("buildings")
 }
@@ -363,6 +411,8 @@ model Apartment {
   visitorPasses     VisitorPass[]
   parcels           ParcelDelivery[]
   pollVotes         PollVote[]
+  parkingAssignments ParkingAssignment[]
+  parkingRequests    ParkingRegistrationRequest[]
 
   @@index([building])
   @@index([status])
@@ -418,6 +468,8 @@ model Resident {
   contracts Contract[]
   feedbacks Feedback[]
   vehicles  Vehicle[]
+  parkingAssignments ParkingAssignment[]
+  parkingRequests    ParkingRegistrationRequest[]
 
   @@index([apartmentId])
   @@index([status])
@@ -673,6 +725,9 @@ model Vehicle {
   updatedAt               DateTime      @updatedAt
 
   parkingCards ParkingCard[]
+  parkingAssignments   ParkingAssignment[]
+  parkingRequests      ParkingRegistrationRequest[]
+  parkingAccessLogs    ParkingAccessLog[]
 
   @@index([apartmentId])
   @@index([residentId])
@@ -697,6 +752,174 @@ model ParkingCard {
   @@index([vehicleId])
   @@index([status])
   @@map("parking_cards")
+}
+
+// 10.1 Smart Parking Management System
+model ParkingArea {
+  id            String         @id @default(cuid())
+  buildingId    String
+  building      Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  code          String         // e.g. "B1", "B2", "OUTDOOR"
+  name          String         // e.g. "Tầng hầm B1", "Tầng hầm B2", "Bãi ngoài trời"
+  floor         Int            @default(-1) // e.g. -1 for B1, -2 for B2, 0 for Ground/Outdoor
+  totalCapacity Int            @default(0)
+  description   String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  zones         ParkingZone[]
+  slots         ParkingSlot[]
+  requests      ParkingRegistrationRequest[]
+
+  @@unique([buildingId, code])
+  @@index([buildingId])
+  @@map("parking_areas")
+}
+
+model ParkingZone {
+  id          String        @id @default(cuid())
+  areaId      String
+  area        ParkingArea   @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  code        String        // e.g. "ZONE-A", "ZONE-B"
+  name        String        // e.g. "Khu A - Ô tô", "Khu B - Xe máy & EV"
+  vehicleType VehicleType   @default(CAR)
+  colorHex    String?       @default("#0F6B4F")
+  totalSlots  Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  slots       ParkingSlot[]
+  requests    ParkingRegistrationRequest[]
+
+  @@unique([areaId, code])
+  @@index([areaId])
+  @@map("parking_zones")
+}
+
+model ParkingSlot {
+  id           String            @id @default(cuid())
+  code         String            // e.g. "B1-A01", "B1-A02"
+  areaId       String
+  area         ParkingArea       @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  zoneId       String
+  zone         ParkingZone       @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  type         SlotVehicleType   @default(CAR)
+  status       ParkingSlotStatus @default(AVAILABLE)
+  floor        Int               @default(-1)
+  positionX    Float             @default(0)
+  positionY    Float             @default(0)
+  width        Float?            @default(1)
+  height       Float?            @default(1)
+  isReservable Boolean           @default(true)
+  isActive     Boolean           @default(true)
+  note         String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  assignments          ParkingAssignment[]
+  registrationRequests ParkingRegistrationRequest[]
+  accessLogs           ParkingAccessLog[]
+
+  @@unique([areaId, code])
+  @@index([areaId])
+  @@index([zoneId])
+  @@index([status])
+  @@index([type])
+  @@map("parking_slots")
+}
+
+model ParkingRegistrationRequest {
+  id              String               @id @default(cuid())
+  requestCode     String               @unique // e.g. "REQ-PARK-2026-0001"
+  residentId      String
+  resident        Resident             @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  apartmentId     String
+  apartment       Apartment            @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  vehicleId       String
+  vehicle         Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  preferredAreaId String?
+  preferredArea   ParkingArea?         @relation(fields: [preferredAreaId], references: [id], onDelete: SetNull)
+  preferredZoneId String?
+  preferredZone   ParkingZone?         @relation(fields: [preferredZoneId], references: [id], onDelete: SetNull)
+  slotId          String?
+  slot            ParkingSlot?         @relation(fields: [slotId], references: [id], onDelete: SetNull)
+  startDate       DateTime             @default(now())
+  endDate         DateTime?
+  status          ParkingRequestStatus @default(PENDING)
+  notes           String?
+  rejectionReason String?
+  reviewerId      String?
+  reviewer        User?                @relation("ReviewedParkingRequests", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  assignment      ParkingAssignment?
+
+  @@index([residentId])
+  @@index([apartmentId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([slotId])
+  @@map("parking_registration_requests")
+}
+
+model ParkingAssignment {
+  id             String                  @id @default(cuid())
+  assignmentCode String                  @unique // e.g. "PASS-2026-0001"
+  slotId         String
+  slot           ParkingSlot             @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  vehicleId      String
+  vehicle        Vehicle                 @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  residentId     String?
+  resident       Resident?               @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  apartmentId    String
+  apartment      Apartment               @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  requestId      String?                 @unique
+  request        ParkingRegistrationRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  startDate      DateTime                @default(now())
+  endDate        DateTime?
+  status         ParkingAssignmentStatus @default(ACTIVE)
+  monthlyFee     Float?                  @default(0)
+  qrToken        String                  @unique
+  assignedById   String?
+  assignedBy     User?                   @relation("AssignedParkingAssignments", fields: [assignedById], references: [id], onDelete: SetNull)
+  notes          String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@index([slotId])
+  @@index([vehicleId])
+  @@index([residentId])
+  @@index([apartmentId])
+  @@index([status])
+  @@index([qrToken])
+  @@map("parking_assignments")
+}
+
+model ParkingAccessLog {
+  id              String              @id @default(cuid())
+  slotId          String?
+  slot            ParkingSlot?        @relation(fields: [slotId], references: [id], onDelete: SetNull)
+  vehicleId       String?
+  vehicle         Vehicle?            @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  licensePlate    String
+  cardCode        String?
+  gateName        String              // e.g. "Cổng VÀO 01 (Hầm B1)", "Cổng RA 02"
+  direction       ParkingLogDirection @default(ENTRY)
+  status          ParkingLogStatus    @default(SUCCESS)
+  operatorId      String?
+  operator        User?               @relation("OperatedParkingAccessLogs", fields: [operatorId], references: [id], onDelete: SetNull)
+  imageSnapshotUrl String?
+  notes           String?
+  timestamp       DateTime            @default(now())
+
+  @@index([timestamp])
+  @@index([licensePlate])
+  @@index([status])
+  @@index([vehicleId])
+  @@map("parking_access_logs")
 }
 
 // 11. Household & Residence Requests
