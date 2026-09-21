@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { InvoiceStatus, Role } from '@prisma/client';
+import { InvoiceStatus, Role, ParkingAssignmentStatus, ParkingSlotStatus } from '@prisma/client';
 
 export interface SafeResidentContext {
   userId: string;
@@ -34,6 +34,40 @@ export interface SafeResidentContext {
     status: string;
     createdAt: Date;
   }>;
+
+  // Real Parking Domain Context (Section 27, 28, 29, 38)
+  parkingAvailability?: {
+    total: number;
+    available: number;
+    occupied: number;
+    areas: Array<{
+      code: string;
+      name: string;
+      floor: number;
+      available: number;
+      total: number;
+    }>;
+  };
+  myParkingAssignments?: Array<{
+    slotCode: string;
+    areaName: string;
+    floor: number;
+    licensePlate: string;
+    vehicleBrand: string;
+    vehicleModel?: string | null;
+    startDate: Date;
+    endDate?: Date | null;
+  }>;
+  myVehicles?: Array<{
+    licensePlate: string;
+    brand: string;
+    model?: string | null;
+    type: string;
+    status: string;
+    cardCode?: string | null;
+    cardStatus?: string | null;
+  }>;
+
   // Role-specific operational stats
   managementStats?: {
     totalApartments: number;
@@ -99,6 +133,45 @@ export class AISafeContextService {
       location: f.location,
     }));
 
+    // Baseline parking availability (Public real data for all authenticated roles)
+    const parkingAreas = await prisma.parkingArea.findMany({
+      where: { isActive: true },
+      include: {
+        slots: {
+          where: { isActive: true },
+          select: { status: true },
+        },
+      },
+      orderBy: { floor: 'asc' },
+    });
+
+    let totalParkingSlots = 0;
+    let totalAvailableSlots = 0;
+    let totalOccupiedSlots = 0;
+
+    const areaParkingStats = parkingAreas.map((area) => {
+      const total = area.slots.length;
+      const occupied = area.slots.filter((s) => s.status === ParkingSlotStatus.OCCUPIED).length;
+      const available = area.slots.filter((s) => s.status === ParkingSlotStatus.AVAILABLE).length;
+      totalParkingSlots += total;
+      totalAvailableSlots += available;
+      totalOccupiedSlots += occupied;
+      return {
+        code: area.code,
+        name: area.name,
+        floor: area.floor,
+        available,
+        total,
+      };
+    });
+
+    const parkingAvailability = {
+      total: totalParkingSlots,
+      available: totalAvailableSlots,
+      occupied: totalOccupiedSlots,
+      areas: areaParkingStats,
+    };
+
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -136,6 +209,7 @@ export class AISafeContextService {
         overdueInvoices: [],
         facilities: formattedFacilities,
         recentTickets: [],
+        parkingAvailability,
         managementStats: {
           totalApartments: totalApts,
           occupiedApartments: occupiedApts,
@@ -170,6 +244,7 @@ export class AISafeContextService {
         overdueInvoices: [],
         facilities: formattedFacilities,
         recentTickets: [],
+        parkingAvailability,
         technicianStats: {
           openTicketsCount: openTickets,
           pendingMaintenanceCount: pendingMaintenance,
@@ -203,6 +278,7 @@ export class AISafeContextService {
         overdueInvoices: [],
         facilities: formattedFacilities,
         recentTickets: [],
+        parkingAvailability,
         securityStats: {
           todayVisitorsCount: todayVisitors,
           pendingPassesCount: pendingPasses,
@@ -231,6 +307,7 @@ export class AISafeContextService {
         overdueInvoices: [],
         facilities: formattedFacilities,
         recentTickets: [],
+        parkingAvailability,
         receptionistStats: {
           waitingParcelsCount: waitingParcels,
           todayVisitorsCount: todayVisitors,
@@ -238,7 +315,7 @@ export class AISafeContextService {
       };
     }
 
-    // 6. RESIDENT (Default): Isolated apartment-specific context
+    // 6. RESIDENT (Default): Isolated apartment & resident-specific context
     const resident = await prisma.resident.findFirst({
       where: { userId },
       include: {
@@ -262,6 +339,7 @@ export class AISafeContextService {
         overdueInvoices: [],
         facilities: formattedFacilities,
         recentTickets: [],
+        parkingAvailability,
       };
     }
 
@@ -269,8 +347,8 @@ export class AISafeContextService {
     const now = new Date();
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-    // Get current month unpaid/pending invoices ONLY for this apartment
-    const [currentInvoices, overdueInvoices, recentTickets] = await Promise.all([
+    // Get current month unpaid/pending invoices ONLY for this apartment, plus parking assignments & vehicles
+    const [currentInvoices, overdueInvoices, recentTickets, myAssignments, myVehicles] = await Promise.all([
       prisma.invoice.findMany({
         where: {
           apartmentId: aptId,
@@ -310,7 +388,53 @@ export class AISafeContextService {
           createdAt: true,
         },
       }),
+      prisma.parkingAssignment.findMany({
+        where: {
+          residentId: resident.id,
+          status: ParkingAssignmentStatus.ACTIVE,
+        },
+        include: {
+          slot: {
+            include: {
+              area: true,
+            },
+          },
+          vehicle: true,
+        },
+      }),
+      prisma.vehicle.findMany({
+        where: {
+          residentId: resident.id,
+        },
+        include: {
+          parkingCards: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      }),
     ]);
+
+    const formattedAssignments = myAssignments.map((a) => ({
+      slotCode: a.slot.code,
+      areaName: a.slot.area.name,
+      floor: a.slot.floor,
+      licensePlate: a.vehicle.licensePlate,
+      vehicleBrand: a.vehicle.brand,
+      vehicleModel: a.vehicle.model,
+      startDate: a.startDate,
+      endDate: a.endDate,
+    }));
+
+    const formattedVehicles = myVehicles.map((v) => ({
+      licensePlate: v.licensePlate,
+      brand: v.brand,
+      model: v.model,
+      type: v.type,
+      status: v.status,
+      cardCode: v.parkingCards[0]?.cardCode || null,
+      cardStatus: v.parkingCards[0]?.status || null,
+    }));
 
     return {
       userId,
@@ -324,6 +448,9 @@ export class AISafeContextService {
       overdueInvoices: overdueInvoices,
       facilities: formattedFacilities,
       recentTickets: recentTickets,
+      parkingAvailability,
+      myParkingAssignments: formattedAssignments,
+      myVehicles: formattedVehicles,
     };
   }
 }

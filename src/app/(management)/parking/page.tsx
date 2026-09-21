@@ -334,6 +334,7 @@ export default function ManagementParkingPage() {
             areaCode={activeArea?.code || 'B1'}
             floor={activeArea?.floor ?? -1}
             slots={currentSlots}
+            zones={activeArea?.zones || []}
             selectedSlotId={inspectingSlot?.id}
             onSelectSlot={handleSelectSlot}
             isManager={true}

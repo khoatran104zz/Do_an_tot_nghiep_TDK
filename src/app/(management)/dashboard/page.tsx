@@ -66,23 +66,11 @@ import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 import { AdminDashboardView } from '@/components/dashboard/AdminDashboardView';
 import { ManagerDashboardView } from '@/components/dashboard/ManagerDashboardView';
 
-export default function SmartApartmentOperationsDashboard() {
+function StaffDashboardView() {
   const router = useRouter();
   const { data: session } = useSession();
   const user = session?.user;
 
-  // 1. Role-specific Dashboards:
-  // Admin: Platform & Cross-Building Overview
-  if (user?.role === 'ADMIN') {
-    return <AdminDashboardView />;
-  }
-
-  // Manager: Building-Scoped Operations Dashboard
-  if (user?.role === 'MANAGER') {
-    return <ManagerDashboardView />;
-  }
-
-  // Operational Staff & Fallback View
   // Selected duration for Revenue Analytics: 6 or 12 months
   const [revenueMonths, setRevenueMonths] = useState<6 | 12>(6);
 
@@ -1124,4 +1112,30 @@ export default function SmartApartmentOperationsDashboard() {
       </Card>
     </div>
   );
+}
+
+export default function SmartApartmentOperationsDashboard() {
+  const { data: session, status } = useSession();
+  const user = session?.user;
+
+  if (status === 'loading') {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#0F6B4F] animate-ping" />
+          <span>Đang tải thông tin vận hành...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.role === 'ADMIN') {
+    return <AdminDashboardView />;
+  }
+
+  if (user?.role === 'MANAGER') {
+    return <ManagerDashboardView />;
+  }
+
+  return <StaffDashboardView />;
 }

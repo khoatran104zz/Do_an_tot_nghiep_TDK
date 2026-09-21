@@ -36,7 +36,7 @@ export class AIAssistantService {
     message: string,
     userId: string,
     actor?: { email?: string; role?: string }
-  ): Promise<{ response: string; rateLimitRemaining?: number }> {
+  ): Promise<{ response: string; actions?: any[]; rateLimitRemaining?: number }> {
     if (!message || message.trim().length === 0) {
       return { response: 'Vui lòng nhập câu hỏi của bạn để tôi có thể hỗ trợ.' };
     }
@@ -58,7 +58,10 @@ export class AIAssistantService {
       // 3. Generate Answer
       const answer = await provider.generateChatResponse(message, context);
 
-      return { response: answer };
+      return {
+        response: answer.response,
+        actions: answer.actions,
+      };
     } catch (error) {
       console.error('[AIAssistantService] Error in chat:', error);
       return {

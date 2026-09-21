@@ -18,6 +18,9 @@ import {
   Compass,
   QrCode,
   FileClock,
+  RotateCcw,
+  Loader2,
+  Users,
 } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -42,16 +45,26 @@ export default function ResidentParkingPage() {
   const [activeTab, setActiveTab] = useState<'MAP' | 'PASSES' | 'REQUESTS'>('MAP');
 
   // Queries
-  const { data: areasRes, isLoading: isLoadingAreas } = useParkingAreas();
+  const {
+    data: areasRes,
+    isLoading: isLoadingAreas,
+    isError: isAreasError,
+    refetch: refetchAreas,
+  } = useParkingAreas();
   const areas = areasRes?.data || [];
 
   const [selectedAreaId, setSelectedAreaId] = useState<string>('');
   const activeAreaId = selectedAreaId || (areas.length > 0 ? areas[0].id : '');
 
-  const { data: areaDetailRes, isLoading: isLoadingAreaDetail } = useParkingArea(activeAreaId);
+  const {
+    data: areaDetailRes,
+    isLoading: isLoadingAreaDetail,
+    isError: isAreaDetailError,
+    refetch: refetchAreaDetail,
+  } = useParkingArea(activeAreaId);
   const activeArea = areaDetailRes?.data;
 
-  const { data: occupancyRes } = useParkingOccupancy();
+  const { data: occupancyRes, isLoading: isLoadingOccupancy } = useParkingOccupancy();
   const occupancy = occupancyRes?.data;
 
   const { data: requestsRes, refetch: refetchRequests } = useParkingRequests();
@@ -88,11 +101,12 @@ export default function ResidentParkingPage() {
     setActiveTab('MAP');
     setHighlightedSlotId(slotId);
 
-    // Auto-scroll and clear highlight after 6 seconds
     setTimeout(() => {
       setHighlightedSlotId(null);
     }, 6000);
   };
+
+  const isFullOccupied = occupancy?.summary ? occupancy.summary.available === 0 && occupancy.summary.total > 0 : false;
 
   return (
     <div className="space-y-6 pb-12">
@@ -101,77 +115,146 @@ export default function ResidentParkingPage() {
         title="Bãi Đỗ Xe Thông Minh K-Home"
         description="Theo dõi chỗ trống thời gian thực, xem sơ đồ vị trí và quản lý thẻ đỗ xe cư dân"
       >
-        <Button
-          variant="outline"
-          size="sm"
-          asChild
-          className="text-xs"
-        >
-          <Link href="/resident/vehicles">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/resident/vehicles"
+            className="inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 px-3 h-8 text-xs font-medium hover:bg-[#E8F5ED] dark:hover:bg-emerald-950/30 hover:text-[#0F6B4F] dark:hover:text-emerald-400 shadow-2xs transition-all"
+          >
             <Car className="w-3.5 h-3.5 mr-1.5" />
             <span>Phương tiện của tôi</span>
           </Link>
-        </Button>
+        </div>
       </PageHeader>
 
-      {/* Real-time Occupancy KPI Banner */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
-            Tổng số chỗ đỗ
-          </span>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-black text-foreground font-mono">
-              {occupancy?.summary?.total ?? 0}
-            </span>
-            <span className="text-xs text-muted-foreground">vị trí</span>
+      {/* Section 13: Resident Car Parking UI Overview Widget */}
+      <div className="bg-gradient-to-r from-[#0F6B4F] to-[#12805e] rounded-3xl p-6 text-white shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-semibold text-emerald-100">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>K-Home Smart Parking</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
+            🟢 {occupancy?.summary?.available ?? 0} chỗ đỗ khả dụng
+          </h2>
+          <p className="text-xs sm:text-sm text-emerald-100/90 max-w-xl">
+            Hệ thống nhận diện vị trí đỗ thời gian thực qua camera ANPR và cảm biến thông minh. Cư dân có thể dễ dàng kiểm tra chỗ trống và đăng ký thẻ đỗ trực tiếp.
+          </p>
+
+          {/* Breakdown per floor/area */}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            {areas.map((area: any) => (
+              <div
+                key={area.id}
+                onClick={() => {
+                  setSelectedAreaId(area.id);
+                  setActiveTab('MAP');
+                }}
+                className={`cursor-pointer px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
+                  activeAreaId === area.id
+                    ? 'bg-white text-[#0F6B4F] font-bold shadow-md border-white'
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+                }`}
+              >
+                <span className="font-bold mr-1.5">{area.code}:</span>
+                <span>{area.metrics?.available ?? 0} chỗ trống</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 shadow-sm">
-          <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider block">
-            🟢 Chỗ trống khả dụng
-          </span>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-black text-emerald-700 dark:text-emerald-300 font-mono">
-              {occupancy?.summary?.available ?? 0}
-            </span>
-            <span className="text-xs text-emerald-800 dark:text-emerald-400">chỗ trống</span>
-          </div>
-        </div>
+        {/* Section 13 Quick Actions */}
+        <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0">
+          <Button
+            onClick={() => setActiveTab('MAP')}
+            className="bg-white hover:bg-emerald-50 text-[#0F6B4F] font-bold text-xs h-10 shadow-sm"
+          >
+            <Compass className="w-4 h-4 mr-2 text-[#0F6B4F]" />
+            <span>Xem sơ đồ bãi đỗ</span>
+          </Button>
 
-        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 shadow-sm">
-          <span className="text-[11px] font-bold text-rose-800 dark:text-rose-300 uppercase tracking-wider block">
-            🔴 Đã có xe đỗ
-          </span>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-black text-rose-700 dark:text-rose-300 font-mono">
-              {occupancy?.summary?.occupied ?? 0}
-            </span>
-            <span className="text-xs text-rose-800 dark:text-rose-400">vị trí</span>
-          </div>
-        </div>
+          <Button
+            onClick={() => {
+              setRequestModalSlot(null);
+              setIsRequestModalOpen(true);
+            }}
+            variant="outline"
+            className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-xs h-10 font-semibold"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            <span>Đăng ký chỗ đỗ</span>
+          </Button>
 
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 shadow-sm">
-          <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider block">
-            🟡 Tỷ lệ lấp đầy
-          </span>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-black text-amber-700 dark:text-amber-300 font-mono">
-              {occupancy?.summary?.occupancyRate ?? 0}%
-            </span>
-            <span className="text-xs text-amber-800 dark:text-amber-400">công suất</span>
-          </div>
+          <Button
+            onClick={() => setActiveTab('PASSES')}
+            variant="outline"
+            className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-xs h-10 font-semibold"
+          >
+            <QrCode className="w-4 h-4 mr-2" />
+            <span>Thẻ xe của tôi ({myPasses.length})</span>
+          </Button>
         </div>
       </div>
+
+      {/* Section 17: Empty State (Bãi đỗ đã đầy) */}
+      {isFullOccupied && (
+        <div className="bg-amber-500/10 border-2 border-amber-500/40 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400 shrink-0 mt-0.5">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-bold text-foreground text-sm">
+                Bãi đỗ xe ô tô hiện đã hết chỗ trống (Full Occupancy)
+              </h4>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Hiện tại tất cả vị trí đỗ ô tô đã được cấp phát hết. Bạn có thể gửi yêu cầu để tham gia danh sách chờ ưu tiên khi có vị trí mới giải phóng.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shrink-0"
+            onClick={() => {
+              setRequestModalSlot(null);
+              setIsRequestModalOpen(true);
+            }}
+          >
+            <Users className="w-3.5 h-3.5 mr-1.5" />
+            <span>Tham gia danh sách chờ (Waitlist)</span>
+          </Button>
+        </div>
+      )}
+
+      {/* Error state fallback */}
+      {(isAreasError || isAreaDetailError) && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-6 text-center space-y-3">
+          <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
+          <h4 className="text-sm font-bold text-foreground">Không thể tải dữ liệu bãi đỗ xe</h4>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            Hệ thống máy chủ chưa phản hồi kịp hoặc kết nối mạng bị gián đoạn. Vui lòng thử tải lại dữ liệu.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetchAreas();
+              refetchAreaDetail();
+            }}
+            className="text-xs"
+          >
+            <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+            <span>Thử lại</span>
+          </Button>
+        </div>
+      )}
 
       {/* Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-border pb-1 text-sm font-medium">
         <button
           onClick={() => setActiveTab('MAP')}
-          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 ${
+          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'MAP'
-              ? 'bg-[#0F6B4F] text-white font-semibold shadow-sm'
+              ? 'bg-[#0F6B4F] text-white font-semibold shadow-xs'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
           }`}
         >
@@ -181,9 +264,9 @@ export default function ResidentParkingPage() {
 
         <button
           onClick={() => setActiveTab('PASSES')}
-          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 ${
+          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'PASSES'
-              ? 'bg-[#0F6B4F] text-white font-semibold shadow-sm'
+              ? 'bg-[#0F6B4F] text-white font-semibold shadow-xs'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
           }`}
         >
@@ -193,9 +276,9 @@ export default function ResidentParkingPage() {
 
         <button
           onClick={() => setActiveTab('REQUESTS')}
-          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 ${
+          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'REQUESTS'
-              ? 'bg-[#0F6B4F] text-white font-semibold shadow-sm'
+              ? 'bg-[#0F6B4F] text-white font-semibold shadow-xs'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
           }`}
         >
@@ -218,10 +301,10 @@ export default function ResidentParkingPage() {
                 variant={activeAreaId === area.id ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setSelectedAreaId(area.id)}
-                className={`text-xs font-semibold ${
+                className={`text-xs font-semibold cursor-pointer ${
                   activeAreaId === area.id
-                    ? 'bg-[#0F6B4F] hover:bg-[#0d5941] text-white shadow-sm'
-                    : 'text-foreground'
+                    ? 'bg-[#0F6B4F] hover:bg-[#0c5942] text-white shadow-xs'
+                    : 'text-foreground hover:bg-muted'
                 }`}
               >
                 <span>{area.name}</span>
@@ -232,17 +315,27 @@ export default function ResidentParkingPage() {
             ))}
           </div>
 
-          {/* Sơ đồ trực quan */}
-          <ParkingLotMap
-            areaName={activeArea?.name || 'Khu vực bãi đỗ'}
-            areaCode={activeArea?.code || 'B1'}
-            floor={activeArea?.floor ?? -1}
-            slots={currentSlots}
-            selectedSlotId={inspectingSlot?.id}
-            highlightedSlotId={highlightedSlotId}
-            onSelectSlot={handleSelectSlot}
-            isManager={false}
-          />
+          {/* Loading Skeletons */}
+          {isLoadingAreaDetail ? (
+            <div className="h-[520px] rounded-2xl bg-muted/40 border border-border flex flex-col items-center justify-center gap-3 animate-pulse">
+              <Loader2 className="w-8 h-8 animate-spin text-[#0F6B4F]" />
+              <span className="text-xs font-medium text-muted-foreground">
+                Đang tải sơ đồ bãi đỗ {activeArea?.name || ''}...
+              </span>
+            </div>
+          ) : (
+            <ParkingLotMap
+              areaName={activeArea?.name || 'Khu vực bãi đỗ'}
+              areaCode={activeArea?.code || 'B1'}
+              floor={activeArea?.floor ?? -1}
+              slots={currentSlots}
+              zones={activeArea?.zones || []}
+              selectedSlotId={inspectingSlot?.id}
+              highlightedSlotId={highlightedSlotId}
+              onSelectSlot={handleSelectSlot}
+              isManager={false}
+            />
+          )}
         </div>
       )}
 
@@ -261,7 +354,7 @@ export default function ResidentParkingPage() {
                 Hãy chuyển sang tab "Sơ đồ bãi xe", tìm kiếm vị trí còn trống phù hợp và gửi đơn đăng ký để được cấp phát thẻ đỗ xe.
               </p>
               <Button
-                className="mt-6 bg-[#0F6B4F] hover:bg-[#0d5941] text-white font-semibold text-xs"
+                className="mt-6 bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-semibold text-xs cursor-pointer"
                 onClick={() => setActiveTab('MAP')}
               >
                 <Compass className="w-4 h-4 mr-1.5" />
@@ -291,7 +384,7 @@ export default function ResidentParkingPage() {
             </h3>
             <Button
               size="sm"
-              className="bg-[#0F6B4F] hover:bg-[#0d5941] text-white text-xs font-semibold"
+              className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white text-xs font-semibold cursor-pointer"
               onClick={() => setActiveTab('MAP')}
             >
               <Plus className="w-3.5 h-3.5 mr-1" />
@@ -304,7 +397,7 @@ export default function ResidentParkingPage() {
               Chưa có đơn đăng ký chỗ đỗ nào được gửi.
             </div>
           ) : (
-            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-xs">
               <div className="divide-y divide-border">
                 {requests.map((req: any) => (
                   <div key={req.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

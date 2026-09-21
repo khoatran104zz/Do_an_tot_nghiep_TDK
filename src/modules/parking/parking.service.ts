@@ -111,15 +111,32 @@ export class ParkingService {
 
     const metrics = await parkingRepository.calculateAreaOccupancy(id);
 
-    // If resident: mask private owner info from slots
+    // If resident: allow seeing own assignment details while masking other residents' personal info
     const isResident = user.role === Role.RESIDENT || user.role === 'RESIDENT';
+    let residentId: string | null = null;
+    if (isResident) {
+      try {
+        const resInfo = await getVerifiedResidentInfo(user.id);
+        residentId = resInfo?.id || null;
+      } catch {
+        residentId = null;
+      }
+    }
+
     const sanitizedZones = area.zones.map((zone) => ({
       ...zone,
       slots: zone.slots.map((slot) => {
         if (isResident) {
+          const activeAss = slot.assignments?.[0];
+          const isOwnSlot = residentId && activeAss?.residentId === residentId;
+          if (isOwnSlot) {
+            // Keep full own assignment info
+            return slot;
+          }
+          // Mask foreign assignment details to prevent privacy leak
           return {
             ...slot,
-            assignments: [], // residents do not see other people's assignment details
+            assignments: activeAss ? [{ status: activeAss.status }] : [],
           };
         }
         return slot;
