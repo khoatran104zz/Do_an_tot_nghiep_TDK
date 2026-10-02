@@ -335,9 +335,23 @@ export default function ManagementParkingPage() {
             floor={activeArea?.floor ?? -1}
             slots={currentSlots}
             zones={activeArea?.zones || []}
+            allAreas={areas}
             selectedSlotId={inspectingSlot?.id}
             onSelectSlot={handleSelectSlot}
             isManager={true}
+            occupancy={occupancy}
+            onFloorChange={(floorCode) => {
+              const matched = areas.find(
+                (a: any) =>
+                  a.code === floorCode ||
+                  a.code.toUpperCase() === floorCode.toUpperCase()
+              );
+              if (matched) {
+                setSelectedAreaId(matched.id);
+              }
+            }}
+            onStatusChange={handleStatusChange}
+            onReleaseSlot={handleReleaseSlot}
           />
         </div>
       )}
