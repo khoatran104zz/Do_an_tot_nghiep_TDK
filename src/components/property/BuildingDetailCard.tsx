@@ -143,7 +143,7 @@ export function BuildingDetailCard({
         <Card className="shadow-xs">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Khối Tháp (Blocks)</p>
+              <p className="text-xs font-medium text-muted-foreground">Khối Tháp</p>
               <h3 className="text-2xl font-bold mt-1 text-foreground">{blocks.length}</h3>
               <p className="text-[11px] text-muted-foreground mt-0.5">{totalFloors} tầng lầu</p>
             </div>

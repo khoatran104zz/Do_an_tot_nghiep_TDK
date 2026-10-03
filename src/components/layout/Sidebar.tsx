@@ -286,11 +286,13 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
         )}
       >
         {/* Header Branding */}
-        <div className="flex h-16 items-center justify-between px-4 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
+        <div className="flex h-16 items-center justify-between px-4 border-b border-slate-200/80 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
           <Link href={homeHref} className="flex items-center gap-2.5 overflow-hidden group">
-            <KHomeIcon className="h-8 w-8 shrink-0 transition-transform group-hover:scale-105" />
+            <div className="flex items-center justify-center p-1.5 rounded-xl bg-[#E8F5ED] dark:bg-emerald-950/60 border border-[#22C55E]/30 shrink-0 transition-transform group-hover:scale-105 shadow-2xs">
+              <KHomeIcon className="h-6 w-6 shrink-0" />
+            </div>
             {!isCollapsed && (
-              <div className="flex flex-col truncate">
+              <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span
                     className="font-extrabold text-base tracking-tight text-[#0F6B4F] dark:text-emerald-400 leading-none"
@@ -298,32 +300,26 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
                   >
                     K-Home
                   </span>
-                  <span className="text-[9px] font-semibold text-[#0F6B4F] dark:text-emerald-300 bg-[#E8F5ED] dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-[#0F6B4F]/20">
-                    Smart Living
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 text-[10px] font-medium text-[#6B7280] dark:text-slate-400 mt-1 truncate">
-                  <span className="truncate">
+                  <span className="text-[9px] font-bold text-[#0F6B4F] dark:text-emerald-300 bg-[#E8F5ED] dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-[#0F6B4F]/20 uppercase tracking-wide">
                     {role === 'ADMIN' ? (
-                      <span className="text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-1">
-                        <Crown className="h-3 w-3 text-amber-500 inline" /> Super Admin
+                      <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-300">
+                        <Crown className="h-2.5 w-2.5 text-amber-500 inline" /> Admin
                       </span>
                     ) : role === 'MANAGER' ? (
-                      <span className="text-[#0F6B4F] dark:text-emerald-400 font-bold">
-                        Ban Quản Lý
-                      </span>
+                      'BQL'
                     ) : role === 'STAFF_TECHNICIAN' ? (
-                      'Kỹ thuật viên'
+                      'Kỹ thuật'
                     ) : role === 'STAFF_SECURITY' ? (
-                      'Đội bảo vệ'
+                      'Bảo vệ'
                     ) : role === 'STAFF_RECEPTIONIST' ? (
-                      'Lễ tân sảnh'
+                      'Lễ tân'
                     ) : (
                       'Cư dân'
                     )}
                   </span>
-                  <span>·</span>
-                  <span className="text-[9.5px] text-slate-400 dark:text-slate-500">Better Together</span>
+                </div>
+                <div className="flex items-center text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-1 tracking-tight truncate">
+                  <span>Smart Living, Better Together</span>
                 </div>
               </div>
             )}

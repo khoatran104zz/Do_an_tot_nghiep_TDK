@@ -143,7 +143,7 @@ export function ParkingDetailPanel({
     if (isAvailable) {
       return (
         <div className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-[#22C55E]/60 bg-[#DCFCE7]/70 dark:bg-emerald-950/50 text-[#15803D] dark:text-emerald-300 font-bold text-sm shadow-2xs">
-          <span>Khả dụng (Available)</span>
+          <span>Khả dụng</span>
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22C55E]"></span>
@@ -155,7 +155,7 @@ export function ParkingDetailPanel({
     if (isOccupied) {
       return (
         <div className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-[#EF4444]/60 bg-[#FEE2E2]/70 dark:bg-rose-950/50 text-[#B91C1C] dark:text-rose-300 font-bold text-sm shadow-2xs">
-          <span>Đang đỗ xe (Occupied)</span>
+          <span>Đang có xe đỗ</span>
           <span className="inline-flex rounded-full h-2.5 w-2.5 bg-[#EF4444]"></span>
         </div>
       );
@@ -164,7 +164,7 @@ export function ParkingDetailPanel({
     if (isReserved) {
       return (
         <div className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-[#F59E0B]/60 bg-[#FEF3C7]/70 dark:bg-amber-950/50 text-[#92400E] dark:text-amber-300 font-bold text-sm shadow-2xs">
-          <span>Đã đặt chỗ (Reserved)</span>
+          <span>Đã đặt chỗ</span>
           <span className="inline-flex rounded-full h-2.5 w-2.5 bg-[#F59E0B]"></span>
         </div>
       );
@@ -173,7 +173,7 @@ export function ParkingDetailPanel({
     if (isMaintenance) {
       return (
         <div className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-amber-500/60 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-bold text-sm shadow-2xs">
-          <span>Đang bảo trì (Maintenance)</span>
+          <span>Đang bảo trì</span>
           <Wrench className="w-3.5 h-3.5 text-amber-600" />
         </div>
       );
@@ -181,7 +181,7 @@ export function ParkingDetailPanel({
 
     return (
       <div className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm">
-        <span>Không khả dụng (Unavailable)</span>
+        <span>Không khả dụng</span>
         <span className="inline-flex rounded-full h-2.5 w-2.5 bg-slate-400"></span>
       </div>
     );
@@ -189,19 +189,19 @@ export function ParkingDetailPanel({
 
   const vehicleTypeName =
     slot.vehicleType === 'motorcycle' || slot.type === 'MOTORBIKE'
-      ? 'Xe máy (Motorcycle)'
+      ? 'Xe máy'
       : isEV
-      ? 'Xe điện (EV Charging)'
+      ? 'Xe điện'
       : isAccessible
-      ? 'Xe người khuyết tật (Accessible)'
-      : 'Ô tô (Car)';
+      ? 'Xe ưu tiên người khuyết tật'
+      : 'Ô tô';
 
   const floorDisplay =
     slot.floor !== undefined
       ? slot.floor < 0
         ? `Tầng hầm B${Math.abs(slot.floor)}`
         : slot.floor === 0
-        ? 'Bãi ngoài trời (Ground)'
+        ? 'Bãi ngoài trời'
         : `Tầng ${slot.floor}`
       : areaName;
 
@@ -288,7 +288,7 @@ export function ParkingDetailPanel({
           <div className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
             <span className="text-slate-500 dark:text-slate-400">Cập nhật</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">
-              Vừa xong (Real-time)
+              Vừa xong
             </span>
           </div>
 
@@ -337,25 +337,60 @@ export function ParkingDetailPanel({
             onClick={() => onReserve?.(slot)}
             className="w-full py-5 rounded-xl bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-bold text-sm shadow-sm transition-all cursor-pointer"
           >
-            {isManager ? 'Cấp phát vị trí này' : 'Đăng ký đỗ xe (Reserve Parking)'}
+            {isManager ? 'Cấp phát vị trí này' : 'Đăng ký đỗ xe'}
           </Button>
-        ) : isOccupied && isManager ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onReleaseSlot?.(slot.id)}
-            className="w-full py-5 rounded-xl border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950 font-bold text-xs"
-          >
-            Giải phóng ô đỗ này (Thu hồi)
-          </Button>
+        ) : (isOccupied || isReserved) && isManager ? (
+          <div className="space-y-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onReleaseSlot?.(slot.id)}
+              className="w-full py-5 rounded-xl border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950 font-bold text-xs cursor-pointer"
+            >
+              Giải phóng ô đỗ này
+            </Button>
+            {onStatusChange && (
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onStatusChange(slot.id, 'MAINTENANCE')}
+                  className="text-xs text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-950"
+                >
+                  <Wrench className="w-3.5 h-3.5 mr-1" />
+                  Bảo trì
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onStatusChange(slot.id, 'BLOCKED')}
+                  className="text-xs text-slate-600 border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  <Lock className="w-3.5 h-3.5 mr-1" />
+                  Tạm khóa
+                </Button>
+              </div>
+            )}
+          </div>
         ) : (
-          <Button
-            type="button"
-            disabled
-            className="w-full py-5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-sm cursor-not-allowed"
-          >
-            {isOccupied ? 'Đang có xe đỗ' : isReserved ? 'Đã được đặt chỗ' : 'Không khả dụng'}
-          </Button>
+          <div className="space-y-2">
+            <Button
+              type="button"
+              disabled
+              className="w-full py-5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-sm cursor-not-allowed"
+            >
+              {isOccupied ? 'Đang có xe đỗ' : isReserved ? 'Đã được đặt chỗ' : 'Không khả dụng'}
+            </Button>
+            <p className="text-[11px] text-center text-slate-500 dark:text-slate-400 px-2 leading-relaxed">
+              {isReserved
+                ? 'Vị trí này đang trong danh sách đặt trước. Cư dân vui lòng chọn vị trí màu xanh còn trống khác.'
+                : isOccupied
+                ? 'Vị trí này đã được cấp phát cho phương tiện cư dân.'
+                : 'Vị trí hiện đang tạm ngưng phục vụ.'}
+            </p>
+          </div>
         )}
       </div>
     </div>

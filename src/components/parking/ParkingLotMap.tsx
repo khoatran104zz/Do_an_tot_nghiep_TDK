@@ -617,7 +617,7 @@ interface MergedSlotItem extends ParkingSlotData {
               </div>
 
               {/* Lane A */}
-              <DrivingLane label="→ LÀN A (LANE A) →" />
+              <DrivingLane label="→ LÀN A →" />
 
               {/* Zone A */}
               <ParkingZone
@@ -684,7 +684,7 @@ interface MergedSlotItem extends ParkingSlotData {
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0F6B4F] text-white text-xs font-mono font-bold tracking-wider">
                   <ArrowDown className="w-3.5 h-3.5" />
-                  <span>ĐƯỜNG DỐC TỪ HẦM B1 XUỐNG (RAMP ENTRY)</span>
+                  <span>ĐƯỜNG DỐC TỪ HẦM B1 XUỐNG</span>
                 </div>
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300">
                   <Shield className="w-3.5 h-3.5 text-[#0F6B4F]" />
@@ -791,7 +791,7 @@ interface MergedSlotItem extends ParkingSlotData {
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 text-white text-xs font-mono font-bold tracking-wider">
                   <ArrowDown className="w-3.5 h-3.5 text-amber-400" />
-                  <span>ĐƯỜNG DỐC TỪ HẦM B2 XUỐNG (TECHNICAL RAMP)</span>
+                  <span>ĐƯỜNG DỐC TỪ HẦM B2 XUỐNG</span>
                 </div>
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs font-semibold text-amber-800 dark:text-amber-300">
                   <Wrench className="w-3.5 h-3.5" />
@@ -800,7 +800,7 @@ interface MergedSlotItem extends ParkingSlotData {
               </div>
 
               {/* Technical Lane */}
-              <DrivingLane label="→ TECHNICAL LANE (LÀN XE KỸ THUẬT & DỰ PHÒNG) →" />
+              <DrivingLane label="→ LÀN XE KỸ THUẬT & DỰ PHÒNG →" />
 
               {/* Zone A B3 */}
               <ParkingZone
@@ -929,7 +929,7 @@ interface MergedSlotItem extends ParkingSlotData {
               </div>
 
               {/* Outdoor Main Lane */}
-              <DrivingLane label="→ LÀN TIẾP ĐÓN KHÁCH VÀNG LAI & TAXI (MAIN DRIVEWAY) →" />
+              <DrivingLane label="→ LÀN TIẾP ĐÓN KHÁCH VÃNG LAI & TAXI →" />
 
               {/* Zone V: Visitor Parking with Canopies */}
               <div className="space-y-2">
@@ -1028,7 +1028,7 @@ interface MergedSlotItem extends ParkingSlotData {
                   <div className="rounded-2xl border-2 border-emerald-500/40 p-3 bg-emerald-50/50 dark:bg-emerald-950/20">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F6B4F] dark:text-emerald-300 uppercase tracking-wider mb-2">
                       <Sun className="w-3.5 h-3.5 text-amber-500" />
-                      <span>TRẠM SẠC NĂNG LƯỢNG MẶT TRỜI (SOLAR EV 50KW)</span>
+                      <span>TRẠM SẠC ĐIỆN NĂNG LƯỢNG MẶT TRỜI 50KW</span>
                     </div>
                     <div className="flex items-center gap-2">
                       {currentEVSlots.map((s) => {

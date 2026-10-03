@@ -44,9 +44,9 @@ export function ParkingAnalyticsChart({
   const vehicleTypeLabels: Record<string, string> = {
     CAR: 'Ô tô',
     MOTORBIKE: 'Xe máy',
-    EV: 'Xe điện (EV)',
+    EV: 'Xe điện',
     BICYCLE: 'Xe đạp',
-    DISABLED: 'Người khuyết tật',
+    DISABLED: 'Xe ưu tiên người khuyết tật',
   };
 
   const vehicleData = Object.entries(byVehicleType).map(([key, value]) => ({

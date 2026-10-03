@@ -102,7 +102,7 @@ export function ParkingSlotDrawer({
       case 'MOTORBIKE':
         return 'Xe máy';
       case 'EV':
-        return 'Ô tô điện (EV Charging)';
+        return 'Ô tô điện';
       case 'DISABLED':
         return 'Ưu tiên người khuyết tật';
       case 'BICYCLE':
@@ -123,46 +123,46 @@ export function ParkingSlotDrawer({
 
       {/* Responsive Container: Bottom Sheet on Mobile, Slide Drawer on Desktop */}
       <div className="fixed inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto sm:max-w-md w-full flex flex-col z-50">
-        <div className="w-full h-[85vh] sm:h-full bg-card border-t sm:border-t-0 sm:border-l border-border shadow-2xl rounded-t-3xl sm:rounded-none flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-right duration-200">
+        <div className="w-full h-[85vh] sm:h-full bg-white dark:bg-slate-900 border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-slate-800 shadow-2xl rounded-t-3xl sm:rounded-none flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-right duration-200">
           
           {/* Mobile Sheet Handle */}
-          <div className="sm:hidden flex items-center justify-center pt-3 pb-1">
-            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
+          <div className="sm:hidden flex items-center justify-center pt-3 pb-1 bg-slate-50 dark:bg-slate-800/80">
+            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full" />
           </div>
 
           {/* Drawer Header */}
-          <div className="p-5 sm:p-6 border-b border-border flex items-center justify-between bg-muted/20">
+          <div className="p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/90 dark:bg-slate-800/60 shrink-0">
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-2xl font-black text-foreground">
+                <span className="font-mono text-2xl font-black text-slate-900 dark:text-white">
                   {slot.code}
                 </span>
                 <span className="text-xs font-bold uppercase tracking-wider text-[#0F6B4F] bg-[#0F6B4F]/10 dark:bg-[#0F6B4F]/20 dark:text-emerald-400 px-2 py-0.5 rounded border border-[#0F6B4F]/20">
                   {slot.zone?.name || 'Phân khu'}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 {slot.area?.name || 'Khu vực bãi đỗ'} • Tầng {slot.floor < 0 ? `Hầm ${Math.abs(slot.floor)}` : slot.floor === 0 ? 'Mặt đất' : `Tầng ${slot.floor}`}
               </p>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full shrink-0">
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full shrink-0 text-slate-500 hover:text-slate-800 dark:hover:text-white">
               <X className="w-5 h-5" />
             </Button>
           </div>
 
           {/* Drawer Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 bg-white dark:bg-slate-900">
             {/* Status Highlight */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Trạng thái hiện tại
               </label>
               <div>{getStatusBadge(slot.status)}</div>
             </div>
 
             {/* Slot Specification Card */}
-            <div className="bg-muted/40 rounded-xl p-4 border border-border/60 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700/60 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-[#0F6B4F]" />
                 Thông số vị trí ô đỗ
               </h4>
@@ -353,7 +353,7 @@ export function ParkingSlotDrawer({
           </div>
 
           {/* Drawer Footer CTA */}
-          <div className="p-4 border-t border-border bg-muted/20 shrink-0">
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-800/60 shrink-0">
             {slot.status === 'AVAILABLE' && onRegisterRequest ? (
               <Button
                 className="w-full bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-semibold flex items-center justify-center gap-2 h-10 shadow-sm cursor-pointer"
@@ -366,7 +366,7 @@ export function ParkingSlotDrawer({
                 <ArrowRight className="w-4 h-4" />
               </Button>
             ) : (
-              <Button variant="outline" className="w-full h-10 cursor-pointer" onClick={onClose}>
+              <Button variant="outline" className="w-full h-10 cursor-pointer border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200" onClick={onClose}>
                 Đóng
               </Button>
             )}

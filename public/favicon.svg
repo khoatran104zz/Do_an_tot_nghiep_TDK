@@ -1,11 +1,22 @@
 <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rounded Squircle Base -->
   <rect width="32" height="32" rx="7" fill="#0F6B4F"/>
-  <path d="M16 4.5L25 12V24.5C25 25.5 24 26.5 23 26.5H9C8 26.5 7 25.5 7 24.5V12L16 4.5Z" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M11.5 12V21" stroke="#34D399" stroke-width="2.2" stroke-linecap="round"/>
-  <path d="M13 16.5L18 12" stroke="#34D399" stroke-width="2" stroke-linecap="round"/>
-  <path d="M14 15.5L19 21" stroke="#34D399" stroke-width="2.2" stroke-linecap="round"/>
-  <rect x="20.5" y="16" width="1.8" height="1.8" rx="0.5" fill="#34D399"/>
-  <rect x="23" y="16" width="1.8" height="1.8" rx="0.5" fill="#34D399"/>
-  <rect x="20.5" y="18.5" width="1.8" height="1.8" rx="0.5" fill="#34D399"/>
-  <rect x="23" y="18.5" width="1.8" height="1.8" rx="0.5" fill="#34D399"/>
+  
+  <!-- Left Building Pillar / Vertical Stem in Crisp White -->
+  <path d="M6 26V9.8C6 9 6.8 8.2 7.8 8.2H12.2C13.2 8.2 14 9 14 9.8V26C14 26.5 13.6 27 13 27H7C6.4 27 6 26.5 6 26Z" fill="#FFFFFF"/>
+  
+  <!-- Angled Penthouse / Facade -->
+  <path d="M14 15.5L23.4 5.8C24.1 5.1 25.2 5.5 25.3 6.5L26.5 12.5C26.7 13.2 26.3 13.8 25.6 14.2L14 20V15.5Z" fill="#FFFFFF" fill-opacity="0.95"/>
+  
+  <!-- Eco Leaf / Emerald Wing forming K -->
+  <path d="M14 17L24.8 23.8C25.7 24.4 25.6 25.8 24.7 26.2L22 27.5C21.4 27.8 20.6 27.7 20.1 27.1L14 20.5V17Z" fill="#34D399"/>
+  
+  <!-- 2x2 Smart Window Aperture in Emerald -->
+  <rect x="8.5" y="11" width="1.8" height="1.8" rx="0.5" fill="#34D399"/>
+  <rect x="11" y="11" width="1.8" height="1.8" rx="0.5" fill="#34D399"/>
+  <rect x="8.5" y="14" width="1.8" height="1.8" rx="0.5" fill="#34D399"/>
+  <rect x="11" y="14" width="1.8" height="1.8" rx="0.5" fill="#34D399"/>
+  
+  <!-- Smart IoT Node -->
+  <circle cx="21.5" cy="10" r="1.2" fill="#34D399"/>
 </svg>

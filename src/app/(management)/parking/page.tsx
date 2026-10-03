@@ -107,7 +107,11 @@ export default function ManagementParkingPage() {
 
   const handleSelectSlot = (slot: any) => {
     setInspectingSlot(slot);
-    setIsDrawerOpen(true);
+    // On desktop (>= 1280px), ParkingLotMap embeds ParkingDetailPanel on the right side.
+    // Only open the slide-in drawer on mobile/tablet (< 1280px) where the detail panel is pushed down.
+    if (typeof window !== 'undefined' && window.innerWidth < 1280) {
+      setIsDrawerOpen(true);
+    }
   };
 
   const handleStatusChange = async (slotId: string, status: ParkingSlotStatus) => {
@@ -411,7 +415,7 @@ export default function ManagementParkingPage() {
                       <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-4">
                         <span>Chỗ đề xuất: <strong>{req.slot?.code || 'Chưa chỉ định (BQL chọn)'}</strong></span>
                         <span>Ngày yêu cầu: {formatDate(req.createdAt)}</span>
-                        {req.notes && <span className="italic">Ghi chú: "{req.notes}"</span>}
+                        {req.notes && <span className="italic">Ghi chú: &ldquo;{req.notes}&rdquo;</span>}
                       </div>
 
                       {req.rejectionReason && (
@@ -472,11 +476,11 @@ export default function ManagementParkingPage() {
                 className="h-9 px-3 text-xs bg-background border border-border rounded-md text-foreground"
               >
                 <option value="">Tất cả trạng thái</option>
-                <option value="AVAILABLE">Trống (Available)</option>
-                <option value="OCCUPIED">Đang đỗ (Occupied)</option>
-                <option value="RESERVED">Đã đặt (Reserved)</option>
-                <option value="MAINTENANCE">Bảo trì (Maintenance)</option>
-                <option value="BLOCKED">Tạm khóa (Blocked)</option>
+                <option value="AVAILABLE">Còn trống</option>
+                <option value="OCCUPIED">Đang có xe đỗ</option>
+                <option value="RESERVED">Đã đặt chỗ</option>
+                <option value="MAINTENANCE">Đang bảo trì</option>
+                <option value="BLOCKED">Tạm khóa</option>
               </select>
             </div>
           </div>
@@ -593,7 +597,7 @@ export default function ManagementParkingPage() {
             </select>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Hệ thống sẽ tạo thẻ đỗ xe điện tử kèm mã QR an toàn cho cư dân và cập nhật trạng thái ô đỗ thành ĐÃ ĐỖ (OCCUPIED).
+            Hệ thống sẽ tạo thẻ đỗ xe điện tử kèm mã QR an toàn cho cư dân và cập nhật trạng thái ô đỗ thành ĐÃ CÓ XE ĐỖ.
           </p>
         </div>
       </FormDialog>

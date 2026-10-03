@@ -46,7 +46,7 @@ export default function MyApartmentPage() {
                         </div>
                         <div className="flex justify-between py-1">
                             <span className="text-muted-foreground">Hướng ban công:</span>
-                            <span className="font-medium">Đông Nam (View Công viên)</span>
+                            <span className="font-medium">Đông Nam, hướng công viên</span>
                         </div>
                     </CardContent>
                 </Card>

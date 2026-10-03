@@ -131,7 +131,7 @@ export default function ResidentHomePage() {
     return (
       <div className="py-12">
         <ErrorState
-          title="Không thể tải thông tin Resident Portal"
+          title="Không thể tải thông tin Cổng cư dân"
           message={(error as any)?.message}
           onRetry={() => refetch()}
         />
@@ -205,126 +205,139 @@ export default function ResidentHomePage() {
       </div>
 
       {/* Main Apartment Profile Card */}
-      <Card className="overflow-hidden border-slate-200/80 dark:border-slate-800 shadow-sm bg-linear-to-r from-blue-600 via-indigo-600 to-blue-700 text-white">
-        <CardContent className="p-6 sm:p-7">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider bg-white/20 text-white px-2.5 py-0.5 rounded-full backdrop-blur-xs">
-                  {resident.relationshipToOwner === 'OWNER' ? 'Chủ hộ' : resident.relationshipToOwner === 'FAMILY' ? 'Thân nhân' : 'Khách thuê'}
-                </span>
-                <span className="text-xs font-semibold bg-emerald-500/30 text-emerald-200 px-2.5 py-0.5 rounded-full border border-emerald-400/30">
-                  {resident.status === 'RESIDING' ? 'Đang cư trú' : 'Tạm vắng'}
-                </span>
-              </div>
+      <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-[#0F6B4F] via-[#0d5942] to-[#083829] text-white shadow-xl border border-emerald-500/20 p-6 sm:p-8">
+        {/* Subtle geometric light or accent glow */}
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 rounded-full bg-[#22C55E]/15 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-16 w-80 h-32 rounded-full bg-[#E8F5ED]/10 blur-2xl pointer-events-none" />
 
-              <div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-3.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider bg-white/15 text-emerald-100 px-3 py-1 rounded-full backdrop-blur-md border border-white/20">
+                {resident.relationshipToOwner === 'OWNER' ? 'Chủ hộ' : resident.relationshipToOwner === 'FAMILY' ? 'Thân nhân' : 'Khách thuê'}
+              </span>
+              <span className="text-xs font-semibold bg-[#22C55E]/25 text-emerald-200 px-3 py-1 rounded-full border border-emerald-400/40">
+                {resident.status === 'RESIDING' ? 'Đang cư trú' : 'Tạm vắng'}
+              </span>
+            </div>
+
+            <div>
+              <div className="flex items-baseline gap-3">
                 <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
                   Căn hộ {apartment.code}
                 </h2>
-                <p className="text-sm text-blue-100 mt-1">
-                  {apartment.building} • Tầng {apartment.floor} • Diện tích {apartment.area} m² ({apartment.bedrooms} Phòng ngủ, {apartment.bathrooms} WC)
-                </p>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-[#22C55E]/30 text-emerald-200 uppercase tracking-widest">
+                  K-Home Smart
+                </span>
               </div>
+              <p className="text-sm text-emerald-100/90 mt-1.5 flex flex-wrap items-center gap-2">
+                <span>{apartment.building}</span>
+                <span>•</span>
+                <span>Tầng {apartment.floor}</span>
+                <span>•</span>
+                <span>Diện tích {apartment.area} m²</span>
+                <span>•</span>
+                <span>{apartment.bedrooms} Phòng ngủ, {apartment.bathrooms} Phòng vệ sinh</span>
+              </p>
             </div>
+          </div>
 
-            <div className="flex flex-wrap items-center gap-3 pt-2 md:pt-0">
+          <div className="flex flex-wrap items-center gap-2.5 pt-2 md:pt-0">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsMembersModalOpen(true)}
+              className="bg-white/15 hover:bg-white/25 text-white border-white/25 backdrop-blur-md text-xs font-semibold h-10 px-4 rounded-xl cursor-pointer"
+            >
+              <Users className="h-4 w-4 mr-1.5 text-emerald-300" />
+              {apartment.members?.length || 1} Thành viên
+            </Button>
+
+            {apartment.activeContract && (
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => setIsMembersModalOpen(true)}
-                className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-xs text-xs font-semibold"
+                onClick={() => setIsContractModalOpen(true)}
+                className="bg-white/15 hover:bg-white/25 text-white border-white/25 backdrop-blur-md text-xs font-semibold h-10 px-4 rounded-xl cursor-pointer"
               >
-                <Users className="h-4 w-4 mr-1.5" />
-                {apartment.members?.length || 1} Thành viên
+                <FileText className="h-4 w-4 mr-1.5 text-emerald-300" />
+                Hợp đồng
               </Button>
-
-              {apartment.activeContract && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setIsContractModalOpen(true)}
-                  className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-xs text-xs font-semibold"
-                >
-                  <FileText className="h-4 w-4 mr-1.5" />
-                  Hợp đồng
-                </Button>
-              )}
-            </div>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* ===================================================================
-          4. QUICK ACTIONS (Big, thumb-friendly icons for mobile)
+          4. QUICK ACTIONS
           =================================================================== */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
         <button
           type="button"
           onClick={() => {
             if (latestInvoice && !isPaid) setIsPayModalOpen(true);
             else toast.info('Bạn hiện không có hóa đơn nào cần thanh toán');
           }}
-          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group text-center"
+          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-[#0F6B4F] dark:hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer group text-center"
         >
-          <div className="p-3 rounded-2xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 mb-2 group-hover:scale-110 transition-transform">
+          <div className="p-3 rounded-2xl bg-[#E8F5ED] dark:bg-emerald-950/60 text-[#0F6B4F] dark:text-emerald-400 mb-2 group-hover:scale-110 transition-transform">
             <QrCode className="h-6 w-6" />
           </div>
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600">
-            Thanh toán QR
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#0F6B4F] dark:group-hover:text-emerald-400">
+            Thanh toán dịch vụ
           </span>
           <span className="text-[10px] text-slate-400 mt-0.5">Quét mã tiện lợi</span>
         </button>
 
         <Link
           href="/resident/vehicles"
-          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all group text-center"
+          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-[#0F6B4F] dark:hover:border-emerald-500 hover:shadow-md transition-all group text-center"
         >
-          <div className="p-3 rounded-2xl bg-cyan-50 dark:bg-cyan-950 text-cyan-600 dark:text-cyan-400 mb-2 group-hover:scale-110 transition-transform">
+          <div className="p-3 rounded-2xl bg-[#E8F5ED] dark:bg-emerald-950/60 text-[#0F6B4F] dark:text-emerald-400 mb-2 group-hover:scale-110 transition-transform">
             <Car className="h-6 w-6" />
           </div>
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600">
-            Xe & Thẻ RFID
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#0F6B4F] dark:group-hover:text-emerald-400">
+            Xe & Thẻ bãi đỗ
           </span>
-          <span className="text-[10px] text-slate-400 mt-0.5">Quản lý thẻ hầm</span>
+          <span className="text-[10px] text-slate-400 mt-0.5">Quản lý phương tiện</span>
         </Link>
 
         <button
           type="button"
           onClick={() => setIsFeedbackModalOpen(true)}
-          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group text-center"
+          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-[#0F6B4F] dark:hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer group text-center"
         >
-          <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 mb-2 group-hover:scale-110 transition-transform">
+          <div className="p-3 rounded-2xl bg-[#E8F5ED] dark:bg-emerald-950/60 text-[#0F6B4F] dark:text-emerald-400 mb-2 group-hover:scale-110 transition-transform">
             <MessageSquareWarning className="h-6 w-6" />
           </div>
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600">
-            Báo hỏng / Sự cố
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#0F6B4F] dark:group-hover:text-emerald-400">
+            Báo sự cố kỹ thuật
           </span>
-          <span className="text-[10px] text-slate-400 mt-0.5">Kỹ thuật hỗ trợ 24/7</span>
+          <span className="text-[10px] text-slate-400 mt-0.5">Hỗ trợ nhanh 24/7</span>
         </button>
 
         <Link
-          href="/resident/notifications"
-          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all group text-center"
+          href="/resident/facilities"
+          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-[#0F6B4F] dark:hover:border-emerald-500 hover:shadow-md transition-all group text-center"
         >
-          <div className="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 mb-2 group-hover:scale-110 transition-transform">
-            <Bell className="h-6 w-6" />
+          <div className="p-3 rounded-2xl bg-[#E8F5ED] dark:bg-emerald-950/60 text-[#0F6B4F] dark:text-emerald-400 mb-2 group-hover:scale-110 transition-transform">
+            <Building className="h-6 w-6" />
           </div>
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600">
-            Thông báo tòa nhà
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#0F6B4F] dark:group-hover:text-emerald-400">
+            Tiện ích nội khu
           </span>
-          <span className="text-[10px] text-slate-400 mt-0.5">Tin tức & bảo trì</span>
+          <span className="text-[10px] text-slate-400 mt-0.5">Đặt chỗ sử dụng</span>
         </Link>
 
         <button
           type="button"
           onClick={() => setIsMembersModalOpen(true)}
-          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group text-center"
+          className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:border-[#0F6B4F] dark:hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer group text-center"
         >
-          <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 mb-2 group-hover:scale-110 transition-transform">
+          <div className="p-3 rounded-2xl bg-[#E8F5ED] dark:bg-emerald-950/60 text-[#0F6B4F] dark:text-emerald-400 mb-2 group-hover:scale-110 transition-transform">
             <Users className="h-6 w-6" />
           </div>
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600">
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#0F6B4F] dark:group-hover:text-emerald-400">
             Thành viên căn hộ
           </span>
           <span className="text-[10px] text-slate-400 mt-0.5">{apartment.members?.length || 1} người đăng ký</span>
@@ -341,7 +354,7 @@ export default function ResidentHomePage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Receipt className="h-4 w-4 text-blue-600" />
+                  <Receipt className="h-4 w-4 text-[#0F6B4F] dark:text-emerald-400" />
                   Hóa đơn Phí Dịch Vụ Căn Hộ
                 </CardTitle>
                 <CardDescription className="text-xs mt-0.5">
@@ -385,7 +398,7 @@ export default function ResidentHomePage() {
                       {formatDate(latestInvoice.dueDate)}
                     </span>
                     {latestInvoice.status !== 'PAID' && (
-                      <span className="block text-[11px] text-blue-600 dark:text-blue-400 font-medium mt-0.5">
+                      <span className="block text-[11px] text-[#0F6B4F] dark:text-emerald-400 font-medium mt-0.5">
                         {billing.daysUntilDue > 0 ? `Còn ${billing.daysUntilDue} ngày nữa` : 'Đã đến hạn'}
                       </span>
                     )}
@@ -418,7 +431,7 @@ export default function ResidentHomePage() {
 
           <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between">
             <Link href="/resident/invoices">
-              <Button variant="ghost" size="sm" className="text-xs text-slate-600 dark:text-slate-300 gap-1">
+              <Button variant="ghost" size="sm" className="text-xs text-slate-600 dark:text-slate-300 gap-1 hover:text-[#0F6B4F]">
                 Lịch sử hóa đơn <ChevronRight className="h-3 w-3" />
               </Button>
             </Link>
@@ -427,7 +440,7 @@ export default function ResidentHomePage() {
               <Button
                 size="sm"
                 onClick={() => setIsPayModalOpen(true)}
-                className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-bold px-4 shadow-md shadow-[#0F6B4F]/20"
+                className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-bold px-4 shadow-md shadow-[#0F6B4F]/20 cursor-pointer"
               >
                 <QrCode className="h-4 w-4 mr-1.5" /> Thanh toán ngay
               </Button>
@@ -510,7 +523,7 @@ export default function ResidentHomePage() {
         <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs bg-slate-50/70 dark:bg-slate-900/50">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
-              <span className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+              <span className="p-1.5 rounded-lg bg-[#E8F5ED] dark:bg-emerald-950/60 text-[#0F6B4F] dark:text-emerald-400">
                 <Sparkles className="h-4 w-4" />
               </span>
               <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
@@ -524,7 +537,7 @@ export default function ResidentHomePage() {
                   key={idx}
                   className="flex items-start gap-2.5 p-3 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 shadow-2xs"
                 >
-                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <Info className="h-4 w-4 text-[#0F6B4F] dark:text-emerald-400 shrink-0 mt-0.5" />
                   <span>{insight}</span>
                 </div>
               ))}
@@ -543,7 +556,7 @@ export default function ResidentHomePage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <MessageSquareWarning className="h-4 w-4 text-amber-600" />
+                  <MessageSquareWarning className="h-4 w-4 text-[#0F6B4F] dark:text-emerald-400" />
                   Tiến Độ Xử Lý Kỹ Thuật
                 </CardTitle>
                 <CardDescription className="text-xs">
@@ -552,7 +565,7 @@ export default function ResidentHomePage() {
               </div>
 
               <Link href="/resident/feedback">
-                <Button variant="ghost" size="sm" className="text-xs text-blue-600 hover:underline gap-1">
+                <Button variant="ghost" size="sm" className="text-xs text-[#0F6B4F] dark:text-emerald-400 hover:underline gap-1">
                   Xem tất cả <ChevronRight className="h-3 w-3" />
                 </Button>
               </Link>
@@ -564,7 +577,7 @@ export default function ResidentHomePage() {
               <div className="space-y-4">
                 <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">
+                    <span className="font-mono text-xs font-bold text-[#0F6B4F] dark:text-emerald-400">
                       {maintenance.latestTicket.code}
                     </span>
                     <StatusBadge type="ticketStatus" status={maintenance.latestTicket.status} />
@@ -586,7 +599,7 @@ export default function ResidentHomePage() {
                     <div
                       className={`p-2 rounded-xl border ${
                         maintenance.timelineStep >= 1
-                          ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                          ? 'border-[#0F6B4F] bg-[#E8F5ED] text-[#0F6B4F] dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-500'
                           : 'border-slate-200 text-slate-400'
                       }`}
                     >
@@ -619,8 +632,8 @@ export default function ResidentHomePage() {
                 </div>
 
                 {maintenance.latestTicket.responseContent && (
-                  <div className="p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/60 text-xs space-y-1">
-                    <span className="font-bold text-blue-800 dark:text-blue-300">Ghi chú từ kỹ thuật viên:</span>
+                  <div className="p-3 rounded-xl bg-[#E8F5ED]/60 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-900/40 text-xs space-y-1">
+                    <span className="font-bold text-[#0F6B4F] dark:text-emerald-300">Ghi chú từ kỹ thuật viên:</span>
                     <p className="text-slate-700 dark:text-slate-300">{maintenance.latestTicket.responseContent}</p>
                   </div>
                 )}
@@ -654,7 +667,7 @@ export default function ResidentHomePage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-blue-600" />
+                  <Bell className="h-4 w-4 text-[#0F6B4F] dark:text-emerald-400" />
                   Bản Tin Tòa Nhà Mới Nhất
                 </CardTitle>
                 <CardDescription className="text-xs">
@@ -663,7 +676,7 @@ export default function ResidentHomePage() {
               </div>
 
               <Link href="/resident/notifications">
-                <Button variant="ghost" size="sm" className="text-xs text-blue-600 hover:underline gap-1">
+                <Button variant="ghost" size="sm" className="text-xs text-[#0F6B4F] dark:text-emerald-400 hover:underline gap-1">
                   Xem tất cả <ChevronRight className="h-3 w-3" />
                 </Button>
               </Link>
@@ -777,7 +790,7 @@ export default function ResidentHomePage() {
                 </div>
               </div>
               <Link href="/resident/parcels">
-                <Button variant="ghost" size="sm" className="text-xs text-blue-600 hover:underline gap-1">
+                <Button variant="ghost" size="sm" className="text-xs text-[#0F6B4F] dark:text-emerald-400 hover:underline gap-1">
                   Xem tất cả <ChevronRight className="h-3 w-3" />
                 </Button>
               </Link>
@@ -839,7 +852,7 @@ export default function ResidentHomePage() {
               >
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                    <div className="p-2.5 rounded-xl bg-[#E8F5ED] dark:bg-emerald-950/60 text-[#0F6B4F] dark:text-emerald-400">
                       <Icon className="h-5 w-5" />
                     </div>
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full">
@@ -885,7 +898,7 @@ export default function ResidentHomePage() {
           <div className="space-y-4 py-2">
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800 text-center space-y-1 border border-slate-200 dark:border-slate-700">
               <span className="text-xs text-slate-500 dark:text-slate-400">Tổng số tiền cần thanh toán</span>
-              <p className="text-2xl font-black text-blue-600 dark:text-blue-400">
+              <p className="text-2xl font-black text-[#0F6B4F] dark:text-emerald-400">
                 {formatCurrency(latestInvoice.totalAmount)}
               </p>
               <p className="text-[11px] text-slate-400 font-mono">Mã HĐ: {latestInvoice.code}</p>
@@ -897,7 +910,7 @@ export default function ResidentHomePage() {
                 onClick={() => setPaymentMethod('VNPAY')}
                 className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                   paymentMethod === 'VNPAY'
-                    ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                    ? 'border-[#0F6B4F] bg-[#E8F5ED] text-[#0F6B4F] dark:bg-emerald-950 dark:text-emerald-300'
                     : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                 }`}
               >
@@ -924,12 +937,12 @@ export default function ResidentHomePage() {
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
                     `SMART_PAY_${latestInvoice.code}_${latestInvoice.totalAmount}`
                   )}`}
-                  alt="QR Sandbox Code"
+                  alt="Mã QR thanh toán"
                   className="w-36 h-36 mx-auto"
                 />
               </div>
               <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                Mã QR khớp lệnh tự động Sandbox 2026
+                Mã QR thanh toán trực tuyến tự động
               </span>
             </div>
 
@@ -940,7 +953,7 @@ export default function ResidentHomePage() {
               <Button
                 onClick={handleSimulatePayment}
                 isLoading={payMutation.isPending}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-bold"
               >
                 <CheckCircle2 className="h-4 w-4 mr-1.5" /> Đã quét mã thanh toán
               </Button>

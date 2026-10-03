@@ -182,7 +182,7 @@ export function BlockFormModal({
         <div>
           <label className="text-xs font-semibold block mb-1">Tên Khối Tháp *</label>
           <Input
-            placeholder="VD: Tháp A (Sky Tower)"
+            placeholder="VD: Tháp A"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required

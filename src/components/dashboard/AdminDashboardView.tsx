@@ -67,7 +67,7 @@ export function AdminDashboardView() {
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
               <Crown className="h-6 w-6 text-amber-500" />
-              Trung Tâm Điều Hành Hệ Thống (Super Admin)
+              Trung Tâm Điều Hành Quản Trị Cấp Cao
             </h1>
             <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 font-bold border-purple-200">
               Quyền Hạn Cao Nhất • Toàn Hệ Thống

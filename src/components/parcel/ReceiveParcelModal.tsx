@@ -317,7 +317,7 @@ export const ReceiveParcelModal: React.FC<ReceiveParcelModalProps> = ({
               {/* Carrier Selection */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Đơn vị giao nhận (Shipper) <span className="text-rose-500">*</span>
+                  Đơn vị giao nhận <span className="text-rose-500">*</span>
                 </label>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {POPULAR_CARRIERS.map((c) => {

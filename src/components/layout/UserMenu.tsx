@@ -26,8 +26,8 @@ export function UserMenu() {
   const notificationsHref = role === 'RESIDENT' ? '/resident/notifications' : '/notifications';
 
   const roleLabels: Record<string, string> = {
-    ADMIN: 'Quản trị viên Cấp cao (Super Admin)',
-    MANAGER: 'Quản lý Tòa nhà (BQL)',
+    ADMIN: 'Quản trị viên Cấp cao',
+    MANAGER: 'Ban Quản lý Tòa nhà',
     STAFF_TECHNICIAN: 'Kỹ thuật viên',
     STAFF_SECURITY: 'Nhân viên An ninh',
     STAFF_RECEPTIONIST: 'Nhân viên Lễ tân',

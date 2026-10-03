@@ -88,7 +88,11 @@ export default function ResidentParkingPage() {
 
   const handleSelectSlot = (slot: any) => {
     setInspectingSlot(slot);
-    setIsDrawerOpen(true);
+    // On desktop (>= 1280px), ParkingLotMap embeds ParkingDetailPanel on the right side.
+    // Only open the slide-in drawer on mobile/tablet (< 1280px) where the detail panel is pushed down.
+    if (typeof window !== 'undefined' && window.innerWidth < 1280) {
+      setIsDrawerOpen(true);
+    }
   };
 
   const handleOpenRegister = (slot: any) => {
@@ -204,7 +208,7 @@ export default function ResidentParkingPage() {
             </div>
             <div>
               <h4 className="font-bold text-foreground text-sm">
-                Bãi đỗ xe ô tô hiện đã hết chỗ trống (Full Occupancy)
+                Bãi đỗ xe ô tô hiện đã hết chỗ trống
               </h4>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Hiện tại tất cả vị trí đỗ ô tô đã được cấp phát hết. Bạn có thể gửi yêu cầu để tham gia danh sách chờ ưu tiên khi có vị trí mới giải phóng.
@@ -220,7 +224,7 @@ export default function ResidentParkingPage() {
             }}
           >
             <Users className="w-3.5 h-3.5 mr-1.5" />
-            <span>Tham gia danh sách chờ (Waitlist)</span>
+            <span>Tham gia danh sách chờ</span>
           </Button>
         </div>
       )}
@@ -363,7 +367,7 @@ export default function ResidentParkingPage() {
                 Bạn chưa có chỗ đỗ xe được cấp
               </h3>
               <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                Hãy chuyển sang tab "Sơ đồ bãi xe", tìm kiếm vị trí còn trống phù hợp và gửi đơn đăng ký để được cấp phát thẻ đỗ xe.
+                Hãy chuyển sang tab &ldquo;Sơ đồ bãi xe&rdquo;, tìm kiếm vị trí còn trống phù hợp và gửi đơn đăng ký để được cấp phát thẻ đỗ xe.
               </p>
               <Button
                 className="mt-6 bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-semibold text-xs cursor-pointer"

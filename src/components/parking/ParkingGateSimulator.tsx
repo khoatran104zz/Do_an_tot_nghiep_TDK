@@ -102,7 +102,7 @@ export function ParkingGateSimulator() {
               </div>
               <div>
                 <h3 className="font-bold text-base text-foreground">
-                  Mô phỏng Trạm Kiểm Soát Ra/Vào (Smart Gate)
+                  Mô phỏng Trạm Kiểm Soát Ra Vào Thông Minh
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   Kiểm tra biển số xe, thẻ RFID và quét mã QR thẻ đỗ xe cư dân
@@ -111,7 +111,7 @@ export function ParkingGateSimulator() {
             </div>
 
             <Badge variant="outline" className="text-xs font-mono">
-              ANPR AI • Ready
+              Nhận diện ANPR • Sẵn sàng
             </Badge>
           </div>
 
@@ -121,7 +121,7 @@ export function ParkingGateSimulator() {
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/10 to-transparent animate-pulse pointer-events-none" />
             <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] font-mono text-emerald-400 bg-slate-900/80 px-2 py-1 rounded border border-slate-700">
               <Camera className="w-3.5 h-3.5" />
-              <span>LIVE • CAM-GATE-01 (1080p HD)</span>
+              <span>TRỰC TIẾP • CAMERA CỔNG 01</span>
             </div>
 
             {/* Target Reticle in Center */}
@@ -141,12 +141,12 @@ export function ParkingGateSimulator() {
                 {isBarrierOpen ? (
                   <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                    BARIE ĐANG MỞ (CHO PHÉP QUA)
+                    BARIE ĐANG MỞ - CHO PHÉP QUA
                   </span>
                 ) : (
                   <span className="flex items-center gap-1.5 text-xs font-bold text-rose-400">
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                    BARIE ĐÓNG (DỪNG CHỜ XÁC MINH)
+                    BARIE ĐÓNG - DỪNG CHỜ XÁC MINH
                   </span>
                 )}
               </div>
