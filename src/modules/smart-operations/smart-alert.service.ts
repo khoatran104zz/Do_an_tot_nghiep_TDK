@@ -24,7 +24,7 @@ export class SmartAlertService {
     const currentDate = new Date();
     const alerts: SmartAlert[] = [];
 
-    // 0. FETCH PERSISTED DB ALERTS (IoT and recorded operational events)
+    // 0. FETCH PERSISTED DB ALERTS (Recorded operational events)
     const dbAlerts = await prisma.smartAlertRecord.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,

@@ -46,8 +46,17 @@ export class AuthRepository {
           email: data.email,
           phone: data.phone,
           identityCard: data.identityCard,
-          apartmentId,
-          relationshipToOwner: 'TENANT',
+          ...(apartmentId
+            ? {
+                occupancies: {
+                  create: {
+                    apartmentId,
+                    roleInHousehold: 'TENANT',
+                    isLivingHere: true,
+                  },
+                },
+              }
+            : {}),
         },
       });
 

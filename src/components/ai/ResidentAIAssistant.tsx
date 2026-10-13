@@ -67,7 +67,7 @@ const ROLE_AI_CONFIGS: Record<string, RoleAIConfig> = {
     subtitle: 'Điều hành & Vận hành 24/7',
     badge: 'Super Admin',
     welcomeMessage:
-      'Xin chào Quản trị viên! Tôi là K-Home AI Assistant. Tôi có thể cung cấp nhanh báo cáo vận hành bãi đỗ xe, tổng công nợ chưa thu, các sự cố kỹ thuật và cảnh báo IoT. Bạn cần hỗ trợ thông tin nào?',
+      'Xin chào Quản trị viên! Tôi là K-Home AI Assistant. Tôi có thể cung cấp nhanh báo cáo vận hành bãi đỗ xe, tổng công nợ chưa thu, các sự cố kỹ thuật và cảnh báo vận hành. Bạn cần hỗ trợ thông tin nào?',
     quickPrompts: [
       { label: '🅿️ Tình hình bãi đỗ xe', query: 'Báo cáo tình hình bãi xe tòa nhà hôm nay', icon: Car },
       { label: '📊 Tổng quan hôm nay', query: 'Báo cáo tổng quan tình hình vận hành hôm nay', icon: BarChart3 },
@@ -90,14 +90,14 @@ const ROLE_AI_CONFIGS: Record<string, RoleAIConfig> = {
   },
   STAFF_TECHNICIAN: {
     title: 'K-Home AI Assistant',
-    subtitle: 'Kỹ thuật & IoT 24/7',
+    subtitle: 'Kỹ thuật & Vận hành 24/7',
     badge: 'Kỹ thuật viên',
     welcomeMessage:
-      'Chào anh/chị kỹ thuật viên! Tôi là K-Home AI Assistant. Tôi sẵn sàng hỗ trợ bạn theo dõi phiếu sự cố đang mở, lịch bảo trì định kỳ thiết bị và kiểm tra cảm biến IoT.',
+      'Chào anh/chị kỹ thuật viên! Tôi là K-Home AI Assistant. Tôi sẵn sàng hỗ trợ bạn theo dõi phiếu sự cố đang mở và lịch bảo trì định kỳ thiết bị.',
     quickPrompts: [
       { label: '🛠️ Sự cố đang mở', query: 'Hôm nay có những sự cố kỹ thuật nào đang mở?', icon: Wrench },
       { label: '📋 Lịch bảo trì', query: 'Kiểm tra lịch bảo trì định kỳ thiết bị', icon: Clock },
-      { label: '📡 Cảm biến bất thường', query: 'Có cảm biến IoT nào đang bất thường không?', icon: AlertTriangle },
+      { label: '⚡ Cảnh báo vận hành', query: 'Có cảnh báo vận hành nào cần lưu ý không?', icon: AlertTriangle },
     ],
   },
   STAFF_SECURITY: {

@@ -35,9 +35,19 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email: normalizedEmail },
-
           include: {
-            residentProfile: true,
+            residentProfile: {
+              include: {
+                occupancies: {
+                  where: { isLivingHere: true },
+                  take: 1,
+                },
+                ownedApartments: {
+                  where: { isCurrent: true },
+                  take: 1,
+                },
+              },
+            },
           },
         });
 
@@ -60,6 +70,11 @@ export const authOptions: NextAuthOptions = {
           assignedBuildingIds = managed.map((m) => m.buildingId);
         }
 
+        const activeApartmentId =
+          user.residentProfile?.occupancies?.[0]?.apartmentId ||
+          user.residentProfile?.ownedApartments?.[0]?.apartmentId ||
+          null;
+
         return {
           id: user.id,
           email: user.email,
@@ -68,7 +83,7 @@ export const authOptions: NextAuthOptions = {
           phone: user.phone,
           avatarUrl: user.avatarUrl,
           residentId: user.residentProfile?.id || null,
-          apartmentId: user.residentProfile?.apartmentId || null,
+          apartmentId: activeApartmentId,
           assignedBuildingIds,
         };
       },

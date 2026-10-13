@@ -3,6 +3,7 @@ import { notificationRepository } from './notification.repository';
 import { NotificationFilter, CreateNotificationDto } from './notification.types';
 import { domainEvents } from '@/lib/events/domain-events';
 import { Role } from '@prisma/client';
+import { getVerifiedResidentInfo } from '@/lib/authorization';
 
 export class NotificationService {
   async getNotifications(
@@ -11,11 +12,8 @@ export class NotificationService {
   ) {
     let apartmentId: string | undefined = undefined;
     if (user.role === Role.RESIDENT) {
-      const resident = await prisma.resident.findFirst({
-        where: { userId: user.id },
-        select: { apartmentId: true },
-      });
-      apartmentId = resident?.apartmentId || undefined;
+      const residentInfo = await getVerifiedResidentInfo(user.id);
+      apartmentId = residentInfo?.apartmentId || undefined;
     }
 
     return notificationRepository.findAll(filter, {
@@ -28,11 +26,8 @@ export class NotificationService {
   async getUnreadCount(user: { id: string; role: string }) {
     let apartmentId: string | undefined = undefined;
     if (user.role === Role.RESIDENT) {
-      const resident = await prisma.resident.findFirst({
-        where: { userId: user.id },
-        select: { apartmentId: true },
-      });
-      apartmentId = resident?.apartmentId || undefined;
+      const residentInfo = await getVerifiedResidentInfo(user.id);
+      apartmentId = residentInfo?.apartmentId || undefined;
     }
 
     return notificationRepository.countUnread(user.id, user.role, apartmentId);
@@ -41,11 +36,8 @@ export class NotificationService {
   async markAllAsRead(user: { id: string; role: string }) {
     let apartmentId: string | undefined = undefined;
     if (user.role === Role.RESIDENT) {
-      const resident = await prisma.resident.findFirst({
-        where: { userId: user.id },
-        select: { apartmentId: true },
-      });
-      apartmentId = resident?.apartmentId || undefined;
+      const residentInfo = await getVerifiedResidentInfo(user.id);
+      apartmentId = residentInfo?.apartmentId || undefined;
     }
 
     return notificationRepository.markAllAsRead(user.id, user.role, apartmentId);

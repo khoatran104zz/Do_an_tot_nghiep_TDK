@@ -14,12 +14,12 @@ describe('Property Management Hierarchy & History Tests', () => {
       const master = buildings[0];
       assert.ok(master.blocks.length >= 3, 'Must have at least 3 blocks (A, B, C)');
 
-      const blockA = master.blocks.find((b) => b.code === 'BLOCK-A');
+      const blockA = master.blocks.find((b: any) => b.code === 'BLOCK-A');
       assert.ok(blockA, 'Block A must exist');
       assert.ok(blockA.floors.length > 0, 'Block A must have floors');
 
       // Check floor contains apartments
-      const floor10 = blockA.floors.find((f) => f.floorNumber === 10);
+      const floor10 = blockA.floors.find((f: any) => f.floorNumber === 10);
       assert.ok(floor10, 'Floor 10 must exist in Block A');
       assert.ok(floor10.apartments.length > 0, 'Floor 10 must have apartments');
     });

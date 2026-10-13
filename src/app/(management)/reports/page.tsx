@@ -46,7 +46,7 @@ export default function ReportsPage() {
     { type: 'FACILITY', label: '11. Đặt tiện ích công cộng' },
     { type: 'POLL', label: '12. Khảo sát & Biểu quyết' },
     { type: 'STAFF', label: '13. Đội ngũ nhân viên' },
-    { type: 'SMART_ALERT', label: '14. Cảnh báo vận hành & IoT' },
+    { type: 'SMART_ALERT', label: '14. Cảnh báo vận hành hệ thống' },
   ];
 
   const { data: response, isLoading } = useReportData({
@@ -84,7 +84,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Báo Cáo & Thống Kê Vận Hành (Reports & Analytics)"
-        description="Tổng hợp dữ liệu tài chính, nhân khẩu, hiệu suất xử lý kỹ thuật, phương tiện và IoT với chức năng xuất file đa định dạng."
+        description="Tổng hợp dữ liệu tài chính, nhân khẩu, hiệu suất xử lý kỹ thuật, phương tiện và vận hành tòa nhà với chức năng xuất file đa định dạng."
       />
 
       {/* Report Controls Panel */}

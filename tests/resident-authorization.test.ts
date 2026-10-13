@@ -16,7 +16,8 @@ describe('Resident Portal Authorization Security Tests', () => {
           return {
             id: 'res-101',
             userId: 'user-101',
-            apartmentId: 'apt-A1001',
+            occupancies: [{ apartmentId: 'apt-A1001' }],
+            ownedApartments: [{ apartmentId: 'apt-A1001' }],
           };
         }
         return null;

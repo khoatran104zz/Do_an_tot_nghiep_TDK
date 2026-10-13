@@ -399,8 +399,9 @@ model Apartment {
 
   // Ownership & Residency History
   history     ApartmentHistory[]
+  ownerships  ApartmentOwnership[]
+  occupancies ApartmentResident[]
 
-  residents     Resident[]
   contracts     Contract[]
   invoices      Invoice[]
   feedbacks     Feedback[]
@@ -446,15 +447,12 @@ model Resident {
   id                  String               @id @default(cuid())
   userId              String?              @unique
   user                User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
-  apartmentId         String?
-  apartment           Apartment?           @relation(fields: [apartmentId], references: [id], onDelete: SetNull)
   fullName            String
   identityCard        String               @unique // CCCD / Passport
   phone               String
   email               String?
   dateOfBirth         DateTime?
   gender              String?
-  relationshipToOwner ResidentRelationship @default(OWNER)
   status              ResidentStatus       @default(RESIDING)
   avatarUrl           String?
   createdAt           DateTime             @default(now())
@@ -470,8 +468,9 @@ model Resident {
   vehicles  Vehicle[]
   parkingAssignments ParkingAssignment[]
   parkingRequests    ParkingRegistrationRequest[]
+  ownedApartments    ApartmentOwnership[]
+  occupancies        ApartmentResident[]
 
-  @@index([apartmentId])
   @@index([status])
   @@index([phone])
   @@map("residents")
@@ -537,7 +536,8 @@ model Invoice {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  items InvoiceItem[]
+  items    InvoiceItem[]
+  payments PaymentTransaction[]
 
   @@index([apartmentId])
   @@index([status])
@@ -1415,3 +1415,71 @@ model SmartAlertRecord {
   @@index([source])
   @@map("smart_alerts")
 }
+
+// =========================================================================
+// APARTMENT OWNERSHIP & RESIDENCY REFACTOR
+// =========================================================================
+
+model ApartmentOwnership {
+  id                  String    @id @default(cuid())
+  apartmentId         String
+  apartment           Apartment @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  ownerResidentId     String
+  ownerResident       Resident  @relation(fields: [ownerResidentId], references: [id], onDelete: Restrict)
+  ownershipType       String    @default("SOLE") // SOLE, CO_OWNER, CORPORATE
+  ownershipPercentage Float     @default(100)
+  certificateNumber   String?   // Số sổ hồng / GCN
+  issueDate           DateTime?
+  startDate           DateTime  @default(now())
+  endDate             DateTime?
+  isCurrent           Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([apartmentId, isCurrent])
+  @@index([ownerResidentId])
+  @@map("apartment_ownerships")
+}
+
+model ApartmentResident {
+  id              String    @id @default(cuid())
+  apartmentId     String
+  apartment       Apartment @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  residentId      String
+  resident        Resident  @relation(fields: [residentId], references: [id], onDelete: Restrict)
+  roleInHousehold String    @default("HEAD_OF_HOUSEHOLD") // HEAD_OF_HOUSEHOLD, FAMILY_MEMBER, TENANT, TEMPORARY
+  isLivingHere    Boolean   @default(true)
+  startDate       DateTime  @default(now())
+  endDate         DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([apartmentId, residentId, startDate])
+  @@index([apartmentId, isLivingHere])
+  @@index([residentId])
+  @@map("apartment_residents")
+}
+
+// =========================================================================
+// PAYMENT TRANSACTIONS
+// =========================================================================
+
+model PaymentTransaction {
+  id                   String        @id @default(cuid())
+  invoiceId            String
+  invoice              Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  transactionCode      String        @unique
+  amount               Float
+  paymentMethod        PaymentMethod
+  gatewayTransactionNo String?
+  bankCode             String?
+  status               String        @default("SUCCESS") // SUCCESS, PENDING, FAILED, REFUNDED
+  transactedAt         DateTime      @default(now())
+  createdAt            DateTime      @default(now())
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([transactedAt])
+  @@map("payment_transactions")
+}
+

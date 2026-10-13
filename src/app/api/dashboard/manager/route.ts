@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
       prisma.apartment.count({ where: { buildingId, status: 'VACANT' } }),
       prisma.apartment.count({ where: { buildingId, status: 'UNDER_MAINTENANCE' } }),
       prisma.resident.count({
-        where: { apartment: { buildingId }, status: 'RESIDING' },
+        where: { occupancies: { some: { apartment: { buildingId }, isLivingHere: true } }, status: 'RESIDING' },
       }),
       prisma.contract.count({
         where: { apartment: { buildingId }, status: 'ACTIVE' },

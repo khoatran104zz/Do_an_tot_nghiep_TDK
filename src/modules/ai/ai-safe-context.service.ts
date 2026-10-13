@@ -81,7 +81,6 @@ export interface SafeResidentContext {
   technicianStats?: {
     openTicketsCount: number;
     pendingMaintenanceCount: number;
-    abnormalSensorsCount: number;
   };
   securityStats?: {
     todayVisitorsCount: number;
@@ -222,17 +221,14 @@ export class AISafeContextService {
       };
     }
 
-    // 3. STAFF_TECHNICIAN: Maintenance, equipment & IoT alerts
+    // 3. STAFF_TECHNICIAN: Maintenance & equipment tickets
     if (effectiveRole === 'STAFF_TECHNICIAN') {
-      const [openTickets, pendingMaintenance, abnormalSensors] = await Promise.all([
+      const [openTickets, pendingMaintenance] = await Promise.all([
         prisma.feedback.count({
           where: { status: { in: ['NEW', 'ASSIGNED', 'PROCESSING'] } },
         }),
         prisma.maintenanceSchedule.count({
           where: { status: 'PENDING' },
-        }),
-        prisma.ioTSensor.count({
-          where: { status: { in: ['WARNING', 'CRITICAL'] } },
         }),
       ]);
 
@@ -248,7 +244,6 @@ export class AISafeContextService {
         technicianStats: {
           openTicketsCount: openTickets,
           pendingMaintenanceCount: pendingMaintenance,
-          abnormalSensorsCount: abnormalSensors,
         },
       };
     }
@@ -319,18 +314,43 @@ export class AISafeContextService {
     const resident = await prisma.resident.findFirst({
       where: { userId },
       include: {
-        apartment: {
-          select: {
-            id: true,
-            code: true,
-            building: true,
-            floor: true,
+        occupancies: {
+          where: { isLivingHere: true },
+          include: {
+            apartment: {
+              select: {
+                id: true,
+                code: true,
+                building: true,
+                floor: true,
+              },
+            },
           },
+          take: 1,
+        },
+        ownedApartments: {
+          where: { isCurrent: true },
+          include: {
+            apartment: {
+              select: {
+                id: true,
+                code: true,
+                building: true,
+                floor: true,
+              },
+            },
+          },
+          take: 1,
         },
       },
     });
 
-    if (!resident || !resident.apartment) {
+    const activeApartment =
+      resident?.occupancies?.[0]?.apartment ||
+      resident?.ownedApartments?.[0]?.apartment ||
+      null;
+
+    if (!resident || !activeApartment) {
       return {
         userId,
         role: effectiveRole,
@@ -343,7 +363,7 @@ export class AISafeContextService {
       };
     }
 
-    const aptId = resident.apartment.id;
+    const aptId = activeApartment.id;
     const now = new Date();
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -440,9 +460,9 @@ export class AISafeContextService {
       userId,
       role: effectiveRole,
       hasApartment: true,
-      apartmentCode: resident.apartment.code,
-      apartmentBuilding: resident.apartment.building,
-      apartmentFloor: resident.apartment.floor,
+      apartmentCode: activeApartment.code,
+      apartmentBuilding: activeApartment.building,
+      apartmentFloor: activeApartment.floor,
       residentName: resident.fullName,
       currentMonthInvoices: currentInvoices,
       overdueInvoices: overdueInvoices,

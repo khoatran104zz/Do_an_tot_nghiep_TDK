@@ -43,7 +43,6 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/polls') ||
     pathname.startsWith('/staff') ||
     pathname.startsWith('/reports') ||
-    pathname.startsWith('/smart-operations') ||
     pathname.startsWith('/settings') ||
     (pathname.startsWith('/notifications') && !pathname.startsWith('/resident'));
 
@@ -188,7 +187,6 @@ export const config = {
     '/polls/:path*',
     '/staff/:path*',
     '/reports/:path*',
-    '/smart-operations/:path*',
     '/settings/:path*',
     '/managers/:path*',
     '/vehicles/:path*',

@@ -116,7 +116,7 @@ export class SmartRuleBasedAIProvider implements AIProvider {
             `• **Tài chính & Thu phí**: Còn **${stats.unpaidInvoicesCount}** hóa đơn chưa thanh toán (Tổng công nợ: **${stats.unpaidInvoicesAmount.toLocaleString('vi-VN')} đ**)\n` +
             `• **Bảo trì & Sự cố**: **${stats.openTicketsCount}** phiếu sự cố đang trong trạng thái xử lý\n` +
             `• **Bãi đỗ xe**: **${parking?.available ?? 0}/${parking?.total ?? 0}** vị trí khả dụng\n` +
-            `• **An toàn & IoT**: **${stats.criticalAlertsCount}** cảnh báo cảm biến cần giám sát`,
+            `• **Cảnh báo vận hành**: **${stats.criticalAlertsCount}** cảnh báo cần giám sát`,
           actions: [
             { label: '📊 Dashboard điều hành', href: '/dashboard', actionType: 'NAVIGATE' },
             { label: '🧾 Quản lý hóa đơn', href: '/invoices', actionType: 'NAVIGATE' },
@@ -173,7 +173,7 @@ export class SmartRuleBasedAIProvider implements AIProvider {
           `1. **Bãi đỗ xe**: Tình trạng chỗ trống, công suất, duyệt đơn đăng ký.\n` +
           `2. **Tài chính**: Công nợ toàn tòa nhà, số hóa đơn chưa thu.\n` +
           `3. **Bảo trì & Sự cố**: Các phiếu sự cố mở, phân công kỹ thuật.\n` +
-          `4. **Giám sát IoT**: Cảnh báo rò rỉ nước, khói nhiệt thời gian thực.`,
+          `4. **Cảnh báo vận hành**: Theo dõi tiến độ SLA, quá hạn và an toàn hệ thống.`,
         actions: [
           { label: '🅿️ Bãi đỗ xe', href: '/parking', actionType: 'NAVIGATE' },
           { label: '🧾 Hóa đơn', href: '/invoices', actionType: 'NAVIGATE' },
@@ -211,7 +211,7 @@ export class SmartRuleBasedAIProvider implements AIProvider {
       return {
         response:
           `Chào anh/chị kỹ thuật viên! Tôi là **Trợ Lý Kỹ Thuật K-Home AI** 🔧\n\n` +
-          `Tôi có thể hỗ trợ bạn theo dõi các phiếu sự cố đang mở, lịch bảo trì thiết bị và kiểm tra cảm biến IoT.`,
+          `Tôi có thể hỗ trợ bạn theo dõi các phiếu sự cố đang mở và lịch bảo trì thiết bị tòa nhà.`,
         actions: [
           { label: '🛠️ Phiếu sự cố', href: '/feedbacks', actionType: 'NAVIGATE' },
           { label: '📋 Lịch bảo trì', href: '/maintenance-schedules', actionType: 'NAVIGATE' },

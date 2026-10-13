@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ResidentRelationship, ResidentStatus } from '@prisma/client';
+import { ResidentStatus } from '@prisma/client';
 
 export const residentSchema = z.object({
   fullName: z.string().min(2, 'Họ tên tối thiểu 2 ký tự'),
@@ -8,7 +8,9 @@ export const residentSchema = z.object({
   email: z.string().email('Email không đúng định dạng').optional().or(z.literal('')),
   dateOfBirth: z.string().optional(),
   gender: z.string().optional(),
-  relationshipToOwner: z.nativeEnum(ResidentRelationship).default(ResidentRelationship.OWNER),
+  roleInHousehold: z.string().optional(),
+  relationshipToOwner: z.string().optional(),
+  isOwner: z.boolean().optional(),
   status: z.nativeEnum(ResidentStatus).default(ResidentStatus.RESIDING),
   apartmentId: z.string().optional().or(z.literal('')),
 });

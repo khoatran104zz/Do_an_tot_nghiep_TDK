@@ -39,10 +39,11 @@ export async function PATCH(
       success: true,
       message: result.message,
     });
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
-      return NextResponse.json({ success: false, error: error.errors[0]?.message || 'Dữ liệu không hợp lệ' }, { status: 400 });
+  } catch (error: unknown) {
+    const err = error as { name?: string; message?: string; errors?: Array<{ message?: string }> };
+    if (err.name === 'ZodError') {
+      return NextResponse.json({ success: false, error: err.errors?.[0]?.message || 'Dữ liệu không hợp lệ' }, { status: 400 });
     }
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: err.message || 'Lỗi hệ thống' }, { status: 500 });
   }
 }

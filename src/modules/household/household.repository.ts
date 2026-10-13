@@ -223,34 +223,38 @@ export class HouseholdRepository {
   }
 
   async getHouseholdByApartmentId(apartmentId: string): Promise<HouseholdGroup> {
-    const residents = await prisma.resident.findMany({
-      where: {
-        apartmentId,
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
+    const [occupancies, ownerships] = await Promise.all([
+      prisma.apartmentResident.findMany({
+        where: { apartmentId },
+        include: { resident: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      prisma.apartmentOwnership.findMany({
+        where: { apartmentId, isCurrent: true },
+        include: { ownerResident: true },
+        orderBy: { startDate: 'desc' },
+      }),
+    ]);
 
-    const activeResidents = residents.filter((r) => r.status === ResidentStatus.RESIDING);
+    const activeOccupancies = occupancies.filter((o) => o.isLivingHere);
+    const residents = occupancies.map((o) => o.resident);
+
     const owner =
-      residents.find(
-        (r) => r.relationshipToOwner === ResidentRelationship.OWNER && r.status === ResidentStatus.RESIDING
-      ) ||
-      residents.find((r) => r.relationshipToOwner === ResidentRelationship.OWNER) ||
+      ownerships[0]?.ownerResident ||
+      occupancies.find((o) => o.roleInHousehold === 'HEAD_OF_HOUSEHOLD')?.resident ||
       null;
 
-    const familyMembers = residents.filter(
-      (r) => r.relationshipToOwner === ResidentRelationship.FAMILY && r.id !== owner?.id
-    );
+    const familyMembers = occupancies
+      .filter((o) => o.roleInHousehold === 'FAMILY_MEMBER' && o.resident.id !== owner?.id)
+      .map((o) => o.resident);
 
-    const tenants = residents.filter(
-      (r) => r.relationshipToOwner === ResidentRelationship.TENANT
-    );
+    const tenants = occupancies
+      .filter((o) => o.roleInHousehold === 'TENANT')
+      .map((o) => o.resident);
 
-    const temporaryResidents = residents.filter(
-      (r) => r.relationshipToOwner === ResidentRelationship.TEMPORARY_RESIDENT
-    );
+    const temporaryResidents = occupancies
+      .filter((o) => o.roleInHousehold === 'TEMPORARY')
+      .map((o) => o.resident);
 
     return {
       owner,
@@ -258,7 +262,7 @@ export class HouseholdRepository {
       tenants,
       temporaryResidents,
       allResidents: residents,
-      totalActiveCount: activeResidents.length,
+      totalActiveCount: activeOccupancies.length,
     };
   }
 }

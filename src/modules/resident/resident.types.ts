@@ -1,11 +1,12 @@
-import { ResidentRelationship, ResidentStatus } from '@prisma/client';
+import { ResidentStatus } from '@prisma/client';
 
 export interface ResidentFilter {
   search?: string;
   apartmentId?: string;
   buildingId?: string;
   buildingIds?: string[];
-  relationshipToOwner?: ResidentRelationship;
+  roleInHousehold?: string;
+  relationshipToOwner?: string;
   status?: ResidentStatus;
   page?: number;
   limit?: number;
@@ -18,7 +19,9 @@ export interface CreateResidentDto {
   email?: string;
   dateOfBirth?: string;
   gender?: string;
-  relationshipToOwner?: ResidentRelationship;
+  roleInHousehold?: string;
+  relationshipToOwner?: string;
+  isOwner?: boolean;
   status?: ResidentStatus;
   apartmentId?: string;
 }

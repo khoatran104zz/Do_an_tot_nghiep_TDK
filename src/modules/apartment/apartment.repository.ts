@@ -11,7 +11,7 @@ import {
   CreateFloorDto,
   UpdateFloorDto,
 } from './apartment.types';
-import { Prisma, ApartmentStatus, ApartmentHistoryEvent } from '@prisma/client';
+import { Prisma, ApartmentStatus, ApartmentHistoryEvent, InvoiceStatus, TicketStatus } from '@prisma/client';
 
 export class ApartmentRepository {
   async findAll(filter: ApartmentFilter) {
@@ -39,7 +39,11 @@ export class ApartmentRepository {
           { code: { contains: search, mode: 'insensitive' } },
           { building: { contains: search, mode: 'insensitive' } },
           { note: { contains: search, mode: 'insensitive' } },
-          { residents: { some: { fullName: { contains: search, mode: 'insensitive' } } } },
+          {
+            occupancies: {
+              some: { resident: { fullName: { contains: search, mode: 'insensitive' } } },
+            },
+          },
         ],
       });
     }
@@ -96,33 +100,41 @@ export class ApartmentRepository {
         take: limit,
         orderBy: [{ floor: 'asc' }, { code: 'asc' }],
         include: {
-          residents: {
-            select: {
-              id: true,
-              fullName: true,
-              phone: true,
-              relationshipToOwner: true,
-              status: true,
+          ownerships: {
+            where: { isCurrent: true },
+            include: {
+              ownerResident: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  phone: true,
+                  status: true,
+                },
+              },
+            },
+          },
+          occupancies: {
+            where: { isLivingHere: true },
+            include: {
+              resident: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  phone: true,
+                  status: true,
+                },
+              },
             },
           },
           invoices: {
-            where: { status: { in: ['UNPAID', 'OVERDUE'] } },
-            select: { id: true, code: true, totalAmount: true, status: true, dueDate: true },
+            where: { status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE] } },
+            select: { id: true, totalAmount: true, status: true },
           },
           feedbacks: {
-            where: { status: { in: ['NEW', 'ASSIGNED', 'PROCESSING'] } },
-            select: { id: true, code: true, title: true, status: true, priority: true },
+            where: { status: { in: [TicketStatus.NEW, TicketStatus.ASSIGNED, TicketStatus.PROCESSING] } },
+            select: { id: true, status: true, priority: true, title: true },
           },
-          block: {
-            select: { id: true, code: true, name: true },
-          },
-          floorRef: {
-            select: { id: true, floorNumber: true, name: true },
-          },
-          buildingRef: {
-            select: { id: true, code: true, name: true },
-          },
-          _count: { select: { residents: true, contracts: true, vehicles: true } },
+          _count: { select: { contracts: true, vehicles: true, occupancies: true } },
         },
       }),
       prisma.apartment.count({ where }),
@@ -130,17 +142,17 @@ export class ApartmentRepository {
 
     // Format and calculate enriched indicators for each apartment card
     const items = rawItems.map((apt) => {
-      const owner =
-        apt.residents.find((r) => r.relationshipToOwner === 'OWNER') ||
-        apt.residents[0] ||
-        null;
-      const residingResidents = apt.residents.filter((r) => r.status === 'RESIDING');
+      // Verified ownership model
+      const owner = (apt as any).ownerships?.[0]?.ownerResident || null;
+      const residents = (apt as any).occupancies?.map((o: any) => o.resident) || [];
       const totalDebt = apt.invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+      const residentsCount = (apt as any).occupancies?.length || 0;
 
       return {
         ...apt,
         owner,
-        residentsCount: residingResidents.length > 0 ? residingResidents.length : apt.residents.length,
+        residents,
+        residentsCount,
         unpaidInvoicesCount: apt.invoices.length,
         totalDebt,
         openTicketsCount: apt.feedbacks.length,
@@ -162,8 +174,17 @@ export class ApartmentRepository {
     const apt = await prisma.apartment.findUnique({
       where: { id },
       include: {
-        residents: {
-          orderBy: { createdAt: 'asc' },
+        ownerships: {
+          include: {
+            ownerResident: true,
+          },
+          orderBy: { startDate: 'desc' },
+        },
+        occupancies: {
+          include: {
+            resident: true,
+          },
+          orderBy: { startDate: 'desc' },
         },
         contracts: {
           orderBy: { createdAt: 'desc' },
@@ -197,20 +218,43 @@ export class ApartmentRepository {
 
     if (!apt) return null;
 
-    const owner =
-      apt.residents.find((r) => r.relationshipToOwner === 'OWNER') ||
-      apt.residents[0] ||
-      null;
+    const currentOwnerships = apt.ownerships.filter((o) => o.isCurrent);
+    const currentOccupancies = apt.occupancies.filter((o) => o.isLivingHere);
+
+    // Verified owner from ownership model
+    const owner = currentOwnerships[0]?.ownerResident || null;
+
+    const owners = currentOwnerships.map((o) => ({
+      ...o.ownerResident,
+      ownershipType: o.ownershipType,
+      ownershipPercentage: o.ownershipPercentage,
+      certificateNumber: o.certificateNumber,
+      startDate: o.startDate,
+      isCurrent: o.isCurrent,
+    }));
+
+    const residents = currentOccupancies.map((o) => ({
+      ...o.resident,
+      roleInHousehold: o.roleInHousehold,
+      isLivingHere: o.isLivingHere,
+      startDate: o.startDate,
+    }));
+
     const unpaidInvoices = apt.invoices.filter((inv) => inv.status === 'UNPAID' || inv.status === 'OVERDUE');
     const totalDebt = unpaidInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
     const openTickets = apt.feedbacks.filter(
       (f) => f.status === 'NEW' || f.status === 'ASSIGNED' || f.status === 'PROCESSING'
     );
 
+    const residentsCount = currentOccupancies.length;
+
     return {
       ...apt,
       owner,
-      residentsCount: apt.residents.filter((r) => r.status === 'RESIDING').length,
+      owners,
+      residents,
+      occupancies: currentOccupancies,
+      residentsCount,
       unpaidInvoicesCount: unpaidInvoices.length,
       totalDebt,
       openTicketsCount: openTickets.length,
@@ -474,7 +518,7 @@ export class ApartmentRepository {
   }
 
   async findFloorById(id: string) {
-    return prisma.floor.findUnique({
+    const floor = await prisma.floor.findUnique({
       where: { id },
       include: {
         block: {
@@ -485,15 +529,28 @@ export class ApartmentRepository {
         apartments: {
           orderBy: { code: 'asc' },
           include: {
-            residents: {
-              select: { id: true, fullName: true, phone: true, status: true, relationshipToOwner: true },
+            occupancies: {
+              where: { isLivingHere: true },
+              include: {
+                resident: {
+                  select: { id: true, fullName: true, phone: true, status: true },
+                },
+              },
+            },
+            ownerships: {
+              where: { isCurrent: true },
+              include: {
+                ownerResident: {
+                  select: { id: true, fullName: true, phone: true, status: true },
+                },
+              },
             },
             invoices: {
-              where: { status: { in: ['UNPAID', 'OVERDUE'] } },
+              where: { status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE] } },
               select: { id: true, totalAmount: true, status: true },
             },
             feedbacks: {
-              where: { status: { in: ['NEW', 'ASSIGNED', 'PROCESSING'] } },
+              where: { status: { in: [TicketStatus.NEW, TicketStatus.ASSIGNED, TicketStatus.PROCESSING] } },
               select: { id: true, status: true, priority: true, title: true },
             },
           },
@@ -501,6 +558,35 @@ export class ApartmentRepository {
         _count: { select: { apartments: true } },
       },
     });
+
+    if (!floor) return null;
+
+    return {
+      ...floor,
+      apartments: floor.apartments.map((apt: any) => {
+        const residents = (apt.occupancies || []).map((occ: any) => ({
+          id: occ.resident?.id || occ.residentId,
+          fullName: occ.resident?.fullName || '',
+          phone: occ.resident?.phone || '',
+          status: occ.status || occ.resident?.status,
+          roleInHousehold: occ.roleInHousehold,
+          relationshipToOwner:
+            occ.roleInHousehold === 'HEAD_OF_HOUSEHOLD'
+              ? 'OWNER'
+              : occ.roleInHousehold === 'FAMILY_MEMBER'
+              ? 'FAMILY'
+              : occ.roleInHousehold === 'TENANT'
+              ? 'TENANT'
+              : 'TEMPORARY_RESIDENT',
+        }));
+        const owner = (apt.ownerships || [])[0]?.ownerResident || null;
+        return {
+          ...apt,
+          residents,
+          owner,
+        };
+      }),
+    };
   }
 
   async createFloor(data: CreateFloorDto) {
@@ -547,78 +633,97 @@ export class ApartmentRepository {
   }
 
   async getHierarchy(buildingIds?: string[]) {
+    const hierarchyInclude = {
+      blocks: {
+        orderBy: { code: 'asc' as const },
+        include: {
+          floors: {
+            orderBy: { floorNumber: 'asc' as const },
+            include: {
+              apartments: {
+                orderBy: { code: 'asc' as const },
+                include: {
+                  occupancies: {
+                    where: { isLivingHere: true },
+                    include: {
+                      resident: {
+                        select: { id: true, fullName: true, phone: true, status: true },
+                      },
+                    },
+                  },
+                  ownerships: {
+                    where: { isCurrent: true },
+                    include: {
+                      ownerResident: {
+                        select: { id: true, fullName: true, phone: true, status: true },
+                      },
+                    },
+                  },
+                  invoices: {
+                    where: { status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE] } },
+                    select: { id: true, totalAmount: true, status: true },
+                  },
+                  feedbacks: {
+                    where: { status: { in: [TicketStatus.NEW, TicketStatus.ASSIGNED, TicketStatus.PROCESSING] } },
+                    select: { id: true, status: true, priority: true, title: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const mapHierarchyBuildings = (list: any[]) =>
+      list.map((b) => ({
+        ...b,
+        blocks: (b.blocks || []).map((blk: any) => ({
+          ...blk,
+          floors: (blk.floors || []).map((fl: any) => ({
+            ...fl,
+            apartments: (fl.apartments || []).map((apt: any) => ({
+              ...apt,
+              residents: (apt.occupancies || []).map((occ: any) => ({
+                id: occ.resident?.id || occ.residentId,
+                fullName: occ.resident?.fullName || '',
+                phone: occ.resident?.phone || '',
+                status: occ.status || occ.resident?.status,
+                roleInHousehold: occ.roleInHousehold,
+                relationshipToOwner:
+                  occ.roleInHousehold === 'HEAD_OF_HOUSEHOLD'
+                    ? 'OWNER'
+                    : occ.roleInHousehold === 'FAMILY_MEMBER'
+                    ? 'FAMILY'
+                    : occ.roleInHousehold === 'TENANT'
+                    ? 'TENANT'
+                    : 'TEMPORARY_RESIDENT',
+              })),
+              owner: (apt.ownerships || [])[0]?.ownerResident || null,
+            })),
+          })),
+        })),
+      }));
+
     // Pure Read-only query
     const where: Prisma.BuildingWhereInput =
       buildingIds && buildingIds.length > 0 ? { id: { in: buildingIds } } : {};
 
     const buildings = await prisma.building.findMany({
       where,
-      include: {
-        blocks: {
-          orderBy: { code: 'asc' },
-          include: {
-            floors: {
-              orderBy: { floorNumber: 'asc' },
-              include: {
-                apartments: {
-                  orderBy: { code: 'asc' },
-                  include: {
-                    residents: {
-                      select: { id: true, fullName: true, phone: true, relationshipToOwner: true, status: true },
-                    },
-                    invoices: {
-                      where: { status: { in: ['UNPAID', 'OVERDUE'] } },
-                      select: { id: true, totalAmount: true, status: true },
-                    },
-                    feedbacks: {
-                      where: { status: { in: ['NEW', 'ASSIGNED', 'PROCESSING'] } },
-                      select: { id: true, status: true, priority: true, title: true },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      include: hierarchyInclude,
     });
 
     if (buildings.length > 0 || (buildingIds && buildingIds.length > 0)) {
-      return buildings;
+      return mapHierarchyBuildings(buildings);
     }
 
     // Fallback: If DB hierarchy is empty, initialize once safely
     await this.bootstrapHierarchy();
-    return prisma.building.findMany({
-      include: {
-        blocks: {
-          orderBy: { code: 'asc' },
-          include: {
-            floors: {
-              orderBy: { floorNumber: 'asc' },
-              include: {
-                apartments: {
-                  orderBy: { code: 'asc' },
-                  include: {
-                    residents: {
-                      select: { id: true, fullName: true, phone: true, relationshipToOwner: true, status: true },
-                    },
-                    invoices: {
-                      where: { status: { in: ['UNPAID', 'OVERDUE'] } },
-                      select: { id: true, totalAmount: true, status: true },
-                    },
-                    feedbacks: {
-                      where: { status: { in: ['NEW', 'ASSIGNED', 'PROCESSING'] } },
-                      select: { id: true, status: true, priority: true, title: true },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+    const bootstrapped = await prisma.building.findMany({
+      include: hierarchyInclude,
     });
+    return mapHierarchyBuildings(bootstrapped);
   }
 
   async getHistory(apartmentId: string) {
@@ -655,7 +760,7 @@ export class ApartmentRepository {
             code: 'SMART-CITY',
             name: 'Tổ hợp Chung cư SmartCity Landmark',
             address: 'Số 108 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
-            description: 'Khu phức hợp căn hộ thông minh cao cấp tích hợp IoT & BMS',
+            description: 'Khu phức hợp căn hộ thông minh cao cấp tích hợp BMS',
           },
         });
       }

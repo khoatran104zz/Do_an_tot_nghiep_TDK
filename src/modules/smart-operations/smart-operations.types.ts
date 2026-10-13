@@ -2,9 +2,9 @@ export type AlertSeverity = 'INFO' | 'WARNING' | 'HIGH' | 'CRITICAL';
 
 export type AlertStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED';
 
-export type AlertSource = 'IOT' | 'SLA' | 'INVOICE' | 'CONTRACT' | 'MAINTENANCE';
+export type AlertSource = 'SLA' | 'INVOICE' | 'CONTRACT' | 'MAINTENANCE';
 
-export type AlertEntityType = 'CONTRACT' | 'INVOICE' | 'TICKET' | 'APARTMENT' | 'MAINTENANCE' | 'ASSET' | 'SENSOR';
+export type AlertEntityType = 'CONTRACT' | 'INVOICE' | 'TICKET' | 'APARTMENT' | 'MAINTENANCE' | 'ASSET';
 
 export type AlertType =
   | 'CONTRACT_EXPIRED'
@@ -17,11 +17,7 @@ export type AlertType =
   | 'TICKET_SLA_APPROACHING'
   | 'TICKET_CRITICAL_PENDING'
   | 'MAINTENANCE_OVERDUE'
-  | 'MAINTENANCE_DUE_SOON'
-  | 'WATER_LEAKAGE'
-  | 'SMOKE_DETECTED'
-  | 'ELEVATOR_OFFLINE'
-  | 'HIGH_TEMPERATURE';
+  | 'MAINTENANCE_DUE_SOON';
 
 export interface SmartAlert {
   id: string;

@@ -18,7 +18,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, cn } from '@/lib/utils';
 
 interface BlockDetailCardProps {
   block: any;
@@ -31,6 +31,7 @@ interface BlockDetailCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onNavigateBuilding?: () => void;
+  canManage?: boolean;
 }
 
 export function BlockDetailCard({
@@ -44,6 +45,7 @@ export function BlockDetailCard({
   onEdit,
   onDelete,
   onNavigateBuilding,
+  canManage = true,
 }: BlockDetailCardProps) {
   const effectiveBuildingName = buildingName || parentPath?.buildingName || 'Tổ hợp chung cư';
   const floors = block.floors || [];
@@ -62,7 +64,7 @@ export function BlockDetailCard({
       else vacantCount++;
 
       if (apt.invoices) {
-        totalDebt += apt.invoices.reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0);
+        totalDebt += apt.invoices.reduce((sum: number, inv: any) => sum + (Number(inv.totalAmount) || 0), 0);
       }
       if (apt.feedbacks) {
         openTicketsCount += apt.feedbacks.length;
@@ -75,161 +77,159 @@ export function BlockDetailCard({
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-6 rounded-xl border shadow-sm">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1">
             <span
               onClick={onNavigateBuilding}
-              className="hover:text-foreground cursor-pointer flex items-center gap-1 font-medium text-blue-600"
+              className="hover:text-[#0F6B4F] cursor-pointer flex items-center gap-1 font-medium transition-colors"
             >
-              <Building2 className="h-3 w-3" />
+              <Building2 className="h-3.5 w-3.5 text-slate-400" />
               {effectiveBuildingName}
             </span>
             <span>/</span>
-            <span className="font-semibold text-foreground">{block.name}</span>
+            <span className="font-semibold text-slate-900 dark:text-slate-100">{block.name}</span>
           </div>
 
           <div className="flex items-center gap-2.5">
-            <span className="p-2 bg-emerald-500/10 text-emerald-600 rounded-lg">
+            <span className="p-2.5 bg-[#E8F5ED] dark:bg-[#0F6B4F]/20 text-[#0F6B4F] dark:text-emerald-300 rounded-xl">
               <Layers className="h-6 w-6" />
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-foreground">{block.name}</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{block.name}</h2>
                 <Badge variant="outline" className="font-mono text-xs">
                   {block.code}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Quy mô: {block.totalFloors || floors.length} tầng thiết kế
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => (onEdit ? onEdit() : onEditBlock?.(block))}
-            className="text-xs gap-1.5"
-          >
-            <Edit className="h-3.5 w-3.5" />
-            Sửa Tháp
-          </Button>
-          {(onDelete || onDeleteBlock) && (
+        {canManage && (
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               size="sm"
               variant="outline"
-              onClick={() => (onDelete ? onDelete() : onDeleteBlock?.(block.id))}
-              className="text-xs gap-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50"
+              onClick={() => (onEdit ? onEdit() : onEditBlock?.(block))}
+              className="text-xs gap-1.5 h-8 font-semibold"
             >
-              <Trash2 className="h-3.5 w-3.5" />
-              Xóa
+              <Edit className="h-3.5 w-3.5" />
+              Sửa Tháp
             </Button>
-          )}
-          <Button
-            size="sm"
-            onClick={() => onAddFloor(block.id)}
-            className="text-xs gap-1.5 bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white shadow-xs"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Thêm Tầng
-          </Button>
-        </div>
+            {(onDelete || onDeleteBlock) && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => (onDelete ? onDelete() : onDeleteBlock?.(block.id))}
+                className="text-xs gap-1.5 h-8 font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Xóa
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={() => onAddFloor(block.id)}
+              className="text-xs gap-1.5 h-8 font-semibold bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white shadow-xs"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Thêm Tầng
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="shadow-xs">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Số Tầng Đã Thiết Lập</p>
-              <h3 className="text-2xl font-bold mt-1 text-foreground">{floors.length}</h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Tầng hoạt động</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <Card className="p-4 rounded-2xl border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Số Tầng</span>
+            <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg">
+              <Hash className="h-4 w-4" />
             </div>
-            <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg">
-              <Hash className="h-5 w-5" />
-            </div>
-          </CardContent>
+          </div>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">{floors.length}</h3>
+          <p className="text-[11px] text-slate-400 mt-0.5">Tầng hoạt động</p>
         </Card>
 
-        <Card className="shadow-xs">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Căn hộ / Tỷ lệ ở</p>
-              <h3 className="text-2xl font-bold mt-1 text-foreground">{totalApts}</h3>
-              <div className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
-                <TrendingUp className="h-3 w-3" />
-                <span>{occupancyRate}% ({occupiedCount} căn)</span>
-              </div>
+        <Card className="p-4 rounded-2xl border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Căn Hộ</span>
+            <div className="p-2 bg-[#E8F5ED] dark:bg-[#0F6B4F]/20 text-[#0F6B4F] dark:text-emerald-400 rounded-lg">
+              <Home className="h-4 w-4" />
             </div>
-            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
-              <Home className="h-5 w-5" />
-            </div>
-          </CardContent>
+          </div>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">{totalApts}</h3>
+          <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium mt-0.5">
+            <TrendingUp className="h-3 w-3" />
+            <span>{occupancyRate}% ({occupiedCount} căn)</span>
+          </div>
         </Card>
 
-        <Card className="shadow-xs">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Công nợ phí của Tháp</p>
-              <h3 className="text-lg font-bold mt-1 text-foreground">
-                {totalDebt > 0 ? formatCurrency(totalDebt) : '0 đ'}
-              </h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Cần thu</p>
+        <Card className="p-4 rounded-2xl border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Công Nợ Phí</span>
+            <div className="p-2 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-lg">
+              <Receipt className="h-4 w-4" />
             </div>
-            <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-lg">
-              <Receipt className="h-5 w-5" />
-            </div>
-          </CardContent>
+          </div>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate font-mono">
+            {totalDebt > 0 ? formatCurrency(totalDebt) : '0 đ'}
+          </h3>
+          <p className="text-[11px] text-slate-400 mt-0.5">Phí chưa thanh toán</p>
         </Card>
 
-        <Card className="shadow-xs">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Sự cố kỹ thuật mở</p>
-              <h3 className="text-2xl font-bold mt-1 text-foreground">{openTicketsCount}</h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{maintenanceCount} căn bảo trì</p>
+        <Card className="p-4 rounded-2xl border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sự Cố Kỹ Thuật</span>
+            <div className="p-2 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-lg">
+              <Wrench className="h-4 w-4" />
             </div>
-            <div className="p-2.5 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-lg">
-              <Wrench className="h-5 w-5" />
-            </div>
-          </CardContent>
+          </div>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">{openTicketsCount}</h3>
+          <p className="text-[11px] text-slate-400 mt-0.5">{maintenanceCount} căn bảo trì</p>
         </Card>
       </div>
 
       {/* Floors List */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <Hash className="h-4 w-4 text-indigo-500" />
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Hash className="h-4 w-4 text-[#0F6B4F]" />
             Danh Sách Tầng Thuộc {block.name} ({floors.length})
           </h3>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onAddFloor(block.id)}
-            className="text-xs gap-1.5"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Thêm Tầng
-          </Button>
+          {canManage && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onAddFloor(block.id)}
+              className="text-xs gap-1.5 h-8 font-semibold"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Thêm Tầng
+            </Button>
+          )}
         </div>
 
         {floors.length === 0 ? (
-          <div className="p-8 border border-dashed rounded-xl text-center bg-card">
-            <Hash className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm font-medium text-foreground">Khối tháp này chưa có tầng lầu nào</p>
-            <p className="text-xs text-muted-foreground mt-1">Hãy thêm các tầng để bắt đầu quản lý căn hộ</p>
-            <Button
-              size="sm"
-              onClick={() => onAddFloor(block.id)}
-              className="mt-3 text-xs gap-1.5 bg-[#0F6B4F] text-white hover:bg-[#0c5942] active:bg-[#094634] shadow-xs"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Thêm Tầng Lầu Ngay
-            </Button>
+          <div className="p-8 border border-dashed rounded-2xl text-center bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800">
+            <Hash className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Khối tháp này chưa có tầng lầu nào</p>
+            <p className="text-xs text-slate-500 mt-1">Hãy thêm các tầng để bắt đầu quản lý căn hộ</p>
+            {canManage && (
+              <Button
+                size="sm"
+                onClick={() => onAddFloor(block.id)}
+                className="mt-3 text-xs gap-1.5 bg-[#0F6B4F] text-white hover:bg-[#0c5942] active:bg-[#094634] shadow-xs"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Thêm Tầng Lầu Ngay
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
@@ -242,39 +242,39 @@ export function BlockDetailCard({
                 <div
                   key={floor.id}
                   onClick={() => onSelectFloor(floor)}
-                  className="group bg-card p-4 rounded-xl border hover:border-indigo-500/50 hover:shadow-md transition-all cursor-pointer space-y-2.5"
+                  className="group bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 hover:border-[#0F6B4F] hover:shadow-md transition-all cursor-pointer space-y-2.5"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="p-1.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 rounded-md font-bold text-xs">
-                        T{floor.floorNumber}
+                      <span className="p-1.5 bg-[#E8F5ED] text-[#0F6B4F] rounded-lg font-bold text-xs font-mono">
+                        T{floor.floorNumber.toString().padStart(2, '0')}
                       </span>
-                      <h4 className="font-semibold text-sm text-foreground group-hover:text-indigo-600 transition-colors">
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-[#0F6B4F] transition-colors">
                         {floor.name}
                       </h4>
                     </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {apts.length} căn hộ
+                    <Badge variant="secondary" className="text-xs font-mono">
+                      {apts.length} căn
                     </Badge>
                   </div>
 
                   {/* Occupancy bar */}
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <div className="flex justify-between text-[11px] text-slate-500">
                       <span>Lấp đầy: {occupied}/{apts.length} căn</span>
-                      <span className="font-semibold text-foreground">{rate}%</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">{rate}%</span>
                     </div>
-                    <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-indigo-500 rounded-full transition-all"
+                        className="h-full bg-gradient-to-r from-[#0F6B4F] to-[#22C55E] rounded-full transition-all"
                         style={{ width: `${rate}%` }}
                       />
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
                     <span className="text-[11px]">Tầng {floor.floorNumber}</span>
-                    <span className="text-indigo-600 font-medium group-hover:translate-x-1 transition-transform inline-flex items-center gap-0.5">
+                    <span className="text-[#0F6B4F] font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-0.5">
                       Xem mặt bằng căn &rarr;
                     </span>
                   </div>

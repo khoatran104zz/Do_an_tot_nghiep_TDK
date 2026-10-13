@@ -345,7 +345,28 @@ export default function ResidentsPage() {
         { label: 'Số CCCD / Hộ chiếu', value: inspectingItem.identityCard, icon: CreditCard },
         { label: 'Số điện thoại', value: inspectingItem.phone, icon: Phone },
         { label: 'Địa chỉ Email', value: inspectingItem.email || 'Chưa cung cấp', icon: Mail },
-        { label: 'Căn hộ gắn kèm', value: inspectingItem.apartment?.code || 'Chưa gán', icon: Home },
+        { label: 'Căn hộ đang cư trú', value: inspectingItem.apartment?.code ? `Căn ${inspectingItem.apartment.code}` : 'Chưa gán căn hộ', icon: Home },
+        {
+          label: 'Vai trò trong hộ',
+          value:
+            inspectingItem.relationshipToOwner === 'OWNER'
+              ? 'Chủ hộ (Chủ sở hữu)'
+              : inspectingItem.relationshipToOwner === 'FAMILY'
+              ? 'Thành viên gia đình'
+              : inspectingItem.relationshipToOwner === 'TENANT'
+              ? 'Khách thuê nhà'
+              : 'Cư dân tạm trú',
+        },
+        {
+          label: 'Quyền sở hữu pháp lý',
+          value:
+            inspectingItem.ownedApartments?.length > 0
+              ? `Chủ sở hữu ${inspectingItem.ownedApartments.map((o: any) => o.apartment?.code || o.apartmentId).join(', ')}`
+              : inspectingItem.relationshipToOwner === 'OWNER' && inspectingItem.apartment
+              ? `Chủ sở hữu Căn ${inspectingItem.apartment.code} (Theo hồ sơ)`
+              : 'Không có quyền sở hữu (Cư trú / Thuê)',
+        },
+        { label: 'Trạng thái cư trú', value: inspectingItem.status === 'RESIDING' ? 'Đang sinh sống thực tế' : inspectingItem.status === 'TEMPORARY_ABSENT' ? 'Tạm vắng' : 'Đã chuyển đi' },
         { label: 'Giới tính', value: inspectingItem.gender || 'Chưa xác định' },
       ]
     : [];

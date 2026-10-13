@@ -1,19 +1,9 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { DataTable, Column } from '@/components/shared/DataTable';
-import { FilterBar } from '@/components/shared/FilterBar';
-import { StatusBadge } from '@/components/shared/StatusBadge';
-import { FormDialog } from '@/components/shared/FormDialog';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ErrorState } from '@/components/shared/ErrorState';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   Plus,
   Edit,
@@ -29,10 +19,8 @@ import {
   LayoutGrid,
   List,
   History,
-  UserCheck,
   Receipt,
   Wrench,
-  AlertTriangle,
   CheckCircle2,
   ChevronRight,
   Filter,
@@ -48,9 +36,24 @@ import {
   FolderTree,
   RefreshCw,
   ExternalLink,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
+  ShieldAlert,
 } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { DataTable, Column } from '@/components/shared/DataTable';
+import { FilterBar } from '@/components/shared/FilterBar';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { FormDialog } from '@/components/shared/FormDialog';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   useApartments,
   useApartmentHierarchy,
@@ -72,12 +75,15 @@ import {
   useBootstrapHierarchy,
 } from '@/hooks/use-apartments';
 import { ApartmentStatus, ApartmentHistoryEvent } from '@prisma/client';
-import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDateTime, cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { PropertyTree, SelectedNode } from '@/components/property/PropertyTree';
 import { BuildingDetailCard } from '@/components/property/BuildingDetailCard';
 import { BlockDetailCard } from '@/components/property/BlockDetailCard';
 import { FloorDetailCard } from '@/components/property/FloorDetailCard';
+import { ApartmentDetailCard } from '@/components/property/ApartmentDetailCard';
+import { PropertyKPIOverview } from '@/components/property/PropertyKPIOverview';
+import { InteractiveFloorPlan } from '@/components/property/InteractiveFloorPlan';
 import {
   BuildingFormModal,
   BlockFormModal,
@@ -88,9 +94,18 @@ import { useBuildingContext } from '@/context/BuildingContext';
 
 export default function ApartmentsPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role;
+  const canManage = userRole === 'ADMIN' || userRole === 'MANAGER';
+  const isAdmin = userRole === 'ADMIN';
+
   const { selectedBuildingId } = useBuildingContext();
-  // View mode switcher: 'TREE', 'FLOOR_PLAN', 'LIST'
+
+  // View mode switcher: 'TREE' | 'FLOOR_PLAN' | 'LIST'
   const [viewMode, setViewMode] = useState<'TREE' | 'FLOOR_PLAN' | 'LIST'>('TREE');
+
+  // Collapsible Left Explorer Panel in Tree mode
+  const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
 
   // Property Tree Selected Node State
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
@@ -111,7 +126,7 @@ export default function ApartmentsPage() {
   const [isAptModalOpen, setIsAptModalOpen] = useState(false);
   const [defaultFloorIdForApt, setDefaultFloorIdForApt] = useState<string>('');
 
-  // Filters
+  // Filters for List view
   const [search, setSearch] = useState('');
   const [blockFilter, setBlockFilter] = useState('');
   const [floorFilter, setFloorFilter] = useState('');
@@ -153,7 +168,6 @@ export default function ApartmentsPage() {
   });
 
   // Queries & Mutations
-  // For List view: paginated query
   const {
     data: listResponse,
     isLoading: isListLoading,
@@ -168,13 +182,15 @@ export default function ApartmentsPage() {
     floor: floorFilter ? parseInt(floorFilter, 10) : undefined,
     status: (statusFilter as ApartmentStatus) || undefined,
     page: viewMode === 'LIST' ? page : 1,
-    limit: viewMode === 'LIST' ? 10 : 300, // Fetch full set for Floor Plan view
+    limit: viewMode === 'LIST' ? 10 : 300,
   });
 
   // Hierarchy query
-  const { data: hierarchyResponse, refetch: refetchHierarchy } = useApartmentHierarchy(
-    selectedBuildingId || undefined
-  );
+  const {
+    data: hierarchyResponse,
+    isLoading: isHierarchyLoading,
+    refetch: refetchHierarchy,
+  } = useApartmentHierarchy(selectedBuildingId || undefined);
 
   // History query for inspecting apartment
   const {
@@ -220,6 +236,69 @@ export default function ApartmentsPage() {
     return sorted.length > 0 ? sorted : Array.from({ length: 25 }, (_, i) => i + 1);
   }, [hierarchyList]);
 
+  // Aggregate KPI Data from Real Hierarchy
+  const kpiData = useMemo(() => {
+    const totalBuildings = hierarchyList.length;
+    let totalBlocks = 0;
+    let totalFloors = 0;
+    let totalApartments = 0;
+    let occupiedCount = 0;
+    let vacantCount = 0;
+    let maintenanceCount = 0;
+    let totalDebt = 0;
+    let openTickets = 0;
+
+    hierarchyList.forEach((b: any) => {
+      (b.blocks || []).forEach((blk: any) => {
+        totalBlocks++;
+        (blk.floors || []).forEach((flr: any) => {
+          totalFloors++;
+          (flr.apartments || []).forEach((apt: any) => {
+            totalApartments++;
+            if (apt.status === 'OCCUPIED') occupiedCount++;
+            else if (apt.status === 'UNDER_MAINTENANCE') maintenanceCount++;
+            else vacantCount++;
+
+            if (apt.invoices) {
+              apt.invoices.forEach((inv: any) => {
+                if (inv.status === 'UNPAID' || inv.status === 'OVERDUE') {
+                  totalDebt += Number(inv.totalAmount) || 0;
+                }
+              });
+            }
+
+            if (apt.feedbacks) {
+              openTickets += apt.feedbacks.filter(
+                (f: any) =>
+                  f.status === 'NEW' ||
+                  f.status === 'ASSIGNED' ||
+                  f.status === 'PROCESSING' ||
+                  f.status === 'OPEN' ||
+                  f.status === 'IN_PROGRESS'
+              ).length;
+            }
+          });
+        });
+      });
+    });
+
+    const occupancyRate =
+      totalApartments > 0 ? Math.round((occupiedCount / totalApartments) * 100) : 0;
+
+    return {
+      totalBuildings,
+      totalBlocks,
+      totalFloors,
+      totalApartments,
+      occupiedCount,
+      vacantCount,
+      maintenanceCount,
+      occupancyRate,
+      totalDebt,
+      openTickets,
+    };
+  }, [hierarchyList]);
+
   // Default select first building once hierarchy loads if none selected
   React.useEffect(() => {
     if (!selectedNode && hierarchyList.length > 0) {
@@ -254,6 +333,17 @@ export default function ApartmentsPage() {
         for (const blk of b.blocks || []) {
           const flr = (blk.floors || []).find((f: any) => f.id === selectedNode.id);
           if (flr) return flr;
+        }
+      }
+      return selectedNode.data;
+    }
+    if (selectedNode.type === 'APARTMENT') {
+      for (const b of hierarchyList) {
+        for (const blk of b.blocks || []) {
+          for (const flr of blk.floors || []) {
+            const apt = (flr.apartments || []).find((a: any) => a.id === selectedNode.id);
+            if (apt) return apt;
+          }
         }
       }
       return selectedNode.data;
@@ -294,12 +384,12 @@ export default function ApartmentsPage() {
     setEditingItem(item);
     setFormData({
       code: item.code,
-      building: item.building,
-      floor: item.floor,
-      bedrooms: item.bedrooms,
-      bathrooms: item.bathrooms,
-      area: item.area,
-      status: item.status,
+      building: item.building || 'Tòa A',
+      floor: item.floor || 1,
+      bedrooms: item.bedrooms || 2,
+      bathrooms: item.bathrooms || 2,
+      area: item.area || 75,
+      status: item.status || 'VACANT',
       note: item.note || '',
     });
     setIsFormOpen(true);
@@ -336,6 +426,9 @@ export default function ApartmentsPage() {
           if (inspectingItem?.id === deletingId) {
             setInspectingItem(null);
           }
+          if (selectedNode?.type === 'APARTMENT' && selectedNode.id === deletingId) {
+            setSelectedNode(null);
+          }
         },
       });
     }
@@ -343,10 +436,12 @@ export default function ApartmentsPage() {
 
   const handleAddHistorySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inspectingItem) return;
+    const aptId = inspectingItem?.id || (selectedNode?.type === 'APARTMENT' ? selectedNode.id : null);
+    if (!aptId) return;
+
     createHistoryMutation.mutate(
       {
-        apartmentId: inspectingItem.id,
+        apartmentId: aptId,
         data: {
           event: historyForm.event,
           title: historyForm.title,
@@ -367,7 +462,7 @@ export default function ApartmentsPage() {
     );
   };
 
-  // Active filter tags for FilterBar
+  // Active filter tags for FilterBar in List View
   const activeTags = [];
   if (blockFilter) {
     activeTags.push({
@@ -399,52 +494,6 @@ export default function ApartmentsPage() {
     });
   }
 
-  // Group apartments for Floor Plan View: Block -> Floor -> Apartments[]
-  const floorPlanGroups = useMemo(() => {
-    const groups: Record<
-      string,
-      {
-        blockName: string;
-        blockCode: string;
-        floors: Record<number, any[]>;
-        stats: { total: number; occupied: number; vacant: number; maintenance: number };
-      }
-    > = {};
-
-    apartments.forEach((apt: any) => {
-      const bName = apt.building || 'Khối Chung Cư';
-      const bCode = bName.includes('A')
-        ? 'Block A'
-        : bName.includes('B')
-        ? 'Block B'
-        : bName.includes('C')
-        ? 'Block C'
-        : bName;
-
-      if (!groups[bCode]) {
-        groups[bCode] = {
-          blockName: bName,
-          blockCode: bCode,
-          floors: {},
-          stats: { total: 0, occupied: 0, vacant: 0, maintenance: 0 },
-        };
-      }
-
-      groups[bCode].stats.total += 1;
-      if (apt.status === 'OCCUPIED') groups[bCode].stats.occupied += 1;
-      else if (apt.status === 'UNDER_MAINTENANCE') groups[bCode].stats.maintenance += 1;
-      else groups[bCode].stats.vacant += 1;
-
-      const floorNum = apt.floor;
-      if (!groups[bCode].floors[floorNum]) {
-        groups[bCode].floors[floorNum] = [];
-      }
-      groups[bCode].floors[floorNum].push(apt);
-    });
-
-    return groups;
-  }, [apartments]);
-
   // Table Columns for List View
   const columns: Column<any>[] = [
     {
@@ -452,7 +501,7 @@ export default function ApartmentsPage() {
       accessorKey: 'code',
       sortable: true,
       cell: (row) => (
-        <span className="font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-md text-xs">
+        <span className="font-mono font-black text-[#0F6B4F] dark:text-emerald-400 bg-[#E8F5ED] dark:bg-[#0F6B4F]/20 px-2.5 py-1 rounded-lg text-xs">
           {row.code}
         </span>
       ),
@@ -463,8 +512,8 @@ export default function ApartmentsPage() {
       sortable: true,
       cell: (row) => (
         <div>
-          <span className="font-semibold text-slate-800 dark:text-slate-200">{row.building}</span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 block">Tầng {row.floor}</span>
+          <span className="font-bold text-slate-900 dark:text-slate-100">{row.building}</span>
+          <span className="text-xs text-slate-500 block">Tầng {row.floor}</span>
         </div>
       ),
     },
@@ -472,8 +521,8 @@ export default function ApartmentsPage() {
       header: 'Chủ hộ / Cư dân',
       cell: (row) => (
         <div className="space-y-0.5 text-xs">
-          <p className="font-semibold text-slate-800 dark:text-slate-200">
-            {row.owner ? row.owner.fullName : <span className="text-slate-400 italic">Chưa có chủ hộ</span>}
+          <p className="font-bold text-slate-900 dark:text-slate-100">
+            {row.owner ? row.owner.fullName : <span className="text-slate-400 italic font-normal">Chưa có chủ hộ</span>}
           </p>
           <span className="text-[11px] text-slate-500 flex items-center gap-1">
             <Users className="h-3 w-3 text-slate-400" />
@@ -486,7 +535,11 @@ export default function ApartmentsPage() {
       header: 'Diện tích',
       accessorKey: 'area',
       sortable: true,
-      cell: (row) => <span className="font-medium text-slate-700 dark:text-slate-300">{row.area} m²</span>,
+      cell: (row) => (
+        <span className="font-medium text-slate-700 dark:text-slate-300 font-mono">
+          {row.area} m²
+        </span>
+      ),
     },
     {
       header: 'Trạng thái',
@@ -499,19 +552,19 @@ export default function ApartmentsPage() {
       cell: (row) => (
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
           {row.unpaidInvoicesCount > 0 ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-semibold border border-rose-200 dark:border-rose-900">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold border border-rose-200 dark:border-rose-900">
               <Receipt className="h-3 w-3 text-rose-600" />
               {formatCurrency(row.totalDebt)}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-medium">
               <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-              Đã thanh toán
+              Đã thu đủ
             </span>
           )}
 
           {row.openTicketsCount > 0 && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-900">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-900">
               <Wrench className="h-3 w-3 text-amber-600" />
               {row.openTicketsCount} sự cố
             </span>
@@ -526,8 +579,8 @@ export default function ApartmentsPage() {
         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           <Link
             href={`/apartments/${row.id}`}
-            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-lg inline-flex items-center"
-            title="Trang quản lý chi tiết (Đầy đủ 360°)"
+            className="p-1.5 text-slate-500 hover:text-[#0F6B4F] hover:bg-[#E8F5ED] rounded-lg inline-flex items-center transition-colors"
+            title="Trang quản lý chi tiết (360°)"
           >
             <ExternalLink className="h-4 w-4" />
           </Link>
@@ -538,29 +591,33 @@ export default function ApartmentsPage() {
               setInspectingItem(row);
               setActiveDrawerTab('DETAILS');
             }}
-            className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800"
+            className="text-slate-500 hover:text-[#0F6B4F] hover:bg-[#E8F5ED]"
             title="Xem nhanh & Lịch sử"
           >
             <Eye className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => handleOpenEdit(row)}
-            className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800"
-            title="Chỉnh sửa"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => setDeletingId(row.id)}
-            className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800"
-            title="Xóa"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {canManage && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => handleOpenEdit(row)}
+                className="text-slate-500 hover:text-[#0F6B4F] hover:bg-[#E8F5ED]"
+                title="Chỉnh sửa"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setDeletingId(row.id)}
+                className="text-slate-500 hover:text-rose-600 hover:bg-rose-50"
+                title="Xóa"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </div>
       ),
     },
@@ -568,22 +625,36 @@ export default function ApartmentsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header with View Switcher */}
+      {/* 1. Breadcrumb navigation */}
+      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+        <Link href="/dashboard" className="hover:text-[#0F6B4F] transition-colors">
+          Trang chủ
+        </Link>
+        <span>/</span>
+        <span className="text-slate-400">Bất động sản & Cư dân</span>
+        <span>/</span>
+        <span className="font-semibold text-slate-900 dark:text-slate-100">
+          Quản lý Bất động sản
+        </span>
+      </div>
+
+      {/* 2. Top Header with Smart View Switcher */}
       <PageHeader
         title="Quản lý Bất động sản"
-        description="Mô hình phân cấp Tòa nhà → Block/Tháp → Tầng → Căn hộ và thông tin vận hành 360°."
+        description="Quản lý tập trung cấu trúc tòa nhà, khối tháp, tầng và căn hộ trên toàn hệ thống."
       >
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Switcher: [Cấu trúc cây] & [Floor Plan View] & [List View] */}
-          <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs font-semibold">
+          {/* View Switcher: [Cấu trúc cây] & [Sơ đồ mặt bằng] & [Danh sách căn hộ] */}
+          <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 text-xs font-semibold">
             <button
               type="button"
               onClick={() => setViewMode('TREE')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer',
                 viewMode === 'TREE'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs font-bold'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
+                  ? 'bg-white dark:bg-slate-700 text-[#0F6B4F] dark:text-emerald-300 shadow-xs font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              )}
             >
               <FolderTree className="h-3.5 w-3.5" />
               Cấu trúc cây
@@ -591,165 +662,145 @@ export default function ApartmentsPage() {
             <button
               type="button"
               onClick={() => setViewMode('FLOOR_PLAN')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer',
                 viewMode === 'FLOOR_PLAN'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs font-bold'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
+                  ? 'bg-white dark:bg-slate-700 text-[#0F6B4F] dark:text-emerald-300 shadow-xs font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              )}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
-              Floor Plan View
+              Sơ đồ mặt bằng
             </button>
             <button
               type="button"
               onClick={() => setViewMode('LIST')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer',
                 viewMode === 'LIST'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs font-bold'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
+                  ? 'bg-white dark:bg-slate-700 text-[#0F6B4F] dark:text-emerald-300 shadow-xs font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              )}
             >
               <List className="h-3.5 w-3.5" />
-              List View
+              Danh sách căn hộ
             </button>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              try {
-                const res = await bootstrapMutation.mutateAsync();
-                toast.success(res.message || 'Đồng bộ cấu trúc thành công');
-              } catch (err: any) {
-                toast.error(err.message || 'Lỗi đồng bộ cấu trúc');
-              }
-            }}
-            disabled={bootstrapMutation.isPending}
-            className="text-xs gap-1.5 h-9"
-            title="Tự động đồng bộ Tòa nhà, Block, Tầng từ dữ liệu hiện có"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${bootstrapMutation.isPending ? 'animate-spin' : ''}`} />
-            Đồng bộ Cấu trúc
-          </Button>
+          {/* Sync Hierarchy Action */}
+          {canManage && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const res = await bootstrapMutation.mutateAsync();
+                  toast.success(res.message || 'Đồng bộ cấu trúc thành công');
+                } catch (err: any) {
+                  toast.error(err.message || 'Lỗi đồng bộ cấu trúc');
+                }
+              }}
+              disabled={bootstrapMutation.isPending}
+              className="text-xs gap-1.5 h-9 font-semibold"
+              title="Tự động đồng bộ cấu trúc phân cấp từ dữ liệu hiện có"
+            >
+              <RefreshCw
+                className={cn('h-3.5 w-3.5', bootstrapMutation.isPending && 'animate-spin')}
+              />
+              Đồng bộ Cấu trúc
+            </Button>
+          )}
 
-          <Button
-            onClick={handleOpenCreate}
-            className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white font-semibold shadow-md shadow-[#0F6B4F]/20 text-xs gap-1.5 h-9"
-          >
-            <Plus className="h-4 w-4" /> Thêm Căn hộ
-          </Button>
+          {/* Create Apartment CTA */}
+          {canManage && (
+            <Button
+              onClick={handleOpenCreate}
+              className="bg-[#0F6B4F] hover:bg-[#0c5942] active:bg-[#094634] text-white font-bold shadow-md shadow-[#0F6B4F]/20 text-xs gap-1.5 h-9"
+            >
+              <Plus className="h-4 w-4" /> Thêm Căn hộ
+            </Button>
+          )}
         </div>
       </PageHeader>
 
-      {/* Unified FilterBar (Only shown for Floor Plan and List views) */}
-      {viewMode !== 'TREE' && (
-      <FilterBar
-        activeTags={activeTags}
-        hasActiveFilters={hasActiveFilters}
-        onReset={handleResetFilters}
-        totalCount={apartments.length}
-        totalCountLabel="Căn hộ hiển thị"
-      >
-        {/* Search input in FilterBar for Floor Plan mode */}
-        <div className="relative w-56">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-          <Input
-            placeholder="Tìm mã căn, chủ hộ..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 h-9 text-xs bg-white dark:bg-slate-900"
-          />
-        </div>
+      {/* 3. Real Data KPI Overview Bar */}
+      <PropertyKPIOverview data={kpiData} isLoading={isHierarchyLoading} />
 
-        {/* Filter Block */}
-        <div className="w-40">
-          <Select
-            value={blockFilter}
-            onChange={(e) => {
-              setBlockFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả Block / Tòa</option>
-            <option value="Block A">Block A</option>
-            <option value="Block B">Block B</option>
-            <option value="Block C">Block C</option>
-          </Select>
-        </div>
-
-        {/* Filter Floor */}
-        <div className="w-36">
-          <Select
-            value={floorFilter}
-            onChange={(e) => {
-              setFloorFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả các tầng</option>
-            {allFloorNumbers.map((fl) => (
-              <option key={fl} value={fl.toString()}>
-                Tầng {fl.toString().padStart(2, '0')}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        {/* Filter Status */}
-        <div className="w-40">
-          <Select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="OCCUPIED">Đang ở</option>
-            <option value="VACANT">Đang trống</option>
-            <option value="UNDER_MAINTENANCE">Đang sửa chữa</option>
-          </Select>
-        </div>
-      </FilterBar>
-      )}
-
-      {/* =====================================================================
-          VIEW MODE 0: PROPERTY HIERARCHY TREE VIEW (Building -> Block -> Floor)
-          ===================================================================== */}
+      {/* 4. VIEW MODE 0: PROPERTY EXPLORER & DETAIL WORKSPACE */}
       {viewMode === 'TREE' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Interactive Tree Navigator */}
-          <div className="lg:col-span-4">
-            <PropertyTree
-              buildings={hierarchyList}
-              isLoading={hierarchyResponse === undefined}
-              selectedNode={selectedNode}
-              onSelectNode={setSelectedNode}
-              onAddBuilding={() => {
-                setEditingBuilding(null);
-                setIsBuildingModalOpen(true);
-              }}
-              onAddBlock={(buildingId: string) => {
-                setTargetBuildingIdForBlock(buildingId);
-                setEditingBlock(null);
-                setIsBlockModalOpen(true);
-              }}
-              onAddFloor={(blockId: string) => {
-                setTargetBlockIdForFloor(blockId);
-                setSuggestedFloorNum(1);
-                setEditingFloor(null);
-                setIsFloorModalOpen(true);
-              }}
-              onAddApartment={(floorId: string) => {
-                setDefaultFloorIdForApt(floorId);
-                setIsAptModalOpen(true);
-              }}
-            />
+          {/* Left Column: Property Explorer Tree */}
+          <div
+            className={cn(
+              'transition-all duration-300',
+              isTreeCollapsed ? 'lg:col-span-1' : 'lg:col-span-4'
+            )}
+          >
+            {isTreeCollapsed ? (
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3 text-center space-y-4 shadow-2xs">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setIsTreeCollapsed(false)}
+                  title="Mở rộng panel sơ đồ"
+                  className="mx-auto"
+                >
+                  <ChevronsRight className="h-4 w-4 text-[#0F6B4F]" />
+                </Button>
+                <div className="space-y-3 pt-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider writing-mode-vertical">
+                  <span>Sơ đồ phân cấp</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-end px-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsTreeCollapsed(true)}
+                    className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex items-center gap-1 font-medium transition-colors"
+                    title="Thu gọn panel sơ đồ"
+                  >
+                    <ChevronsLeft className="h-3 w-3" /> Thu gọn
+                  </button>
+                </div>
+                <PropertyTree
+                  buildings={hierarchyList}
+                  isLoading={isHierarchyLoading}
+                  selectedNode={selectedNode}
+                  onSelectNode={setSelectedNode}
+                  onAddBuilding={() => {
+                    setEditingBuilding(null);
+                    setIsBuildingModalOpen(true);
+                  }}
+                  onAddBlock={(buildingId: string) => {
+                    setTargetBuildingIdForBlock(buildingId);
+                    setEditingBlock(null);
+                    setIsBlockModalOpen(true);
+                  }}
+                  onAddFloor={(blockId: string) => {
+                    setTargetBlockIdForFloor(blockId);
+                    setSuggestedFloorNum(1);
+                    setEditingFloor(null);
+                    setIsFloorModalOpen(true);
+                  }}
+                  onAddApartment={(floorId: string) => {
+                    setDefaultFloorIdForApt(floorId);
+                    setIsAptModalOpen(true);
+                  }}
+                  canManage={canManage}
+                />
+              </div>
+            )}
           </div>
 
-          {/* Right Column: Node Details and Sub-Entity Management */}
-          <div className="lg:col-span-8">
+          {/* Right Column: Dynamic Detail Workspace */}
+          <div
+            className={cn(
+              'transition-all duration-300',
+              isTreeCollapsed ? 'lg:col-span-11' : 'lg:col-span-8'
+            )}
+          >
+            {/* When Building is Selected */}
             {selectedNode?.type === 'BUILDING' && currentSelectedData && (
               <BuildingDetailCard
                 building={currentSelectedData}
@@ -786,9 +837,11 @@ export default function ApartmentsPage() {
                     },
                   });
                 }}
+                canManage={canManage}
               />
             )}
 
+            {/* When Block is Selected */}
             {selectedNode?.type === 'BLOCK' && currentSelectedData && (
               <BlockDetailCard
                 block={currentSelectedData}
@@ -834,9 +887,23 @@ export default function ApartmentsPage() {
                     },
                   });
                 }}
+                onNavigateBuilding={() => {
+                  const bId = selectedNode.parentPath?.buildingId;
+                  const b = hierarchyList.find((x: any) => x.id === bId);
+                  if (b) {
+                    setSelectedNode({
+                      type: 'BUILDING',
+                      id: b.id,
+                      data: b,
+                      parentPath: { buildingName: b.name, buildingId: b.id },
+                    });
+                  }
+                }}
+                canManage={canManage}
               />
             )}
 
+            {/* When Floor is Selected */}
             {selectedNode?.type === 'FLOOR' && currentSelectedData && (
               <FloorDetailCard
                 floor={currentSelectedData}
@@ -863,19 +930,139 @@ export default function ApartmentsPage() {
                   setIsAptModalOpen(true);
                 }}
                 onSelectApartment={(apt) => {
-                  router.push(`/apartments/${apt.id}`);
+                  setSelectedNode({
+                    type: 'APARTMENT',
+                    id: apt.id,
+                    data: apt,
+                    parentPath: {
+                      buildingName: selectedNode.parentPath?.buildingName,
+                      buildingId: selectedNode.parentPath?.buildingId,
+                      blockName: selectedNode.parentPath?.blockName,
+                      blockId: selectedNode.parentPath?.blockId,
+                      floorName: currentSelectedData.name,
+                      floorId: currentSelectedData.id,
+                    },
+                  });
                 }}
+                onNavigateBuilding={() => {
+                  const bId = selectedNode.parentPath?.buildingId;
+                  const b = hierarchyList.find((x: any) => x.id === bId);
+                  if (b) {
+                    setSelectedNode({
+                      type: 'BUILDING',
+                      id: b.id,
+                      data: b,
+                      parentPath: { buildingName: b.name, buildingId: b.id },
+                    });
+                  }
+                }}
+                onNavigateBlock={() => {
+                  const blkId = selectedNode.parentPath?.blockId;
+                  for (const b of hierarchyList) {
+                    const blk = (b.blocks || []).find((x: any) => x.id === blkId);
+                    if (blk) {
+                      setSelectedNode({
+                        type: 'BLOCK',
+                        id: blk.id,
+                        data: blk,
+                        parentPath: {
+                          buildingName: b.name,
+                          buildingId: b.id,
+                          blockName: blk.name,
+                          blockId: blk.id,
+                        },
+                      });
+                      break;
+                    }
+                  }
+                }}
+                canManage={canManage}
               />
             )}
 
+            {/* When Apartment is Selected */}
+            {selectedNode?.type === 'APARTMENT' && currentSelectedData && (
+              <ApartmentDetailCard
+                apartment={currentSelectedData}
+                buildingName={selectedNode.parentPath?.buildingName}
+                blockName={selectedNode.parentPath?.blockName}
+                floorName={selectedNode.parentPath?.floorName}
+                parentPath={selectedNode.parentPath}
+                onEdit={() => handleOpenEdit(currentSelectedData)}
+                onDelete={() => setDeletingId(currentSelectedData.id)}
+                onAddHistory={() => {
+                  setInspectingItem(currentSelectedData);
+                  setIsAddHistoryOpen(true);
+                }}
+                onNavigateBuilding={() => {
+                  const bId = selectedNode.parentPath?.buildingId;
+                  const b = hierarchyList.find((x: any) => x.id === bId);
+                  if (b) {
+                    setSelectedNode({
+                      type: 'BUILDING',
+                      id: b.id,
+                      data: b,
+                      parentPath: { buildingName: b.name, buildingId: b.id },
+                    });
+                  }
+                }}
+                onNavigateBlock={() => {
+                  const blkId = selectedNode.parentPath?.blockId;
+                  for (const b of hierarchyList) {
+                    const blk = (b.blocks || []).find((x: any) => x.id === blkId);
+                    if (blk) {
+                      setSelectedNode({
+                        type: 'BLOCK',
+                        id: blk.id,
+                        data: blk,
+                        parentPath: {
+                          buildingName: b.name,
+                          buildingId: b.id,
+                          blockName: blk.name,
+                          blockId: blk.id,
+                        },
+                      });
+                      break;
+                    }
+                  }
+                }}
+                onNavigateFloor={() => {
+                  const flrId = selectedNode.parentPath?.floorId;
+                  for (const b of hierarchyList) {
+                    for (const blk of b.blocks || []) {
+                      const flr = (blk.floors || []).find((f: any) => f.id === flrId);
+                      if (flr) {
+                        setSelectedNode({
+                          type: 'FLOOR',
+                          id: flr.id,
+                          data: flr,
+                          parentPath: {
+                            buildingName: b.name,
+                            buildingId: b.id,
+                            blockName: blk.name,
+                            blockId: blk.id,
+                            floorName: flr.name,
+                            floorId: flr.id,
+                          },
+                        });
+                        break;
+                      }
+                    }
+                  }
+                }}
+                canManage={canManage}
+              />
+            )}
+
+            {/* When Nothing Selected */}
             {!selectedNode && (
-              <Card className="p-12 text-center text-slate-500 border-dashed">
-                <FolderTree className="h-12 w-12 mx-auto text-slate-300 mb-3" />
-                <h4 className="text-base font-bold text-slate-700 dark:text-slate-300">
+              <Card className="p-12 text-center rounded-2xl border-dashed border-slate-300 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40">
+                <FolderTree className="h-12 w-12 mx-auto text-[#0F6B4F]/40 mb-3" />
+                <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">
                   Chọn một thực thể trong cây phân cấp
                 </h4>
-                <p className="text-xs text-slate-400 mt-1">
-                  Chọn Tòa nhà, Block hoặc Tầng bên trái để xem thông tin chi tiết và thao tác quản lý.
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                  Chọn Tòa nhà, Block, Tầng hoặc Căn hộ ở cây bên trái để xem đầy đủ hồ sơ vận hành 360° và thực hiện thao tác quản lý.
                 </p>
               </Card>
             )}
@@ -883,256 +1070,146 @@ export default function ApartmentsPage() {
         </div>
       )}
 
-      {/* =====================================================================
-          VIEW MODE 1: FLOOR PLAN VIEW (Hierarchical Block -> Floor -> Cards)
-          ===================================================================== */}
+      {/* 5. VIEW MODE 1: INTERACTIVE FLOOR PLAN VIEW */}
       {viewMode === 'FLOOR_PLAN' && (
-        <div className="space-y-8">
-          {isListLoading ? (
-            <div className="space-y-6 animate-pulse">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 space-y-4">
-                  <div className="h-6 w-48 bg-slate-200 dark:bg-slate-800 rounded-md" />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {Array.from({ length: 4 }).map((_, j) => (
-                      <div key={j} className="h-44 bg-slate-100 dark:bg-slate-800 rounded-xl" />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : isListError ? (
-            <ErrorState
-              title="Không thể tải sơ đồ căn hộ"
-              message={(listError as any)?.message}
-              onRetry={() => refetchList()}
-            />
-          ) : Object.keys(floorPlanGroups).length === 0 ? (
-            <div className="p-12 text-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
-              <Building2 className="h-10 w-10 text-slate-400 mx-auto mb-3" />
-              <p className="font-bold text-sm text-slate-800 dark:text-slate-200">Không tìm thấy căn hộ phù hợp</p>
-              <p className="text-xs text-slate-500 mt-1">Vui lòng điều chỉnh hoặc xóa bớt tiêu chí lọc</p>
-              <Button size="sm" variant="outline" onClick={handleResetFilters} className="mt-3 text-xs">
-                Đặt lại bộ lọc
-              </Button>
-            </div>
-          ) : (
-            Object.entries(floorPlanGroups).map(([bCode, bGroup]) => {
-              const floorEntries = Object.entries(bGroup.floors).sort(
-                ([f1], [f2]) => parseInt(f1) - parseInt(f2)
-              );
-
-              return (
-                <Card
-                  key={bCode}
-                  className="border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden"
-                >
-                  {/* Block Header */}
-                  <CardHeader className="p-4 sm:p-5 bg-gradient-to-r from-slate-50 via-emerald-50/30 to-slate-50 dark:from-slate-900 dark:via-emerald-950/20 dark:to-slate-900 border-b border-slate-200/80 dark:border-slate-800">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-[#0F6B4F] text-white shadow-sm shadow-[#0F6B4F]/30">
-                          <Building2 className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
-                              {bGroup.blockName} ({bCode})
-                            </CardTitle>
-                            <Badge variant="outline" className="text-[11px] font-semibold bg-white/80 dark:bg-slate-800">
-                              {floorEntries.length} Tầng hiển thị
-                            </Badge>
-                          </div>
-                          <CardDescription className="text-xs mt-0.5">
-                            Cấu trúc sơ đồ mặt bằng tầng và tình trạng vận hành căn hộ
-                          </CardDescription>
-                        </div>
-                      </div>
-
-                      {/* Block Quick Stats */}
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E8F5ED] text-[#0F6B4F] dark:bg-[#0F6B4F]/20 dark:text-emerald-300 font-semibold border border-[#0F6B4F]/20">
-                          <span className="h-2 w-2 rounded-full bg-[#0F6B4F]" />
-                          {bGroup.stats.occupied} Đang ở
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-semibold border border-slate-200">
-                          <span className="h-2 w-2 rounded-full bg-slate-400" />
-                          {bGroup.stats.vacant} Trống
-                        </span>
-                        {bGroup.stats.maintenance > 0 && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-semibold border border-amber-200">
-                            <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                            {bGroup.stats.maintenance} Bảo dưỡng
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="p-5 space-y-6">
-                    {floorEntries.map(([floorNum, aptList]) => (
-                      <div key={floorNum} className="space-y-3">
-                        {/* Floor Branch Line Header */}
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-mono text-xs font-bold border border-slate-200 dark:border-slate-700">
-                            <Layers className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                            Tầng {floorNum.toString().padStart(2, '0')}
-                          </div>
-                          <span className="text-xs text-slate-400 font-medium">({aptList.length} Căn hộ)</span>
-                          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-                        </div>
-
-                        {/* Apartments Grid for this Floor */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 pl-2 sm:pl-4 border-l-2 border-slate-200 dark:border-slate-800 ml-3.5">
-                          {aptList.map((apt: any) => {
-                            const isOccupied = apt.status === 'OCCUPIED';
-                            const isMaintenance = apt.status === 'UNDER_MAINTENANCE';
-                            const hasDebt = apt.unpaidInvoicesCount > 0;
-                            const hasTicket = apt.openTicketsCount > 0;
-
-                            return (
-                              <div
-                                key={apt.id}
-                                onClick={() => {
-                                  setInspectingItem(apt);
-                                  setActiveDrawerTab('DETAILS');
-                                }}
-                                className={`p-4 rounded-2xl border transition-all cursor-pointer group hover:shadow-md ${
-                                  isOccupied
-                                    ? 'bg-white dark:bg-slate-900/90 border-slate-200/90 dark:border-slate-800 hover:border-blue-500'
-                                    : isMaintenance
-                                    ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-900/60 hover:border-amber-500'
-                                    : 'bg-slate-50/60 dark:bg-slate-900/50 border-slate-200/70 dark:border-slate-800 hover:border-slate-400'
-                                }`}
-                              >
-                                {/* Card Header: Code & Consistent Status Badge */}
-                                <div className="flex items-center justify-between gap-2 mb-2.5">
-                                  <span className="font-mono text-base font-black text-slate-900 dark:text-slate-100 group-hover:text-blue-600 transition-colors">
-                                    {apt.code}
-                                  </span>
-                                  <StatusBadge type="apartment" status={apt.status} />
-                                </div>
-
-                                {/* Owner Information */}
-                                <div className="space-y-1 text-xs mb-3">
-                                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                                    <span>Chủ hộ:</span>
-                                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[130px]" title={apt.owner?.fullName}>
-                                      {apt.owner ? apt.owner.fullName : <span className="italic font-normal text-slate-400">Chưa có</span>}
-                                    </span>
-                                  </div>
-
-                                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                                    <span>Cư dân:</span>
-                                    <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                      <Users className="h-3 w-3 text-slate-400" />
-                                      {apt.residentsCount || 0} người
-                                    </span>
-                                  </div>
-
-                                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                                    <span>Quy mô:</span>
-                                    <span>
-                                      {apt.bedrooms}PN • {apt.area}m²
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Indicators: Outstanding Debt & Maintenance Ticket */}
-                                <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80 space-y-1.5">
-                                  {/* Debt Badge */}
-                                  <div className="flex items-center justify-between text-[11px]">
-                                    <span className="text-slate-400">Phí DV:</span>
-                                    {hasDebt ? (
-                                      <span className="font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                        <Receipt className="h-3 w-3" />
-                                        Nợ {formatCurrency(apt.totalDebt)}
-                                      </span>
-                                    ) : (
-                                      <span className="font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                        <CheckCircle2 className="h-3 w-3" />
-                                        Đã nộp đủ
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {/* Maintenance Issue Badge */}
-                                  <div className="flex items-center justify-between text-[11px]">
-                                    <span className="text-slate-400">Kỹ thuật:</span>
-                                    {hasTicket ? (
-                                      <span className="font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                        <Wrench className="h-3 w-3" />
-                                        {apt.openTicketsCount} sự cố mở
-                                      </span>
-                                    ) : (
-                                      <span className="font-normal text-slate-500">Bình thường</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
-      )}
-
-      {/* =====================================================================
-          VIEW MODE 2: STANDARD ENTERPRISE LIST VIEW 
-          ===================================================================== */}
-      {viewMode === 'LIST' && (
-        <DataTable
-          columns={columns}
-          data={apartments}
+        <InteractiveFloorPlan
+          apartments={apartments}
+          hierarchy={hierarchyList}
           isLoading={isListLoading}
-          isError={isListError}
-          errorMessage={(listError as any)?.message}
-          onRetry={() => refetchList()}
-          searchPlaceholder="Tìm mã căn hộ (VD: A-1001)..."
-          searchValue={search}
-          onSearchChange={(val) => {
-            setSearch(val);
-            setPage(1);
-          }}
-          page={page}
-          totalPages={meta.totalPages}
-          totalItems={meta.total}
-          onPageChange={setPage}
-          onRowClick={(row) => {
-            setInspectingItem(row);
+          onInspectApartment={(apt) => {
+            setInspectingItem(apt);
             setActiveDrawerTab('DETAILS');
           }}
-          enableRowSelection
-          selectedRowIds={selectedRowIds}
-          onRowSelect={(id: string | number) => {
-            setSelectedRowIds((prev) =>
-              prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-            );
-          }}
-          onSelectAll={() => {
-            if (selectedRowIds.length === apartments.length) setSelectedRowIds([]);
-            else setSelectedRowIds(apartments.map((a: any) => a.id));
+          onSelectApartment={(apt) => {
+            setSelectedNode({
+              type: 'APARTMENT',
+              id: apt.id,
+              data: apt,
+            });
           }}
         />
       )}
 
-      {/* =====================================================================
-          APARTMENT DETAIL DRAWER WITH HISTORY TIMELINE
-          ===================================================================== */}
+      {/* 6. VIEW MODE 2: ENTERPRISE DATA TABLE LIST VIEW */}
+      {viewMode === 'LIST' && (
+        <div className="space-y-4">
+          <FilterBar
+            activeTags={activeTags}
+            hasActiveFilters={hasActiveFilters}
+            onReset={handleResetFilters}
+            totalCount={apartments.length}
+            totalCountLabel="Căn hộ hiển thị"
+          >
+            {/* Search */}
+            <div className="relative w-56">
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                placeholder="Tìm mã căn, chủ hộ..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8.5 h-9 text-xs bg-white dark:bg-slate-900 rounded-xl"
+              />
+            </div>
+
+            {/* Filter Block */}
+            <div className="w-40">
+              <Select
+                value={blockFilter}
+                onChange={(e) => {
+                  setBlockFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="rounded-xl"
+              >
+                <option value="">Tất cả Block / Tòa</option>
+                <option value="Block A">Block A</option>
+                <option value="Block B">Block B</option>
+                <option value="Block C">Block C</option>
+              </Select>
+            </div>
+
+            {/* Filter Floor */}
+            <div className="w-36">
+              <Select
+                value={floorFilter}
+                onChange={(e) => {
+                  setFloorFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="rounded-xl"
+              >
+                <option value="">Tất cả các tầng</option>
+                {allFloorNumbers.map((fl) => (
+                  <option key={fl} value={fl.toString()}>
+                    Tầng {fl.toString().padStart(2, '0')}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {/* Filter Status */}
+            <div className="w-40">
+              <Select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="rounded-xl"
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="OCCUPIED">Đang ở</option>
+                <option value="VACANT">Đang trống</option>
+                <option value="UNDER_MAINTENANCE">Đang sửa chữa</option>
+              </Select>
+            </div>
+          </FilterBar>
+
+          <DataTable
+            columns={columns}
+            data={apartments}
+            isLoading={isListLoading}
+            isError={isListError}
+            errorMessage={(listError as any)?.message}
+            onRetry={() => refetchList()}
+            searchPlaceholder="Tìm mã căn hộ (VD: A-1001)..."
+            searchValue={search}
+            onSearchChange={(val) => {
+              setSearch(val);
+              setPage(1);
+            }}
+            page={page}
+            totalPages={meta.totalPages}
+            totalItems={meta.total}
+            onPageChange={setPage}
+            onRowClick={(row) => {
+              setInspectingItem(row);
+              setActiveDrawerTab('DETAILS');
+            }}
+            enableRowSelection
+            selectedRowIds={selectedRowIds}
+            onRowSelect={(id: string | number) => {
+              setSelectedRowIds((prev) =>
+                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+              );
+            }}
+            onSelectAll={() => {
+              if (selectedRowIds.length === apartments.length) setSelectedRowIds([]);
+              else setSelectedRowIds(apartments.map((a: any) => a.id));
+            }}
+          />
+        </div>
+      )}
+
+      {/* 7. QUICK INSPECT DRAWER WITH TIMELINE */}
       {inspectingItem && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in">
           <div className="w-full max-w-lg bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800 animate-in slide-in-from-right duration-200">
             {/* Drawer Header */}
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-950/60">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
-                  <Building2 className="h-5 w-5" />
+                <div className="p-2.5 rounded-xl bg-[#E8F5ED] text-[#0F6B4F]">
+                  <Home className="h-5 w-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -1141,7 +1218,7 @@ export default function ApartmentsPage() {
                     </h3>
                     <StatusBadge type="apartment" status={inspectingItem.status} />
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     {inspectingItem.building} • Tầng {inspectingItem.floor}
                   </p>
                 </div>
@@ -1152,11 +1229,11 @@ export default function ApartmentsPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => router.push(`/apartments/${inspectingItem.id}`)}
-                  className="text-xs gap-1.5 h-8 font-semibold bg-white dark:bg-slate-800"
+                  className="text-xs gap-1.5 h-8 font-semibold"
                   title="Mở toàn màn hình trang chi tiết 360°"
                 >
-                  <ExternalLink className="h-3.5 w-3.5 text-blue-600" />
-                  Trang chi tiết 360°
+                  <ExternalLink className="h-3.5 w-3.5 text-[#0F6B4F]" />
+                  Chi tiết 360°
                 </Button>
                 <Button
                   variant="ghost"
@@ -1169,27 +1246,29 @@ export default function ApartmentsPage() {
               </div>
             </div>
 
-            {/* Tab Navigation: Details vs History Timeline */}
+            {/* Tab Navigation: Details vs History */}
             <div className="flex border-b border-slate-200 dark:border-slate-800 px-5 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setActiveDrawerTab('DETAILS')}
-                className={`py-3 px-3 border-b-2 transition-all cursor-pointer ${
+                className={cn(
+                  'py-3 px-3 border-b-2 transition-all cursor-pointer',
                   activeDrawerTab === 'DETAILS'
-                    ? 'border-blue-600 text-blue-600 font-bold'
+                    ? 'border-[#0F6B4F] text-[#0F6B4F] font-bold'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
+                )}
               >
                 Thông tin Căn hộ
               </button>
               <button
                 type="button"
                 onClick={() => setActiveDrawerTab('HISTORY')}
-                className={`py-3 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={cn(
+                  'py-3 px-3 border-b-2 transition-all flex items-center gap-1.5 cursor-pointer',
                   activeDrawerTab === 'HISTORY'
-                    ? 'border-blue-600 text-blue-600 font-bold'
+                    ? 'border-[#0F6B4F] text-[#0F6B4F] font-bold'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
+                )}
               >
                 <History className="h-3.5 w-3.5" />
                 Lịch sử Biến động ({historyList.length})
@@ -1200,33 +1279,34 @@ export default function ApartmentsPage() {
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
               {activeDrawerTab === 'DETAILS' && (
                 <div className="space-y-6">
-                  {/* Basic Specifications */}
+                  {/* Specifications */}
                   <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60">
                       <span className="text-slate-500 block mb-0.5">Diện tích sàn</span>
-                      <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                      <span className="font-black text-base text-slate-900 dark:text-slate-100 font-mono">
                         {inspectingItem.area} m²
                       </span>
                     </div>
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-                      <span className="text-slate-500 block mb-0.5">Cấu trúc</span>
+                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60">
+                      <span className="text-slate-500 block mb-0.5">Cấu trúc phòng</span>
                       <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                        {inspectingItem.bedrooms} PN, {inspectingItem.bathrooms} PT
+                        {inspectingItem.bedrooms} PN &bull; {inspectingItem.bathrooms} PT
                       </span>
                     </div>
                   </div>
 
-                  {/* Financial & Maintenance Status */}
-                  <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-2 text-xs">
+                  {/* Financial & Maintenance */}
+                  <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 space-y-2 text-xs">
                     <span className="font-bold uppercase tracking-wider text-slate-400 block text-[10px]">
                       Tình trạng dịch vụ & tài chính
                     </span>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Công nợ hiện tại:</span>
                       <span
-                        className={`font-bold ${
-                          inspectingItem.totalDebt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600'
-                        }`}
+                        className={cn(
+                          'font-bold',
+                          inspectingItem.totalDebt > 0 ? 'text-rose-600 font-mono' : 'text-emerald-600'
+                        )}
                       >
                         {inspectingItem.totalDebt > 0
                           ? formatCurrency(inspectingItem.totalDebt)
@@ -1234,26 +1314,27 @@ export default function ApartmentsPage() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500">Sự cố bảo trì đang mở:</span>
+                      <span className="text-slate-500">Sự cố kỹ thuật:</span>
                       <span
-                        className={`font-bold ${
+                        className={cn(
+                          'font-bold',
                           inspectingItem.openTicketsCount > 0 ? 'text-amber-600' : 'text-emerald-600'
-                        }`}
+                        )}
                       >
                         {inspectingItem.openTicketsCount > 0
-                          ? `${inspectingItem.openTicketsCount} yêu cầu đang xử lý`
-                          : 'Không có sự cố nào'}
+                          ? `${inspectingItem.openTicketsCount} phản ánh đang xử lý`
+                          : 'Hoạt động bình thường'}
                       </span>
                     </div>
                   </div>
 
-                  {/* HOUSEHOLD Hierarchy Section */}
+                  {/* Residents breakdown */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-slate-800">
                       <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <Users className="h-4 w-4 text-[#0F6B4F]" />
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
-                          HỘ GIA ĐÌNH
+                          Hộ gia đình
                         </h4>
                       </div>
                       <Badge variant="outline" className="text-[10px] font-mono">
@@ -1270,76 +1351,52 @@ export default function ApartmentsPage() {
 
                       if (allRes.length === 0) {
                         return (
-                          <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 italic">
-                            Chưa có thông tin nhân khẩu / hộ gia đình đăng ký
+                          <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center text-xs text-slate-400 italic">
+                            Chưa có thông tin nhân khẩu đăng ký
                           </div>
                         );
                       }
 
                       return (
                         <div className="space-y-3">
-                          {/* 👤 Chủ hộ */}
-                          {owner ? (
-                            <div className="p-3 rounded-xl border-2 border-[#0F6B4F]/20 bg-[#E8F5ED]/40 dark:bg-[#0F6B4F]/10 space-y-1.5">
+                          {owner && (
+                            <div className="p-3 rounded-xl border-2 border-[#0F6B4F]/20 bg-[#E8F5ED]/40 space-y-1.5">
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F6B4F] dark:text-emerald-300">
-                                  <span className="text-base leading-none">👤</span>
-                                  <span>Chủ hộ</span>
-                                </div>
-                                <Badge className="bg-[#0F6B4F] hover:bg-[#0c5942] text-white text-[10px]">
-                                  CHỦ SỞ HỮU
-                                </Badge>
+                                <span className="text-xs font-bold text-[#0F6B4F] flex items-center gap-1.5">
+                                  <span>👤</span> Chủ sở hữu (Chủ hộ)
+                                </span>
+                                <Badge className="bg-[#0F6B4F] text-white text-[10px]">CHỦ HỘ</Badge>
                               </div>
                               <div className="flex items-center justify-between text-xs pt-1">
                                 <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
                                   {owner.fullName}
                                 </span>
                                 <span className="text-[11px] text-emerald-600 font-medium">
-                                  {owner.status === 'RESIDING' ? 'Đang cư trú' : owner.status === 'TEMPORARY_ABSENT' ? 'Tạm vắng' : 'Đã dọn đi'}
+                                  {owner.status === 'RESIDING' ? 'Đang cư trú' : 'Tạm vắng'}
                                 </span>
                               </div>
-                              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" /> {owner.phone || 'Chưa có SĐT'}
-                                </span>
-                                {owner.identityCard && (
-                                  <span className="font-mono text-slate-400">CCCD: {owner.identityCard}</span>
-                                )}
+                              <div className="text-[11px] text-slate-500 pt-0.5 flex items-center gap-1">
+                                <Phone className="h-3 w-3" /> {owner.phone || 'Chưa có SĐT'}
                               </div>
-                            </div>
-                          ) : (
-                            <div className="p-2.5 rounded-xl border border-amber-200 bg-amber-50/40 dark:bg-amber-950/20 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                              <span>⚠️</span> Chưa xác lập chủ sở hữu chính thức
                             </div>
                           )}
 
-                          {/* 👩👦 Thành viên gia đình */}
                           {family.length > 0 && (
                             <div className="space-y-1.5">
-                              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                                <span>👩‍👦</span> Thành viên gia đình ({family.length})
+                              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                👩‍👦 Thành viên gia đình ({family.length})
                               </span>
-                              <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
-                                {family.map((m: any, idx: number) => (
+                              <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white">
+                                {family.map((m: any) => (
                                   <div key={m.id} className="p-2.5 flex items-center justify-between text-xs">
                                     <div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-slate-900 dark:text-slate-100">
-                                          {idx % 2 === 0 ? '👩' : '👦'} {m.fullName}
-                                        </span>
-                                        <Badge variant="secondary" className="text-[10px]">
-                                          Thành viên
-                                        </Badge>
-                                      </div>
-                                      <div className="flex items-center gap-3 text-slate-400 text-[11px] mt-0.5">
-                                        <span className="flex items-center gap-1">
-                                          <Phone className="h-3 w-3" /> {m.phone || '—'}
-                                        </span>
-                                        {m.identityCard && <span className="font-mono">CCCD: {m.identityCard}</span>}
+                                      <span className="font-semibold text-slate-900">{m.fullName}</span>
+                                      <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                                        <Phone className="h-3 w-3" /> {m.phone || '—'}
                                       </div>
                                     </div>
-                                    <span className="text-[11px] font-medium text-emerald-600">
-                                      {m.status === 'RESIDING' ? 'Đang cư trú' : m.status === 'TEMPORARY_ABSENT' ? 'Tạm vắng' : 'Đã dọn đi'}
+                                    <span className="text-[11px] text-emerald-600 font-medium">
+                                      {m.status === 'RESIDING' ? 'Đang cư trú' : 'Tạm vắng'}
                                     </span>
                                   </div>
                                 ))}
@@ -1347,67 +1404,22 @@ export default function ApartmentsPage() {
                             </div>
                           )}
 
-                          {/* 🏠 Khách thuê */}
                           {tenants.length > 0 && (
                             <div className="space-y-1.5">
-                              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                                <span>🏠</span> Khách thuê ({tenants.length})
+                              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                🏠 Khách thuê ({tenants.length})
                               </span>
-                              <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+                              <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white">
                                 {tenants.map((t: any) => (
                                   <div key={t.id} className="p-2.5 flex items-center justify-between text-xs">
                                     <div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-slate-900 dark:text-slate-100">
-                                          🏠 {t.fullName}
-                                        </span>
-                                        <Badge variant="outline" className="text-[10px] text-purple-600 border-purple-200 bg-purple-50/50 dark:bg-purple-950/20">
-                                          Khách thuê
-                                        </Badge>
-                                      </div>
-                                      <div className="flex items-center gap-3 text-slate-400 text-[11px] mt-0.5">
-                                        <span className="flex items-center gap-1">
-                                          <Phone className="h-3 w-3" /> {t.phone || '—'}
-                                        </span>
-                                        {t.identityCard && <span className="font-mono">CCCD: {t.identityCard}</span>}
+                                      <span className="font-semibold text-slate-900">🏠 {t.fullName}</span>
+                                      <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                                        <Phone className="h-3 w-3" /> {t.phone || '—'}
                                       </div>
                                     </div>
-                                    <span className="text-[11px] font-medium text-purple-600">
-                                      {t.status === 'RESIDING' ? 'Đang thuê' : t.status === 'TEMPORARY_ABSENT' ? 'Tạm vắng' : 'Hết hạn thuê'}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* ⏱️ Tạm trú */}
-                          {temporary.length > 0 && (
-                            <div className="space-y-1.5">
-                              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                                <span>⏱️</span> Nhân khẩu tạm trú ({temporary.length})
-                              </span>
-                              <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
-                                {temporary.map((tr: any) => (
-                                  <div key={tr.id} className="p-2.5 flex items-center justify-between text-xs">
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-slate-900 dark:text-slate-100">
-                                          ⏱️ {tr.fullName}
-                                        </span>
-                                        <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
-                                          Tạm trú
-                                        </Badge>
-                                      </div>
-                                      <div className="flex items-center gap-3 text-slate-400 text-[11px] mt-0.5">
-                                        <span className="flex items-center gap-1">
-                                          <Phone className="h-3 w-3" /> {tr.phone || '—'}
-                                        </span>
-                                        {tr.identityCard && <span className="font-mono">CCCD: {tr.identityCard}</span>}
-                                      </div>
-                                    </div>
-                                    <span className="text-[11px] font-medium text-amber-600">
-                                      {tr.status === 'RESIDING' ? 'Còn hạn' : 'Hết hạn'}
+                                    <span className="text-[11px] text-purple-600 font-medium">
+                                      {t.status === 'RESIDING' ? 'Đang thuê' : 'Hết hạn'}
                                     </span>
                                   </div>
                                 ))}
@@ -1421,47 +1433,47 @@ export default function ApartmentsPage() {
 
                   {/* Note */}
                   {inspectingItem.note && (
-                    <div className="p-3.5 rounded-xl bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/40 text-xs">
-                      <span className="font-bold text-blue-900 dark:text-blue-300 block mb-1">Ghi chú căn hộ:</span>
-                      <p className="text-slate-700 dark:text-slate-300">{inspectingItem.note}</p>
+                    <div className="p-3.5 rounded-xl bg-[#E8F5ED]/40 border border-[#0F6B4F]/20 text-xs">
+                      <span className="font-bold text-[#0F6B4F] block mb-1">Ghi chú:</span>
+                      <p className="text-slate-700">{inspectingItem.note}</p>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* ===================================================================
-                  TAB 2: HISTORY TIMELINE
-                  =================================================================== */}
+              {/* History Timeline Tab */}
               {activeDrawerTab === 'HISTORY' && (
                 <div className="space-y-5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                       Dòng thời gian biến động căn hộ
                     </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setIsAddHistoryOpen(true)}
-                      className="text-xs h-7 gap-1"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Ghi nhận sự kiện
-                    </Button>
+                    {canManage && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsAddHistoryOpen(true)}
+                        className="text-xs h-7 gap-1"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Ghi nhận sự kiện
+                      </Button>
+                    )}
                   </div>
 
                   {isHistoryLoading ? (
                     <div className="space-y-4 animate-pulse">
                       {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+                        <div key={i} className="h-16 bg-slate-100 rounded-xl" />
                       ))}
                     </div>
                   ) : historyList.length === 0 ? (
                     <div className="py-12 text-center text-slate-400 space-y-2">
-                      <History className="h-8 w-8 mx-auto text-slate-300 dark:text-slate-600" />
+                      <History className="h-8 w-8 mx-auto text-slate-300" />
                       <p className="text-xs font-semibold">Chưa có bản ghi lịch sử nào</p>
-                      <p className="text-[11px]">Các sự kiện chuyển nhượng, đổi trạng thái sẽ được ghi nhận tại đây.</p>
+                      <p className="text-[11px]">Các sự kiện chuyển nhượng, đổi trạng thái sẽ được lưu tại đây.</p>
                     </div>
                   ) : (
-                    <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
+                    <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
                       {historyList.map((item: any) => {
                         const isOwnerTransfer = item.event === 'OWNER_TRANSFER';
                         const isMoveIn = item.event === 'RESIDENT_MOVE_IN' || item.event === 'TENANT_MOVE_IN';
@@ -1477,25 +1489,27 @@ export default function ApartmentsPage() {
 
                         const eventBadgeLabel =
                           item.event === 'OWNER_TRANSFER'
-                            ? 'Chuyển quyền sở hữu'
+                            ? 'Chuyển nhượng'
                             : item.event === 'RESIDENT_MOVE_IN'
                             ? 'Cư dân dọn vào'
                             : item.event === 'TENANT_MOVE_IN'
                             ? 'Khách thuê dọn vào'
                             : item.event === 'RESIDENT_MOVE_OUT'
-                            ? 'Cư dân chuyển đi'
+                            ? 'Cư dân dọn đi'
                             : item.event === 'TENANT_MOVE_OUT'
                             ? 'Khách thuê dọn đi'
-                            : 'Thay đổi trạng thái';
+                            : 'Đổi trạng thái';
 
                         return (
                           <div key={item.id} className="relative group">
-                            {/* Timeline Node Dot */}
                             <div
-                              className={`absolute -left-[27px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white dark:border-slate-900 ${dotBg} shadow-xs`}
+                              className={cn(
+                                'absolute -left-[27px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs',
+                                dotBg
+                              )}
                             />
 
-                            <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-2xs space-y-1">
+                            <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white shadow-2xs space-y-1">
                               <div className="flex flex-wrap items-center justify-between gap-1.5">
                                 <Badge variant="secondary" className="text-[10px] font-semibold">
                                   {eventBadgeLabel}
@@ -1505,19 +1519,17 @@ export default function ApartmentsPage() {
                                 </span>
                               </div>
 
-                              <h5 className="text-xs font-bold text-slate-900 dark:text-slate-100 mt-1">
-                                {item.title}
-                              </h5>
+                              <h5 className="text-xs font-bold text-slate-900 mt-1">{item.title}</h5>
 
                               {item.description && (
-                                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                                <p className="text-[11px] text-slate-600 leading-relaxed">
                                   {item.description}
                                 </p>
                               )}
 
                               {item.performedBy && (
-                                <p className="text-[10px] text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/60">
-                                  Người thực hiện: <span className="font-semibold text-slate-600 dark:text-slate-300">{item.performedBy}</span>
+                                <p className="text-[10px] text-slate-400 pt-1 border-t border-slate-100">
+                                  Người thực hiện: <span className="font-semibold text-slate-600">{item.performedBy}</span>
                                 </p>
                               )}
                             </div>
@@ -1531,35 +1543,26 @@ export default function ApartmentsPage() {
             </div>
 
             {/* Drawer Footer Actions */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 flex items-center justify-between">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setInspectingItem(null)}
-                className="text-xs"
-              >
+            <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex items-center justify-between">
+              <Button variant="outline" size="sm" onClick={() => setInspectingItem(null)} className="text-xs">
                 Đóng
               </Button>
-              <div className="flex items-center gap-2">
+              {canManage && (
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    handleOpenEdit(inspectingItem);
-                  }}
-                  className="text-xs gap-1.5"
+                  onClick={() => handleOpenEdit(inspectingItem)}
+                  className="text-xs gap-1.5 font-semibold"
                 >
                   <Edit className="h-3.5 w-3.5" /> Chỉnh sửa
                 </Button>
-              </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* =====================================================================
-          DIALOG: CREATE / EDIT APARTMENT
-          ===================================================================== */}
+      {/* 8. MODAL: CREATE / EDIT APARTMENT */}
       <FormDialog
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
@@ -1569,7 +1572,7 @@ export default function ApartmentsPage() {
         isLoading={createMutation.isPending || updateMutation.isPending}
       >
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <label className="text-xs font-semibold text-slate-700">
             Mã căn hộ <span className="text-rose-500">*</span>
           </label>
           <Input
@@ -1577,17 +1580,19 @@ export default function ApartmentsPage() {
             value={formData.code}
             onChange={(e) => setFormData({ ...formData, code: e.target.value })}
             required
+            className="rounded-xl font-mono uppercase"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-semibold text-slate-700">
               Khối / Tòa nhà <span className="text-rose-500">*</span>
             </label>
             <Select
               value={formData.building}
               onChange={(e) => setFormData({ ...formData, building: e.target.value })}
+              className="rounded-xl"
             >
               <option value="Tòa A">Tòa A</option>
               <option value="Tòa B">Tòa B</option>
@@ -1596,7 +1601,7 @@ export default function ApartmentsPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-semibold text-slate-700">
               Tầng số <span className="text-rose-500">*</span>
             </label>
             <Input
@@ -1605,13 +1610,14 @@ export default function ApartmentsPage() {
               value={formData.floor}
               onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) || 1 })}
               required
+              className="rounded-xl font-mono"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label className="text-xs font-semibold text-slate-700">
               Diện tích (m²) <span className="text-rose-500">*</span>
             </label>
             <Input
@@ -1621,14 +1627,16 @@ export default function ApartmentsPage() {
               value={formData.area}
               onChange={(e) => setFormData({ ...formData, area: parseFloat(e.target.value) || 0 })}
               required
+              className="rounded-xl font-mono"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Trạng thái</label>
+            <label className="text-xs font-semibold text-slate-700">Trạng thái</label>
             <Select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as ApartmentStatus })}
+              className="rounded-xl"
             >
               <option value="VACANT">Đang trống</option>
               <option value="OCCUPIED">Đang ở</option>
@@ -1639,54 +1647,56 @@ export default function ApartmentsPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Số phòng ngủ</label>
+            <label className="text-xs font-semibold text-slate-700">Số phòng ngủ</label>
             <Input
               type="number"
               min={1}
               value={formData.bedrooms}
               onChange={(e) => setFormData({ ...formData, bedrooms: parseInt(e.target.value) || 1 })}
+              className="rounded-xl font-mono"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Số phòng tắm</label>
+            <label className="text-xs font-semibold text-slate-700">Số phòng tắm</label>
             <Input
               type="number"
               min={1}
               value={formData.bathrooms}
               onChange={(e) => setFormData({ ...formData, bathrooms: parseInt(e.target.value) || 1 })}
+              className="rounded-xl font-mono"
             />
           </div>
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Ghi chú thêm</label>
+          <label className="text-xs font-semibold text-slate-700">Ghi chú thêm</label>
           <Input
-            placeholder="Nội thất bàn giao, hướng ban công..."
+            placeholder="Nội thất bàn giao, ban công..."
             value={formData.note}
             onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+            className="rounded-xl"
           />
         </div>
       </FormDialog>
 
-      {/* =====================================================================
-          DIALOG: ADD HISTORY EVENT
-          ===================================================================== */}
+      {/* 9. MODAL: ADD HISTORY EVENT */}
       <FormDialog
         open={isAddHistoryOpen}
         onOpenChange={setIsAddHistoryOpen}
-        title={`Ghi nhận sự kiện cho Căn hộ ${inspectingItem?.code}`}
+        title={`Ghi nhận sự kiện cho Căn hộ ${inspectingItem?.code || selectedNode?.data?.code || ''}`}
         description="Ghi nhận dòng thời gian bàn giao, chuyển quyền sở hữu hoặc dọn vào/ra của cư dân."
         onSubmit={handleAddHistorySubmit}
         isLoading={createHistoryMutation.isPending}
       >
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <label className="text-xs font-semibold text-slate-700">
             Loại sự kiện <span className="text-rose-500">*</span>
           </label>
           <Select
             value={historyForm.event}
             onChange={(e) => setHistoryForm({ ...historyForm, event: e.target.value as ApartmentHistoryEvent })}
+            className="rounded-xl"
           >
             <option value="OWNER_TRANSFER">OWNER_TRANSFER (Chuyển nhượng quyền sở hữu)</option>
             <option value="TENANT_MOVE_IN">TENANT_MOVE_IN (Khách thuê dọn vào)</option>
@@ -1698,7 +1708,7 @@ export default function ApartmentsPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <label className="text-xs font-semibold text-slate-700">
             Tiêu đề sự kiện <span className="text-rose-500">*</span>
           </label>
           <Input
@@ -1706,22 +1716,22 @@ export default function ApartmentsPage() {
             value={historyForm.title}
             onChange={(e) => setHistoryForm({ ...historyForm, title: e.target.value })}
             required
+            className="rounded-xl"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Mô tả chi tiết
-          </label>
+          <label className="text-xs font-semibold text-slate-700">Mô tả chi tiết</label>
           <Input
             placeholder="Nội dung biên bản, số hợp đồng hoặc tình trạng bàn giao..."
             value={historyForm.description}
             onChange={(e) => setHistoryForm({ ...historyForm, description: e.target.value })}
+            className="rounded-xl"
           />
         </div>
       </FormDialog>
 
-      {/* Delete Confirmation */}
+      {/* 10. DELETE CONFIRMATION */}
       <ConfirmDialog
         open={Boolean(deletingId)}
         onOpenChange={(open) => !open && setDeletingId(null)}
@@ -1731,7 +1741,7 @@ export default function ApartmentsPage() {
         onConfirm={handleDeleteConfirm}
       />
 
-      {/* Hierarchy Modals */}
+      {/* 11. HIERARCHY CRUD MODALS */}
       <BuildingFormModal
         open={isBuildingModalOpen}
         onOpenChange={setIsBuildingModalOpen}

@@ -579,98 +579,257 @@ async function main() {
   });
 
   // 5. Residents Profiles
-  console.log('--> Seeding Resident Profiles...');
+  console.log('--> Seeding Resident Profiles & Occupancy / Ownership Relations...');
   const residentProfileA1001 = await prisma.resident.upsert({
     where: { identityCard: '012345678901' },
-    update: { userId: residentUser.id, apartmentId: aptMap['A-1001'].id },
+    update: { userId: residentUser.id },
     create: {
       userId: residentUser.id,
-      apartmentId: aptMap['A-1001'].id,
       fullName: 'Nguyễn Văn An',
       identityCard: '012345678901',
       phone: '0987654321',
       email: 'resident@building.com',
       gender: 'Nam',
-      relationshipToOwner: ResidentRelationship.OWNER,
       status: ResidentStatus.RESIDING,
     },
   });
 
-  const residentProfileA1001_spouse = await prisma.resident.upsert({
-    where: { identityCard: '012345678902' },
-    update: { apartmentId: aptMap['A-1001'].id },
+  await prisma.apartmentResident.upsert({
+    where: {
+      apartmentId_residentId_startDate: {
+        apartmentId: aptMap['A-1001'].id,
+        residentId: residentProfileA1001.id,
+        startDate: new Date('2024-01-01'),
+      },
+    },
+    update: { roleInHousehold: 'HEAD_OF_HOUSEHOLD', isLivingHere: true },
     create: {
       apartmentId: aptMap['A-1001'].id,
+      residentId: residentProfileA1001.id,
+      roleInHousehold: 'HEAD_OF_HOUSEHOLD',
+      isLivingHere: true,
+      startDate: new Date('2024-01-01'),
+    },
+  });
+
+  const existingOwnA1001 = await prisma.apartmentOwnership.findFirst({
+    where: { apartmentId: aptMap['A-1001'].id, ownerResidentId: residentProfileA1001.id },
+  });
+  if (!existingOwnA1001) {
+    await prisma.apartmentOwnership.create({
+      data: {
+        apartmentId: aptMap['A-1001'].id,
+        ownerResidentId: residentProfileA1001.id,
+        ownershipType: 'SOLE',
+        ownershipPercentage: 100,
+        isCurrent: true,
+        startDate: new Date('2024-01-01'),
+      },
+    });
+  }
+
+  const residentProfileA1001_spouse = await prisma.resident.upsert({
+    where: { identityCard: '012345678902' },
+    update: {},
+    create: {
       fullName: 'Phạm Thu Hương',
       identityCard: '012345678902',
       phone: '0987654322',
       email: 'thuhuong.pham@gmail.com',
       gender: 'Nữ',
-      relationshipToOwner: ResidentRelationship.FAMILY,
       status: ResidentStatus.RESIDING,
     },
   });
 
+  await prisma.apartmentResident.upsert({
+    where: {
+      apartmentId_residentId_startDate: {
+        apartmentId: aptMap['A-1001'].id,
+        residentId: residentProfileA1001_spouse.id,
+        startDate: new Date('2024-01-01'),
+      },
+    },
+    update: { roleInHousehold: 'FAMILY_MEMBER', isLivingHere: true },
+    create: {
+      apartmentId: aptMap['A-1001'].id,
+      residentId: residentProfileA1001_spouse.id,
+      roleInHousehold: 'FAMILY_MEMBER',
+      isLivingHere: true,
+      startDate: new Date('2024-01-01'),
+    },
+  });
 
   const residentProfileA1002 = await prisma.resident.upsert({
     where: { identityCard: '023456789012' },
-    update: { apartmentId: aptMap['A-1002'].id },
+    update: {},
     create: {
-      apartmentId: aptMap['A-1002'].id,
       fullName: 'Hoàng Quốc Dũng',
       identityCard: '023456789012',
       phone: '0944556677',
       email: 'dung.hoang@vietcombank.com',
       gender: 'Nam',
-      relationshipToOwner: ResidentRelationship.OWNER,
       status: ResidentStatus.RESIDING,
     },
   });
 
+  await prisma.apartmentResident.upsert({
+    where: {
+      apartmentId_residentId_startDate: {
+        apartmentId: aptMap['A-1002'].id,
+        residentId: residentProfileA1002.id,
+        startDate: new Date('2024-02-01'),
+      },
+    },
+    update: { roleInHousehold: 'HEAD_OF_HOUSEHOLD', isLivingHere: true },
+    create: {
+      apartmentId: aptMap['A-1002'].id,
+      residentId: residentProfileA1002.id,
+      roleInHousehold: 'HEAD_OF_HOUSEHOLD',
+      isLivingHere: true,
+      startDate: new Date('2024-02-01'),
+    },
+  });
+
+  const existingOwnA1002 = await prisma.apartmentOwnership.findFirst({
+    where: { apartmentId: aptMap['A-1002'].id, ownerResidentId: residentProfileA1002.id },
+  });
+  if (!existingOwnA1002) {
+    await prisma.apartmentOwnership.create({
+      data: {
+        apartmentId: aptMap['A-1002'].id,
+        ownerResidentId: residentProfileA1002.id,
+        ownershipType: 'SOLE',
+        ownershipPercentage: 100,
+        isCurrent: true,
+        startDate: new Date('2024-02-01'),
+      },
+    });
+  }
+
   const residentProfileB2001 = await prisma.resident.upsert({
     where: { identityCard: '098765432109' },
-    update: { apartmentId: aptMap['B-2001'].id },
+    update: {},
     create: {
-      apartmentId: aptMap['B-2001'].id,
       fullName: 'Trần Thị Bình',
       identityCard: '098765432109',
       phone: '0977112233',
       email: 'binhtran@gmail.com',
       gender: 'Nữ',
-      relationshipToOwner: ResidentRelationship.OWNER,
       status: ResidentStatus.RESIDING,
     },
   });
 
+  await prisma.apartmentResident.upsert({
+    where: {
+      apartmentId_residentId_startDate: {
+        apartmentId: aptMap['B-2001'].id,
+        residentId: residentProfileB2001.id,
+        startDate: new Date('2024-03-01'),
+      },
+    },
+    update: { roleInHousehold: 'HEAD_OF_HOUSEHOLD', isLivingHere: true },
+    create: {
+      apartmentId: aptMap['B-2001'].id,
+      residentId: residentProfileB2001.id,
+      roleInHousehold: 'HEAD_OF_HOUSEHOLD',
+      isLivingHere: true,
+      startDate: new Date('2024-03-01'),
+    },
+  });
+
+  const existingOwnB2001 = await prisma.apartmentOwnership.findFirst({
+    where: { apartmentId: aptMap['B-2001'].id, ownerResidentId: residentProfileB2001.id },
+  });
+  if (!existingOwnB2001) {
+    await prisma.apartmentOwnership.create({
+      data: {
+        apartmentId: aptMap['B-2001'].id,
+        ownerResidentId: residentProfileB2001.id,
+        ownershipType: 'SOLE',
+        ownershipPercentage: 100,
+        isCurrent: true,
+        startDate: new Date('2024-03-01'),
+      },
+    });
+  }
+
   const residentProfileB2002 = await prisma.resident.upsert({
     where: { identityCard: '034567890123' },
-    update: { apartmentId: aptMap['B-2002'].id },
+    update: {},
     create: {
-      apartmentId: aptMap['B-2002'].id,
       fullName: 'Đặng Tuấn Kiệt',
       identityCard: '034567890123',
       phone: '0911223344',
       email: 'kiet.dang@fpt.com',
       gender: 'Nam',
-      relationshipToOwner: ResidentRelationship.TENANT,
       status: ResidentStatus.RESIDING,
+    },
+  });
+
+  await prisma.apartmentResident.upsert({
+    where: {
+      apartmentId_residentId_startDate: {
+        apartmentId: aptMap['B-2002'].id,
+        residentId: residentProfileB2002.id,
+        startDate: new Date('2024-04-01'),
+      },
+    },
+    update: { roleInHousehold: 'TENANT', isLivingHere: true },
+    create: {
+      apartmentId: aptMap['B-2002'].id,
+      residentId: residentProfileB2002.id,
+      roleInHousehold: 'TENANT',
+      isLivingHere: true,
+      startDate: new Date('2024-04-01'),
     },
   });
 
   const residentProfileC0501 = await prisma.resident.upsert({
     where: { identityCard: '045678901234' },
-    update: { apartmentId: aptMap['C-0501'].id },
+    update: {},
     create: {
-      apartmentId: aptMap['C-0501'].id,
       fullName: 'Vũ Đình Trọng',
       identityCard: '045678901234',
       phone: '0922334455',
       email: 'trongvu@techcom.vn',
       gender: 'Nam',
-      relationshipToOwner: ResidentRelationship.OWNER,
       status: ResidentStatus.RESIDING,
     },
   });
+
+  await prisma.apartmentResident.upsert({
+    where: {
+      apartmentId_residentId_startDate: {
+        apartmentId: aptMap['C-0501'].id,
+        residentId: residentProfileC0501.id,
+        startDate: new Date('2024-05-01'),
+      },
+    },
+    update: { roleInHousehold: 'HEAD_OF_HOUSEHOLD', isLivingHere: true },
+    create: {
+      apartmentId: aptMap['C-0501'].id,
+      residentId: residentProfileC0501.id,
+      roleInHousehold: 'HEAD_OF_HOUSEHOLD',
+      isLivingHere: true,
+      startDate: new Date('2024-05-01'),
+    },
+  });
+
+  const existingOwnC0501 = await prisma.apartmentOwnership.findFirst({
+    where: { apartmentId: aptMap['C-0501'].id, ownerResidentId: residentProfileC0501.id },
+  });
+  if (!existingOwnC0501) {
+    await prisma.apartmentOwnership.create({
+      data: {
+        apartmentId: aptMap['C-0501'].id,
+        ownerResidentId: residentProfileC0501.id,
+        ownershipType: 'SOLE',
+        ownershipPercentage: 100,
+        isCurrent: true,
+        startDate: new Date('2024-05-01'),
+      },
+    });
+  }
 
   // 6. Contracts with Smart Alert triggers (expiring soon, active, expired)
   console.log('--> Seeding Contracts...');

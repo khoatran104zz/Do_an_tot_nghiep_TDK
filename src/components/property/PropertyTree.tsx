@@ -15,10 +15,18 @@ import {
   Wrench,
   Receipt,
   Users,
+  Plus,
+  ChevronsUpDown,
+  Filter,
+  X,
+  RotateCcw,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { ApartmentStatus } from '@prisma/client';
 
 export type SelectedNodeType = 'BUILDING' | 'BLOCK' | 'FLOOR' | 'APARTMENT';
 
@@ -46,6 +54,7 @@ interface PropertyTreeProps {
   onAddBlock?: (buildingId: string) => void;
   onAddFloor?: (blockId: string) => void;
   onAddApartment?: (floorId: string) => void;
+  canManage?: boolean;
   className?: string;
 }
 
@@ -59,10 +68,12 @@ export function PropertyTree({
   onAddBlock,
   onAddFloor,
   onAddApartment,
+  canManage = true,
   className,
 }: PropertyTreeProps) {
   const treeData = hierarchy || buildings || [];
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
 
   const toggleExpand = (nodeKey: string, e?: React.MouseEvent) => {
@@ -73,93 +84,231 @@ export function PropertyTree({
     }));
   };
 
-  // Filter hierarchy based on search term
+  const handleExpandAll = () => {
+    const next: Record<string, boolean> = {};
+    treeData.forEach((b: any) => {
+      next[`building-${b.id}`] = true;
+      (b.blocks || []).forEach((blk: any) => {
+        next[`block-${blk.id}`] = true;
+        (blk.floors || []).forEach((flr: any) => {
+          next[`floor-${flr.id}`] = true;
+        });
+      });
+    });
+    setExpandedNodes(next);
+  };
+
+  const handleCollapseAll = () => {
+    setExpandedNodes({});
+  };
+
+  // Filter hierarchy based on search term and status filter
   const filteredHierarchy = useMemo(() => {
-    if (!searchTerm.trim()) return treeData;
-    const term = searchTerm.toLowerCase();
+    const term = searchTerm.trim().toLowerCase();
+    const isAllStatus = statusFilter === 'ALL';
+
+    if (!term && isAllStatus) return treeData;
 
     return treeData
       .map((building) => {
-        const matchesBuilding =
-          building.name.toLowerCase().includes(term) || building.code.toLowerCase().includes(term);
+        const matchesBuildingText =
+          !term ||
+          building.name.toLowerCase().includes(term) ||
+          building.code.toLowerCase().includes(term);
 
         const filteredBlocks = (building.blocks || [])
           .map((block: any) => {
-            const matchesBlock =
-              block.name.toLowerCase().includes(term) || block.code.toLowerCase().includes(term);
+            const matchesBlockText =
+              !term ||
+              block.name.toLowerCase().includes(term) ||
+              block.code.toLowerCase().includes(term);
 
             const filteredFloors = (block.floors || [])
               .map((floor: any) => {
-                const matchesFloor =
+                const matchesFloorText =
+                  !term ||
                   floor.name.toLowerCase().includes(term) ||
                   floor.floorNumber.toString().includes(term);
 
-                const filteredApts = (floor.apartments || []).filter(
-                  (apt: any) =>
+                const filteredApts = (floor.apartments || []).filter((apt: any) => {
+                  const matchesStatus =
+                    isAllStatus || apt.status === statusFilter;
+                  const matchesAptText =
+                    !term ||
                     apt.code.toLowerCase().includes(term) ||
-                    apt.residents?.some((r: any) => r.fullName?.toLowerCase().includes(term))
-                );
+                    apt.residents?.some((r: any) => r.fullName?.toLowerCase().includes(term));
+                  return matchesStatus && matchesAptText;
+                });
 
-                if (matchesFloor || filteredApts.length > 0) {
+                if (
+                  (matchesFloorText && (isAllStatus || filteredApts.length > 0)) ||
+                  filteredApts.length > 0
+                ) {
                   return { ...floor, apartments: filteredApts };
                 }
                 return null;
               })
               .filter(Boolean);
 
-            if (matchesBlock || filteredFloors.length > 0) {
+            if (
+              (matchesBlockText && (isAllStatus || filteredFloors.length > 0)) ||
+              filteredFloors.length > 0
+            ) {
               return { ...block, floors: filteredFloors };
             }
             return null;
           })
           .filter(Boolean);
 
-        if (matchesBuilding || filteredBlocks.length > 0) {
+        if (
+          (matchesBuildingText && (isAllStatus || filteredBlocks.length > 0)) ||
+          filteredBlocks.length > 0
+        ) {
           return { ...building, blocks: filteredBlocks };
         }
         return null;
       })
       .filter(Boolean);
-  }, [hierarchy, searchTerm]);
+  }, [treeData, searchTerm, statusFilter]);
 
-  // Expand all when searching
-  const isSearching = searchTerm.trim().length > 0;
+  const isSearchingOrFiltering = searchTerm.trim().length > 0 || statusFilter !== 'ALL';
+
+  if (isLoading) {
+    return (
+      <div className={cn('bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 space-y-3', className)}>
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-9 w-full rounded-xl" />
+        <div className="space-y-2 pt-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={cn('flex flex-col h-full bg-card rounded-xl border shadow-sm overflow-hidden', className)}>
-      {/* Tree Header & Search */}
-      <div className="p-3.5 border-b bg-muted/40 space-y-2.5">
+    <div
+      className={cn(
+        'flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden',
+        className
+      )}
+    >
+      {/* Tree Header */}
+      <div className="p-3.5 sm:p-4 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Sơ đồ Cấu trúc</h3>
+            <div className="p-1.5 rounded-lg bg-[#E8F5ED] dark:bg-[#0F6B4F]/20 text-[#0F6B4F] dark:text-emerald-400">
+              <Building2 className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                Sơ đồ phân cấp
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                Tòa nhà &bull; Khối &bull; Tầng &bull; Căn hộ
+              </p>
+            </div>
           </div>
-          <Badge variant="outline" className="text-[11px] font-mono">
-            {treeData.length} Tòa nhà
-          </Badge>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleExpandAll}
+              title="Mở rộng tất cả"
+              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-md hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+            >
+              <ChevronsUpDown className="h-3.5 w-3.5" />
+            </button>
+            {canManage && onAddBuilding && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onAddBuilding}
+                className="h-7 text-[11px] px-2 gap-1 font-semibold text-[#0F6B4F] border-[#0F6B4F]/30 hover:bg-[#E8F5ED]"
+              >
+                <Plus className="h-3 w-3" /> Thêm Tòa
+              </Button>
+            )}
+          </div>
         </div>
 
+        {/* Search input */}
         <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
           <Input
-            placeholder="Tìm theo mã căn, tầng, tháp..."
+            placeholder="Tìm tòa, tháp, tầng hoặc mã căn..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 h-8 text-xs bg-background"
+            className="pl-8.5 pr-8 h-8.5 text-xs bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
           />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Status filter pills */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-[10px] font-semibold">
+          {[
+            { id: 'ALL', label: 'Tất cả' },
+            { id: 'OCCUPIED', label: 'Đang ở', dot: 'bg-emerald-500' },
+            { id: 'VACANT', label: 'Trống', dot: 'bg-slate-400' },
+            { id: 'UNDER_MAINTENANCE', label: 'Bảo trì', dot: 'bg-amber-500' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setStatusFilter(item.id)}
+              className={cn(
+                'px-2 py-1 rounded-lg transition-all shrink-0 flex items-center gap-1 cursor-pointer border',
+                statusFilter === item.id
+                  ? 'bg-[#0F6B4F] text-white border-[#0F6B4F] font-bold shadow-2xs'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-800 hover:bg-slate-100'
+              )}
+            >
+              {item.dot && <span className={cn('h-1.5 w-1.5 rounded-full', item.dot)} />}
+              <span>{item.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Tree Content */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1 text-xs">
+      {/* Tree Content Area */}
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-1 text-xs max-h-[640px]">
         {filteredHierarchy.length === 0 ? (
-          <div className="p-6 text-center text-muted-foreground">
-            <p className="text-xs">Không tìm thấy cấu trúc phù hợp</p>
+          <div className="p-8 text-center text-slate-400 space-y-2">
+            <Building2 className="h-8 w-8 mx-auto text-slate-300 dark:text-slate-700" />
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {isSearchingOrFiltering ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có cấu trúc bất động sản'}
+            </p>
+            <p className="text-[11px] text-slate-400">
+              {isSearchingOrFiltering ? 'Thử thay đổi từ khóa hoặc bộ lọc trạng thái' : 'Bắt đầu bằng việc thêm tòa nhà đầu tiên'}
+            </p>
+            {isSearchingOrFiltering && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm('');
+                  setStatusFilter('ALL');
+                }}
+                className="text-xs h-7 gap-1 mt-1"
+              >
+                <RotateCcw className="h-3 w-3" /> Đặt lại
+              </Button>
+            )}
           </div>
         ) : (
           filteredHierarchy.map((building) => {
             const buildingKey = `building-${building.id}`;
-            const isBuildingExpanded = isSearching || expandedNodes[buildingKey] !== false;
+            const isBuildingExpanded =
+              isSearchingOrFiltering || expandedNodes[buildingKey] !== false;
             const isBuildingSelected =
               selectedNode?.type === 'BUILDING' && selectedNode.id === building.id;
 
@@ -175,7 +324,7 @@ export function PropertyTree({
 
             return (
               <div key={building.id} className="space-y-0.5">
-                {/* Building Item */}
+                {/* Building Row */}
                 <div
                   onClick={() =>
                     onSelectNode({
@@ -189,41 +338,50 @@ export function PropertyTree({
                     })
                   }
                   className={cn(
-                    'group flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors select-none',
+                    'group flex items-center justify-between px-2.5 py-2 rounded-xl cursor-pointer transition-all select-none border',
                     isBuildingSelected
-                      ? 'bg-primary text-primary-foreground font-medium shadow-xs'
-                      : 'hover:bg-muted text-foreground'
+                      ? 'bg-[#E8F5ED] dark:bg-[#0F6B4F]/20 border-[#0F6B4F] text-[#0F6B4F] dark:text-emerald-300 font-bold shadow-2xs'
+                      : 'border-transparent hover:bg-slate-100/80 dark:hover:bg-slate-800/60 text-slate-800 dark:text-slate-200'
                   )}
                 >
                   <div className="flex items-center gap-1.5 truncate">
                     <button
                       type="button"
                       onClick={(e) => toggleExpand(buildingKey, e)}
-                      className="p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
+                      className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-md transition-colors"
                     >
                       {isBuildingExpanded ? (
-                        <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-500" />
                       ) : (
-                        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-500" />
                       )}
                     </button>
-                    <Building2 className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+                    <Building2
+                      className={cn(
+                        'h-4 w-4 shrink-0',
+                        isBuildingSelected ? 'text-[#0F6B4F] dark:text-emerald-400' : 'text-[#0F6B4F]'
+                      )}
+                    />
                     <span className="truncate font-semibold">{building.name}</span>
                   </div>
-                  <Badge
-                    variant={isBuildingSelected ? 'secondary' : 'outline'}
-                    className="text-[10px] px-1.5 py-0 h-4 font-mono shrink-0"
-                  >
-                    {building.blocks?.length || 0} tháp
-                  </Badge>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-mono px-1.5 py-0 h-4.5 bg-white/60 dark:bg-slate-900/60"
+                    >
+                      {building.blocks?.length || 0} tháp
+                    </Badge>
+                  </div>
                 </div>
 
-                {/* Blocks list */}
+                {/* Blocks List */}
                 {isBuildingExpanded && (
-                  <div className="pl-4 ml-2 border-l border-border/60 space-y-0.5">
+                  <div className="pl-3.5 ml-3 border-l-2 border-slate-200/80 dark:border-slate-800 space-y-0.5">
                     {(building.blocks || []).map((block: any) => {
                       const blockKey = `block-${block.id}`;
-                      const isBlockExpanded = isSearching || expandedNodes[blockKey] === true;
+                      const isBlockExpanded =
+                        isSearchingOrFiltering || expandedNodes[blockKey] === true;
                       const isBlockSelected =
                         selectedNode?.type === 'BLOCK' && selectedNode.id === block.id;
 
@@ -234,7 +392,7 @@ export function PropertyTree({
 
                       return (
                         <div key={block.id} className="space-y-0.5">
-                          {/* Block Item */}
+                          {/* Block Row */}
                           <div
                             onClick={() =>
                               onSelectNode({
@@ -250,45 +408,46 @@ export function PropertyTree({
                               })
                             }
                             className={cn(
-                              'group flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition-colors select-none',
+                              'group flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer transition-all select-none border',
                               isBlockSelected
-                                ? 'bg-primary/90 text-primary-foreground font-medium'
-                                : 'hover:bg-muted text-foreground'
+                                ? 'bg-[#E8F5ED] dark:bg-[#0F6B4F]/20 border-[#0F6B4F] text-[#0F6B4F] dark:text-emerald-300 font-bold shadow-2xs'
+                                : 'border-transparent hover:bg-slate-100/80 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                             )}
                           >
                             <div className="flex items-center gap-1.5 truncate">
                               <button
                                 type="button"
                                 onClick={(e) => toggleExpand(blockKey, e)}
-                                className="p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
+                                className="p-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors"
                               >
                                 {isBlockExpanded ? (
-                                  <ChevronDown className="h-3 w-3 shrink-0" />
+                                  <ChevronDown className="h-3 w-3 shrink-0 text-slate-500" />
                                 ) : (
-                                  <ChevronRight className="h-3 w-3 shrink-0" />
+                                  <ChevronRight className="h-3 w-3 shrink-0 text-slate-500" />
                                 )}
                               </button>
-                              <Layers className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                              <Layers className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
                               <span className="truncate font-medium">{block.name}</span>
                             </div>
-                            <span className="text-[10px] text-muted-foreground group-hover:text-foreground">
+
+                            <span className="text-[10px] text-slate-400 font-mono">
                               {blockAptsCount} căn
                             </span>
                           </div>
 
-                          {/* Floors list */}
+                          {/* Floors List */}
                           {isBlockExpanded && (
-                            <div className="pl-4 ml-2 border-l border-border/60 space-y-0.5">
+                            <div className="pl-3.5 ml-2.5 border-l-2 border-slate-200/60 dark:border-slate-800 space-y-0.5">
                               {(block.floors || []).map((floor: any) => {
                                 const floorKey = `floor-${floor.id}`;
                                 const isFloorExpanded =
-                                  isSearching || expandedNodes[floorKey] === true;
+                                  isSearchingOrFiltering || expandedNodes[floorKey] === true;
                                 const isFloorSelected =
                                   selectedNode?.type === 'FLOOR' && selectedNode.id === floor.id;
 
                                 return (
                                   <div key={floor.id} className="space-y-0.5">
-                                    {/* Floor Item */}
+                                    {/* Floor Row */}
                                     <div
                                       onClick={() =>
                                         onSelectNode({
@@ -306,35 +465,35 @@ export function PropertyTree({
                                         })
                                       }
                                       className={cn(
-                                        'group flex items-center justify-between px-2 py-1 rounded-md cursor-pointer transition-colors select-none',
+                                        'group flex items-center justify-between px-2 py-1 rounded-md cursor-pointer transition-all select-none border',
                                         isFloorSelected
-                                          ? 'bg-primary/80 text-primary-foreground font-medium'
-                                          : 'hover:bg-muted/70 text-foreground/90'
+                                          ? 'bg-[#E8F5ED] dark:bg-[#0F6B4F]/20 border-[#0F6B4F] text-[#0F6B4F] dark:text-emerald-300 font-bold shadow-2xs'
+                                          : 'border-transparent hover:bg-slate-100/70 dark:hover:bg-slate-800/40 text-slate-600 dark:text-slate-400'
                                       )}
                                     >
                                       <div className="flex items-center gap-1.5 truncate">
                                         <button
                                           type="button"
                                           onClick={(e) => toggleExpand(floorKey, e)}
-                                          className="p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
+                                          className="p-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors"
                                         >
                                           {isFloorExpanded ? (
-                                            <ChevronDown className="h-2.5 w-2.5 shrink-0" />
+                                            <ChevronDown className="h-2.5 w-2.5 shrink-0 text-slate-400" />
                                           ) : (
-                                            <ChevronRight className="h-2.5 w-2.5 shrink-0" />
+                                            <ChevronRight className="h-2.5 w-2.5 shrink-0 text-slate-400" />
                                           )}
                                         </button>
-                                        <Hash className="h-3 w-3 shrink-0 text-indigo-400" />
+                                        <Hash className="h-3 w-3 shrink-0 text-indigo-500" />
                                         <span className="truncate">{floor.name}</span>
                                       </div>
-                                      <span className="text-[10px] text-muted-foreground">
+                                      <span className="text-[10px] text-slate-400 font-mono">
                                         {floor.apartments?.length || 0}
                                       </span>
                                     </div>
 
-                                    {/* Apartments list */}
+                                    {/* Apartments List */}
                                     {isFloorExpanded && (
-                                      <div className="pl-3 ml-2 border-l border-border/40 grid grid-cols-1 gap-0.5 py-0.5">
+                                      <div className="pl-3 ml-2 border-l border-slate-200/50 dark:border-slate-800 space-y-0.5 py-0.5">
                                         {(floor.apartments || []).map((apt: any) => {
                                           const isAptSelected =
                                             selectedNode?.type === 'APARTMENT' &&
@@ -363,10 +522,10 @@ export function PropertyTree({
                                                 })
                                               }
                                               className={cn(
-                                                'flex items-center justify-between px-2 py-1 rounded cursor-pointer transition-colors text-[11px]',
+                                                'flex items-center justify-between px-2 py-1 rounded cursor-pointer transition-colors text-[11px] border',
                                                 isAptSelected
-                                                  ? 'bg-[#0F6B4F] text-white font-medium shadow-2xs'
-                                                  : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                                                  ? 'bg-[#0F6B4F] text-white font-bold border-[#0F6B4F] shadow-2xs'
+                                                  : 'border-transparent hover:bg-slate-100 text-slate-600 dark:text-slate-400 hover:text-slate-900'
                                               )}
                                             >
                                               <div className="flex items-center gap-1.5 truncate">
@@ -380,22 +539,37 @@ export function PropertyTree({
                                                       : 'bg-slate-300 dark:bg-slate-600'
                                                   )}
                                                 />
-                                                <span className="font-mono">{apt.code}</span>
+                                                <span className="font-mono font-medium">{apt.code}</span>
                                               </div>
 
                                               <div className="flex items-center gap-1 shrink-0">
                                                 {apt.invoices?.length > 0 && (
                                                   <span title="Đang nợ phí">
-                                                    <Receipt className="h-3 w-3 text-red-500" />
+                                                    <Receipt
+                                                      className={cn(
+                                                        'h-3 w-3',
+                                                        isAptSelected ? 'text-white' : 'text-rose-500'
+                                                      )}
+                                                    />
                                                   </span>
                                                 )}
                                                 {apt.feedbacks?.length > 0 && (
                                                   <span title="Sự cố mở">
-                                                    <Wrench className="h-3 w-3 text-amber-500" />
+                                                    <Wrench
+                                                      className={cn(
+                                                        'h-3 w-3',
+                                                        isAptSelected ? 'text-white' : 'text-amber-500'
+                                                      )}
+                                                    />
                                                   </span>
                                                 )}
                                                 {apt.residents?.length > 0 && (
-                                                  <span className="text-[9px] text-muted-foreground">
+                                                  <span
+                                                    className={cn(
+                                                      'text-[9px] font-mono',
+                                                      isAptSelected ? 'text-white/80' : 'text-slate-400'
+                                                    )}
+                                                  >
                                                     {apt.residents.length} ng
                                                   </span>
                                                 )}

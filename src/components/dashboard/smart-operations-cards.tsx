@@ -142,10 +142,10 @@ export function SmartDashboardAlerts() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => router.push('/smart-operations/alerts')}
-                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-1 cursor-pointer transition-colors"
+                  onClick={() => router.push('/feedbacks')}
+                  className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer transition-colors"
                 >
-                  <span>Xem tất cả {counts.total} cảnh báo vận hành</span>
+                  <span>Xem tất cả sự cố & phản ánh</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>

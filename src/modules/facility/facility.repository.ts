@@ -348,8 +348,24 @@ export class FacilityRepository {
       // 4. Resolve Resident & Apartment profile if available
       const resident = await tx.resident.findFirst({
         where: { userId },
-        include: { apartment: true },
+        include: {
+          occupancies: {
+            where: { isLivingHere: true },
+            select: { apartmentId: true },
+            take: 1,
+          },
+          ownedApartments: {
+            where: { isCurrent: true },
+            select: { apartmentId: true },
+            take: 1,
+          },
+        },
       });
+
+      const residentApartmentId =
+        resident?.occupancies?.[0]?.apartmentId ||
+        resident?.ownedApartments?.[0]?.apartmentId ||
+        null;
 
       // 5. Generate Booking Code
       const year = new Date().getFullYear();
@@ -363,7 +379,7 @@ export class FacilityRepository {
           facilityId: data.facilityId,
           userId,
           residentId: resident?.id || null,
-          apartmentId: resident?.apartmentId || null,
+          apartmentId: residentApartmentId,
           bookingDate: new Date(`${data.bookingDate}T00:00:00.000Z`),
           startTime: data.startTime,
           endTime: data.endTime,

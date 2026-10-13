@@ -72,9 +72,29 @@ export async function getVerifiedResidentInfo(
   }
   const resident = await prismaClient.resident.findUnique({
     where: { userId },
-    select: { id: true, apartmentId: true },
+    select: {
+      id: true,
+      occupancies: {
+        where: { isLivingHere: true },
+        select: { apartmentId: true },
+        take: 1,
+      },
+      ownedApartments: {
+        where: { isCurrent: true },
+        select: { apartmentId: true },
+        take: 1,
+      },
+    },
   });
-  return resident;
+
+  if (!resident) return null;
+
+  const currentApartmentId =
+    resident.occupancies?.[0]?.apartmentId ||
+    resident.ownedApartments?.[0]?.apartmentId ||
+    null;
+
+  return { id: resident.id, apartmentId: currentApartmentId };
 }
 
 /**

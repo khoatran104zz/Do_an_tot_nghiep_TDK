@@ -103,10 +103,14 @@ export class VehicleService {
       finalApartmentId = dto.apartmentId;
 
       if (dto.residentId) {
-        const resident = await prisma.resident.findUnique({
-          where: { id: dto.residentId },
+        const occupancy = await prisma.apartmentResident.findFirst({
+          where: {
+            residentId: dto.residentId,
+            apartmentId: finalApartmentId,
+            isLivingHere: true,
+          },
         });
-        if (!resident || resident.apartmentId !== finalApartmentId) {
+        if (!occupancy) {
           throw new VehicleError('Cư dân được chọn không thuộc căn hộ này', 'INVALID_RESIDENT', 400);
         }
         finalResidentId = dto.residentId;
@@ -185,8 +189,14 @@ export class VehicleService {
 
     if (dto.residentId) {
       const targetApartmentId = dto.apartmentId || vehicle.apartmentId;
-      const resident = await prisma.resident.findUnique({ where: { id: dto.residentId } });
-      if (!resident || resident.apartmentId !== targetApartmentId) {
+      const occupancy = await prisma.apartmentResident.findFirst({
+        where: {
+          residentId: dto.residentId,
+          apartmentId: targetApartmentId,
+          isLivingHere: true,
+        },
+      });
+      if (!occupancy) {
         throw new VehicleError('Cư dân được chọn không thuộc căn hộ này', 'INVALID_RESIDENT', 400);
       }
     }

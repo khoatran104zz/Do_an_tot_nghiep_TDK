@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { domainEvents, DomainEventPayload } from '@/lib/events/domain-events';
+import { getVerifiedResidentInfo } from '@/lib/authorization';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,11 +19,8 @@ export async function GET(req: NextRequest) {
   // Resolve resident apartmentId if user is resident
   let residentApartmentId: string | null = null;
   if (userRole === 'RESIDENT') {
-    const resident = await prisma.resident.findFirst({
-      where: { userId },
-      select: { apartmentId: true },
-    });
-    residentApartmentId = resident?.apartmentId || null;
+    const residentInfo = await getVerifiedResidentInfo(userId);
+    residentApartmentId = residentInfo?.apartmentId || null;
   }
 
   const responseStream = new TransformStream();

@@ -3,16 +3,14 @@ import { pollRepository } from './poll.repository';
 import { PollFilter, CreatePollDto, UpdatePollDto, VotePollDto } from './poll.types';
 import { domainEvents } from '@/lib/events/domain-events';
 import { NotificationCategory, NotificationPriority, PollStatus, Role } from '@prisma/client';
+import { getVerifiedResidentInfo } from '@/lib/authorization';
 
 export class PollService {
   async getPolls(filter: PollFilter, user: { id: string; role: string }) {
     let residentApartmentId: string | undefined = undefined;
     if (user.role === Role.RESIDENT) {
-      const resident = await prisma.resident.findFirst({
-        where: { userId: user.id },
-        select: { apartmentId: true },
-      });
-      residentApartmentId = resident?.apartmentId || undefined;
+      const residentInfo = await getVerifiedResidentInfo(user.id);
+      residentApartmentId = residentInfo?.apartmentId || undefined;
       if (!filter.status) {
         filter.status = PollStatus.ACTIVE;
       }
@@ -24,11 +22,8 @@ export class PollService {
   async getPollById(id: string, user: { id: string; role: string }) {
     let residentApartmentId: string | undefined = undefined;
     if (user.role === Role.RESIDENT) {
-      const resident = await prisma.resident.findFirst({
-        where: { userId: user.id },
-        select: { apartmentId: true },
-      });
-      residentApartmentId = resident?.apartmentId || undefined;
+      const residentInfo = await getVerifiedResidentInfo(user.id);
+      residentApartmentId = residentInfo?.apartmentId || undefined;
     }
 
     const poll = await pollRepository.findById(id, residentApartmentId);
@@ -100,12 +95,8 @@ export class PollService {
     }
 
     // Resolve Resident and Apartment securely from DB
-    const resident = await prisma.resident.findFirst({
-      where: { userId: user.id },
-      include: { apartment: true },
-    });
-
-    if (!resident || !resident.apartmentId) {
+    const residentInfo = await getVerifiedResidentInfo(user.id);
+    if (!residentInfo?.apartmentId) {
       throw new Error('Tài khoản của bạn chưa được liên kết với căn hộ nào để thực hiện biểu quyết');
     }
 
@@ -129,7 +120,7 @@ export class PollService {
     }
 
     // Check if apartment has already voted
-    const alreadyVoted = await pollRepository.hasApartmentVoted(pollId, resident.apartmentId);
+    const alreadyVoted = await pollRepository.hasApartmentVoted(pollId, residentInfo.apartmentId);
     if (alreadyVoted) {
       throw new Error(
         'Căn hộ của bạn đã thực hiện biểu quyết cho khảo sát này. Mỗi căn hộ chỉ có duy nhất 1 lượt biểu quyết.'
@@ -141,8 +132,8 @@ export class PollService {
       const vote = await pollRepository.recordVote(
         pollId,
         dto.optionId,
-        resident.apartmentId,
-        resident.id
+        residentInfo.apartmentId,
+        residentInfo.id
       );
       return vote;
     } catch (dbErr: any) {

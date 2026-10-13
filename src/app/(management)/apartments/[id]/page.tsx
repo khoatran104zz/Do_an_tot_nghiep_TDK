@@ -474,8 +474,8 @@ export default function ApartmentDetailPage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Users className="h-4 w-4 text-emerald-600" />
-                  Chủ Hộ & Hợp Đồng Pháp Lý
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  Chủ Sở Hữu Pháp Lý & Hợp Đồng
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-xs">
@@ -483,17 +483,25 @@ export default function ApartmentDetailPage() {
                   <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/40 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-foreground text-sm">{apt.owner.fullName}</span>
-                      <Badge className="bg-emerald-600 text-white text-[10px]">Chủ Hộ</Badge>
+                      <Badge className="bg-emerald-600 text-white text-[10px]">
+                        {apt.owners?.[0]?.ownershipType === 'CO_OWNER' ? 'Đồng Sở Hữu' : 'Chủ Sở Hữu Hợp Pháp'}
+                      </Badge>
                     </div>
                     {apt.owner.phone && (
                       <p className="text-muted-foreground flex items-center gap-1.5">
                         <Phone className="h-3 w-3" /> {apt.owner.phone}
                       </p>
                     )}
+                    {apt.owners?.[0]?.ownershipPercentage && (
+                      <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
+                        Tỷ lệ sở hữu: {apt.owners[0].ownershipPercentage}%
+                        {apt.owners[0].certificateNumber ? ` • Số GCN: ${apt.owners[0].certificateNumber}` : ''}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="p-4 border border-dashed rounded-xl text-center text-muted-foreground">
-                    Chưa đăng ký thông tin chủ hộ chính
+                    Chưa đăng ký thông tin chủ sở hữu hợp pháp
                   </div>
                 )}
 
@@ -519,55 +527,161 @@ export default function ApartmentDetailPage() {
           </div>
         )}
 
-        {/* 2. RESIDENTS TAB */}
+        {/* 2. RESIDENTS & OWNERSHIP TAB */}
         {activeTab === 'RESIDENTS' && (
-          <Card>
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold">Danh Sách Nhân Khẩu / Cư Dân ({residents.length})</CardTitle>
-              <Link href="/residents">
-                <Button size="sm" variant="outline" className="text-xs gap-1">
-                  <Plus className="h-3 w-3" /> Quản lý cư dân
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {residents.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-6 text-center">Chưa có cư dân nào đăng ký ở căn hộ này.</p>
-              ) : (
-                <div className="divide-y text-xs">
-                  {residents.map((res: any) => (
-                    <div key={res.id} className="py-3 flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground text-sm">{res.fullName}</span>
-                          <Badge variant="secondary" className="text-[10px]">
-                            {res.relationshipToOwner || 'Cư dân'}
-                          </Badge>
-                          <Badge
-                            variant={res.status === 'RESIDING' ? 'default' : 'outline'}
-                            className="text-[10px]"
-                          >
-                            {res.status === 'RESIDING' ? 'Đang ở' : res.status}
-                          </Badge>
-                        </div>
-                        {res.phone && (
-                          <p className="text-muted-foreground flex items-center gap-1 text-[11px]">
-                            <Phone className="h-3 w-3" /> {res.phone}
-                          </p>
-                        )}
-                      </div>
-
-                      <Link href="/residents">
-                        <Button size="sm" variant="ghost" className="text-xs">
-                          Xem hồ sơ
-                        </Button>
-                      </Link>
-                    </div>
-                  ))}
+          <div className="space-y-6">
+            {/* 2.1. BẢNG CHỦ SỞ HỮU HỢP PHÁP */}
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between border-b">
+                <div>
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                    <ShieldCheck className="h-4 w-4" />
+                    Chủ Sở Hữu Hợp Pháp (Ownership Records)
+                  </CardTitle>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Xác minh quyền sở hữu căn hộ độc lập với tình trạng cư trú thực tế
+                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <Badge variant="outline" className="font-mono text-xs">
+                  {apt.owners?.length || (apt.owner ? 1 : 0)} Chủ sở hữu
+                </Badge>
+              </CardHeader>
+              <CardContent className="pt-3">
+                {(!apt.owners || apt.owners.length === 0) && !apt.owner ? (
+                  <div className="py-6 text-center text-muted-foreground space-y-1">
+                    <p className="text-xs font-medium">Chưa có dữ liệu chủ sở hữu được xác minh cho căn hộ này.</p>
+                    <p className="text-[11px] text-muted-foreground/80">
+                      Hệ thống tuân thủ nguyên tắc không tự suy đoán quyền sở hữu từ cư dân đang cư trú.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y text-xs">
+                    {(apt.owners && apt.owners.length > 0 ? apt.owners : [apt.owner]).map((ownerItem: any, idx: number) => (
+                      <div key={ownerItem.id || idx} className="py-3 flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground text-sm">{ownerItem.fullName}</span>
+                            <Badge className="bg-emerald-600 text-white text-[10px]">
+                              {ownerItem.ownershipType === 'CO_OWNER' ? 'Đồng sở hữu' : 'Chủ sở hữu độc quyền'}
+                            </Badge>
+                            {ownerItem.ownershipPercentage && (
+                              <Badge variant="secondary" className="text-[10px]">
+                                {ownerItem.ownershipPercentage}% quyền sở hữu
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-[11px]">
+                            {ownerItem.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" /> {ownerItem.phone}
+                              </span>
+                            )}
+                            {ownerItem.certificateNumber && (
+                              <span>Số GCN/Sổ hồng: <strong className="text-foreground">{ownerItem.certificateNumber}</strong></span>
+                            )}
+                            {ownerItem.startDate && (
+                              <span>Ngày xác lập: {formatDate(ownerItem.startDate)}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <Link href="/residents">
+                          <Button size="sm" variant="ghost" className="text-xs">
+                            Xem chi tiết
+                          </Button>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 2.2. BẢNG NGƯỜI ĐANG CƯ TRÚ THỰC TẾ */}
+            <Card>
+              <CardHeader className="pb-3 flex flex-row items-center justify-between border-b">
+                <div>
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Users className="h-4 w-4 text-blue-600" />
+                    Danh Sách Cư Dân Cư Trú Thực Tế ({apt.occupancies?.length || residents.length})
+                  </CardTitle>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Nhân khẩu đang sinh sống tại căn hộ (Chủ hộ, Gia đình, Khách thuê)
+                  </p>
+                </div>
+                <Link href="/residents">
+                  <Button size="sm" variant="outline" className="text-xs gap-1">
+                    <Plus className="h-3 w-3" /> Quản lý cư dân
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent className="pt-3">
+                {(apt.occupancies?.length === 0 && residents.length === 0) ? (
+                  <p className="text-xs text-muted-foreground py-6 text-center">Chưa có cư dân nào đăng ký ở căn hộ này.</p>
+                ) : (
+                  <div className="divide-y text-xs">
+                    {(apt.occupancies && apt.occupancies.length > 0
+                      ? apt.occupancies.map((occ: any) => ({
+                          id: occ.resident?.id || occ.id,
+                          fullName: occ.resident?.fullName || 'N/A',
+                          phone: occ.resident?.phone,
+                          relationshipToOwner: occ.roleInHousehold,
+                          status: occ.isLivingHere ? 'RESIDING' : 'TEMPORARY_ABSENT',
+                          startDate: occ.startDate,
+                        }))
+                      : residents
+                    ).map((res: any) => {
+                      const roleLabel =
+                        res.relationshipToOwner === 'HEAD_OF_HOUSEHOLD'
+                          ? 'Chủ hộ'
+                          : res.relationshipToOwner === 'FAMILY_MEMBER' || res.relationshipToOwner === 'FAMILY'
+                          ? 'Thành viên gia đình'
+                          : res.relationshipToOwner === 'TENANT'
+                          ? 'Khách thuê'
+                          : res.relationshipToOwner === 'OWNER'
+                          ? 'Chủ sở hữu'
+                          : 'Tạm trú';
+
+                      return (
+                        <div key={res.id} className="py-3 flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-foreground text-sm">{res.fullName}</span>
+                              <Badge variant="secondary" className="text-[10px]">
+                                {roleLabel}
+                              </Badge>
+                              <Badge
+                                variant={res.status === 'RESIDING' ? 'default' : 'outline'}
+                                className="text-[10px]"
+                              >
+                                {res.status === 'RESIDING' ? 'Đang cư trú' : 'Đã chuyển đi / Tạm vắng'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-3 text-muted-foreground text-[11px]">
+                              {res.phone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" /> {res.phone}
+                                </span>
+                              )}
+                              {res.startDate && (
+                                <span>Bắt đầu ở: {formatDate(res.startDate)}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <Link href="/residents">
+                            <Button size="sm" variant="ghost" className="text-xs">
+                              Xem hồ sơ
+                            </Button>
+                          </Link>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* 3. INVOICES TAB */}

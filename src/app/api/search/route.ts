@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     };
     if (isResident) {
       if (residentApartmentId) {
-        residentWhere.apartmentId = residentApartmentId;
+        residentWhere.occupancies = { some: { apartmentId: residentApartmentId } };
       } else {
         residentWhere.id = residentId || 'non-existent';
       }
@@ -103,7 +103,11 @@ export async function GET(req: NextRequest) {
               id: true,
               fullName: true,
               phone: true,
-              apartment: { select: { code: true } },
+              occupancies: {
+                where: { isLivingHere: true },
+                select: { apartment: { select: { code: true } } },
+                take: 1,
+              },
             },
             take: 4,
           }),
@@ -135,9 +139,16 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    const formattedResidents = (residents as any[]).map((r) => ({
+      id: r.id,
+      fullName: r.fullName,
+      phone: r.phone,
+      apartment: r.occupancies?.[0]?.apartment || null,
+    }));
+
     return apiSuccess({
       apartments,
-      residents,
+      residents: formattedResidents,
       invoices,
       tickets,
     });

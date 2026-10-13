@@ -10,35 +10,84 @@ export class ResidentDashboardService {
     const resident = await prisma.resident.findUnique({
       where: { userId },
       include: {
-        apartment: {
+        occupancies: {
+          where: { isLivingHere: true },
           include: {
-            residents: {
-              select: {
-                id: true,
-                fullName: true,
-                phone: true,
-                relationshipToOwner: true,
-                status: true,
-                gender: true,
+            apartment: {
+              include: {
+                occupancies: {
+                  where: { isLivingHere: true },
+                  include: {
+                    resident: {
+                      select: {
+                        id: true,
+                        fullName: true,
+                        phone: true,
+                        status: true,
+                        gender: true,
+                      },
+                    },
+                  },
+                },
+                contracts: {
+                  where: { status: 'ACTIVE' },
+                  select: {
+                    contractCode: true,
+                    type: true,
+                    startDate: true,
+                    endDate: true,
+                    monthlyRent: true,
+                  },
+                  take: 1,
+                },
               },
-            },
-            contracts: {
-              where: { status: 'ACTIVE' },
-              select: {
-                contractCode: true,
-                type: true,
-                startDate: true,
-                endDate: true,
-                monthlyRent: true,
-              },
-              take: 1,
             },
           },
+          take: 1,
+        },
+        ownedApartments: {
+          where: { isCurrent: true },
+          include: {
+            apartment: {
+              include: {
+                occupancies: {
+                  where: { isLivingHere: true },
+                  include: {
+                    resident: {
+                      select: {
+                        id: true,
+                        fullName: true,
+                        phone: true,
+                        status: true,
+                        gender: true,
+                      },
+                    },
+                  },
+                },
+                contracts: {
+                  where: { status: 'ACTIVE' },
+                  select: {
+                    contractCode: true,
+                    type: true,
+                    startDate: true,
+                    endDate: true,
+                    monthlyRent: true,
+                  },
+                  take: 1,
+                },
+              },
+            },
+          },
+          take: 1,
         },
       },
     });
 
-    if (!resident || !resident.apartment) {
+    const activeOccupancy = resident?.occupancies?.[0];
+    const activeOwnership = resident?.ownedApartments?.[0];
+    const apartment = activeOccupancy?.apartment || activeOwnership?.apartment;
+
+    if (!resident || !apartment) {
       // Return empty/unassigned state if resident profile has not been assigned an apartment yet
       return {
         hasApartment: false,
@@ -49,7 +98,7 @@ export class ResidentDashboardService {
       };
     }
 
-    const apartmentId = resident.apartment.id;
+    const apartmentId = apartment.id;
     const now = new Date();
 
     // 2. Fetch Invoices, Feedbacks, and Notifications in parallel
@@ -187,7 +236,7 @@ export class ResidentDashboardService {
       insights.push(`Bạn có ${pendingTickets.length} yêu cầu hỗ trợ kỹ thuật đang được BQL tiếp nhận xử lý.`);
     }
 
-    const activeMembersCount = resident.apartment.residents.filter((r) => r.status === 'RESIDING').length;
+    const activeMembersCount = apartment.occupancies.filter((o: any) => o.resident?.status === 'RESIDING' && o.isLivingHere).length;
     insights.push(`Căn hộ đang có ${activeMembersCount} thành viên đăng ký cư trú chính thức.`);
 
     // 6. Latest Ticket & Timeline Status
@@ -249,6 +298,25 @@ export class ResidentDashboardService {
       isRead: n.reads.length > 0,
     }));
 
+    const members = apartment.occupancies.map((o) => ({
+      id: o.resident.id,
+      fullName: o.resident.fullName,
+      phone: o.resident.phone,
+      relationshipToOwner: o.roleInHousehold,
+      roleInHousehold: o.roleInHousehold,
+      status: o.resident.status,
+      gender: o.resident.gender,
+    }));
+
+    const roleName =
+      activeOccupancy?.roleInHousehold === 'HEAD_OF_HOUSEHOLD' || activeOwnership
+        ? 'OWNER'
+        : activeOccupancy?.roleInHousehold === 'FAMILY_MEMBER'
+        ? 'FAMILY'
+        : activeOccupancy?.roleInHousehold === 'TENANT'
+        ? 'TENANT'
+        : 'TEMPORARY_RESIDENT';
+
     return {
       hasApartment: true,
       resident: {
@@ -256,19 +324,20 @@ export class ResidentDashboardService {
         fullName: resident.fullName,
         phone: resident.phone,
         email: resident.email,
-        relationshipToOwner: resident.relationshipToOwner,
+        relationshipToOwner: roleName,
+        roleInHousehold: activeOccupancy?.roleInHousehold || 'HEAD_OF_HOUSEHOLD',
         status: resident.status,
       },
       apartment: {
-        id: resident.apartment.id,
-        code: resident.apartment.code,
-        building: resident.apartment.building,
-        floor: resident.apartment.floor,
-        area: resident.apartment.area,
-        bedrooms: resident.apartment.bedrooms,
-        bathrooms: resident.apartment.bathrooms,
-        members: resident.apartment.residents,
-        activeContract: resident.apartment.contracts[0] || null,
+        id: apartment.id,
+        code: apartment.code,
+        building: apartment.building,
+        floor: apartment.floor,
+        area: apartment.area,
+        bedrooms: apartment.bedrooms,
+        bathrooms: apartment.bathrooms,
+        members,
+        activeContract: apartment.contracts[0] || null,
       },
       billing: {
         latestInvoice,

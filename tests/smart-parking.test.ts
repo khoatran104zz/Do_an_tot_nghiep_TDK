@@ -40,7 +40,7 @@ describe('Smart Parking Management Module Test Suite', () => {
     assert.ok(testApartment, 'Apartment A-1001 must exist');
 
     testResident = await prisma.resident.findFirst({
-      where: { apartmentId: testApartment.id },
+      where: { occupancies: { some: { apartmentId: testApartment.id } } },
     });
     assert.ok(testResident, 'Resident must exist');
 

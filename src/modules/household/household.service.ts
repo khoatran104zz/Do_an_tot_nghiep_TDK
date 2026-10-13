@@ -154,23 +154,41 @@ export class HouseholdService {
 
     switch (request.type) {
       case ResidenceRequestType.ADD_MEMBER: {
-        // Upsert resident with FAMILY relationship and RESIDING status
+        // Upsert resident details
         const resident = await prisma.resident.upsert({
           where: { identityCard: request.identityCard },
           update: {
-            apartmentId: aptId,
             fullName: request.fullName,
             phone: request.phone,
-            relationshipToOwner: ResidentRelationship.FAMILY,
             status: ResidentStatus.RESIDING,
           },
           create: {
-            apartmentId: aptId,
             fullName: request.fullName,
             identityCard: request.identityCard,
             phone: request.phone,
-            relationshipToOwner: ResidentRelationship.FAMILY,
             status: ResidentStatus.RESIDING,
+          },
+        });
+
+        // Record occupancy in apartment_residents
+        await prisma.apartmentResident.upsert({
+          where: {
+            apartmentId_residentId_startDate: {
+              apartmentId: aptId,
+              residentId: resident.id,
+              startDate: new Date(),
+            },
+          },
+          update: {
+            roleInHousehold: 'FAMILY_MEMBER',
+            isLivingHere: true,
+          },
+          create: {
+            apartmentId: aptId,
+            residentId: resident.id,
+            roleInHousehold: 'FAMILY_MEMBER',
+            isLivingHere: true,
+            startDate: new Date(),
           },
         });
 
@@ -191,24 +209,31 @@ export class HouseholdService {
 
       case ResidenceRequestType.MOVE_IN: {
         const isTenant = request.relationship === ResidentRelationship.TENANT;
-        const rel = isTenant ? ResidentRelationship.TENANT : (request.relationship || ResidentRelationship.FAMILY);
+        const role = isTenant ? 'TENANT' : 'FAMILY_MEMBER';
 
         const resident = await prisma.resident.upsert({
           where: { identityCard: request.identityCard },
           update: {
-            apartmentId: aptId,
             fullName: request.fullName,
             phone: request.phone,
-            relationshipToOwner: rel,
             status: ResidentStatus.RESIDING,
           },
           create: {
-            apartmentId: aptId,
             fullName: request.fullName,
             identityCard: request.identityCard,
             phone: request.phone,
-            relationshipToOwner: rel,
             status: ResidentStatus.RESIDING,
+          },
+        });
+
+        // Record occupancy in apartment_residents
+        await prisma.apartmentResident.create({
+          data: {
+            apartmentId: aptId,
+            residentId: resident.id,
+            roleInHousehold: role,
+            isLivingHere: true,
+            startDate: new Date(),
           },
         });
 
@@ -250,7 +275,6 @@ export class HouseholdService {
         // Find existing resident
         const resident = await prisma.resident.findFirst({
           where: {
-            apartmentId: aptId,
             OR: [
               { identityCard: request.identityCard },
               { phone: request.phone },
@@ -263,14 +287,25 @@ export class HouseholdService {
             where: { id: resident.id },
             data: { status: ResidentStatus.MOVED_OUT },
           });
-        }
 
-        const isTenant = resident?.relationshipToOwner === ResidentRelationship.TENANT;
+          // Terminate active occupancy
+          await prisma.apartmentResident.updateMany({
+            where: {
+              apartmentId: aptId,
+              residentId: resident.id,
+              isLivingHere: true,
+            },
+            data: {
+              isLivingHere: false,
+              endDate: new Date(),
+            },
+          });
+        }
 
         await prisma.apartmentHistory.create({
           data: {
             apartmentId: aptId,
-            event: isTenant ? ApartmentHistoryEvent.TENANT_MOVE_OUT : ApartmentHistoryEvent.RESIDENT_MOVE_OUT,
+            event: ApartmentHistoryEvent.RESIDENT_MOVE_OUT,
             title: `Cư dân hoàn tất chuyển đi: ${request.fullName}`,
             description: `Duyệt yêu cầu chuyển đi ${request.code}. Cập nhật trạng thái MOVED_OUT.`,
             residentId: resident?.id || null,
@@ -286,19 +321,26 @@ export class HouseholdService {
         const resident = await prisma.resident.upsert({
           where: { identityCard: request.identityCard },
           update: {
-            apartmentId: aptId,
             fullName: request.fullName,
             phone: request.phone,
-            relationshipToOwner: ResidentRelationship.TEMPORARY_RESIDENT,
             status: ResidentStatus.RESIDING,
           },
           create: {
-            apartmentId: aptId,
             fullName: request.fullName,
             identityCard: request.identityCard,
             phone: request.phone,
-            relationshipToOwner: ResidentRelationship.TEMPORARY_RESIDENT,
             status: ResidentStatus.RESIDING,
+          },
+        });
+
+        await prisma.apartmentResident.create({
+          data: {
+            apartmentId: aptId,
+            residentId: resident.id,
+            roleInHousehold: 'TEMPORARY',
+            isLivingHere: true,
+            startDate: request.startDate ? new Date(request.startDate) : new Date(),
+            endDate: request.endDate ? new Date(request.endDate) : null,
           },
         });
 
@@ -323,7 +365,6 @@ export class HouseholdService {
         // Register temporary absence
         const resident = await prisma.resident.findFirst({
           where: {
-            apartmentId: aptId,
             OR: [
               { identityCard: request.identityCard },
               { phone: request.phone },
@@ -335,6 +376,17 @@ export class HouseholdService {
           await prisma.resident.update({
             where: { id: resident.id },
             data: { status: ResidentStatus.TEMPORARY_ABSENT },
+          });
+
+          await prisma.apartmentResident.updateMany({
+            where: {
+              apartmentId: aptId,
+              residentId: resident.id,
+              isLivingHere: true,
+            },
+            data: {
+              isLivingHere: false,
+            },
           });
         }
 

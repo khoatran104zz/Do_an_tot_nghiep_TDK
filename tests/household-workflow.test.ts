@@ -66,33 +66,37 @@ describe('Household Management & Residence Request Workflow Tests', () => {
         {
           id: 'res-1',
           fullName: 'Nguyễn Văn A',
-          relationshipToOwner: ResidentRelationship.OWNER,
+          roleInHousehold: 'HEAD_OF_HOUSEHOLD',
+          relationshipToOwner: 'OWNER',
           status: ResidentStatus.RESIDING,
         },
         {
           id: 'res-2',
           fullName: 'Nguyễn Thị B',
-          relationshipToOwner: ResidentRelationship.FAMILY,
+          roleInHousehold: 'FAMILY_MEMBER',
+          relationshipToOwner: 'FAMILY',
           status: ResidentStatus.RESIDING,
         },
         {
           id: 'res-3',
           fullName: 'Trần Văn C',
-          relationshipToOwner: ResidentRelationship.TENANT,
+          roleInHousehold: 'TENANT',
+          relationshipToOwner: 'TENANT',
           status: ResidentStatus.RESIDING,
         },
         {
           id: 'res-4',
           fullName: 'Lê Văn D',
-          relationshipToOwner: ResidentRelationship.TEMPORARY_RESIDENT,
+          roleInHousehold: 'TEMPORARY',
+          relationshipToOwner: 'TEMPORARY_RESIDENT',
           status: ResidentStatus.RESIDING,
         },
       ];
 
-      const owner = residents.find((r) => r.relationshipToOwner === ResidentRelationship.OWNER && r.status === ResidentStatus.RESIDING) || null;
-      const family = residents.filter((r) => r.relationshipToOwner === ResidentRelationship.FAMILY && r.id !== owner?.id);
-      const tenants = residents.filter((r) => r.relationshipToOwner === ResidentRelationship.TENANT);
-      const temporary = residents.filter((r) => r.relationshipToOwner === ResidentRelationship.TEMPORARY_RESIDENT);
+      const owner = residents.find((r) => (r.roleInHousehold === 'HEAD_OF_HOUSEHOLD' || r.relationshipToOwner === 'OWNER') && r.status === ResidentStatus.RESIDING) || null;
+      const family = residents.filter((r) => (r.roleInHousehold === 'FAMILY_MEMBER' || r.relationshipToOwner === 'FAMILY') && r.id !== owner?.id);
+      const tenants = residents.filter((r) => r.roleInHousehold === 'TENANT' || r.relationshipToOwner === 'TENANT');
+      const temporary = residents.filter((r) => r.roleInHousehold === 'TEMPORARY' || r.relationshipToOwner === 'TEMPORARY_RESIDENT');
 
       assert.equal(owner?.fullName, 'Nguyễn Văn A', 'Owner identified correctly');
       assert.equal(family.length, 1, '1 Family member');
@@ -127,12 +131,17 @@ describe('Household Management & Residence Request Workflow Tests', () => {
 
       // Mock side effect implementation
       residentUpserted = {
-        apartmentId: mockRequest.apartmentId,
         fullName: mockRequest.fullName,
         identityCard: mockRequest.identityCard,
         phone: mockRequest.phone,
-        relationshipToOwner: ResidentRelationship.TEMPORARY_RESIDENT,
         status: ResidentStatus.RESIDING,
+      };
+
+      const occupancyCreated = {
+        apartmentId: mockRequest.apartmentId,
+        roleInHousehold: 'TEMPORARY',
+        status: ResidentStatus.RESIDING,
+        isLivingHere: true,
       };
 
       historyCreated = {
@@ -148,7 +157,7 @@ describe('Household Management & Residence Request Workflow Tests', () => {
         entityId: mockRequest.id,
       };
 
-      assert.equal(residentUpserted.relationshipToOwner, ResidentRelationship.TEMPORARY_RESIDENT);
+      assert.equal(occupancyCreated.roleInHousehold, 'TEMPORARY');
       assert.equal(residentUpserted.status, ResidentStatus.RESIDING);
       assert.equal(historyCreated.event, ApartmentHistoryEvent.RESIDENT_MOVE_IN);
       assert.equal(auditCreated.action, 'APPROVE_RESIDENCE_REQUEST');

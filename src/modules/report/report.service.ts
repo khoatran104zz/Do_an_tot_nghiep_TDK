@@ -55,7 +55,14 @@ export class ReportService {
         take: limit,
         orderBy: { code: 'asc' },
         include: {
-          residents: { select: { fullName: true, relationshipToOwner: true } },
+          ownerships: {
+            where: { isCurrent: true },
+            include: { ownerResident: { select: { fullName: true } } },
+          },
+          occupancies: {
+            where: { isLivingHere: true },
+            include: { resident: { select: { fullName: true } } },
+          },
         },
       }),
       prisma.apartment.count({ where }),
@@ -72,7 +79,11 @@ export class ReportService {
     ];
 
     const rows = items.map((a: any) => {
-      const host = a.residents.find((r: any) => r.relationshipToOwner === 'OWNER') || a.residents[0];
+      const host =
+        a.ownerships[0]?.ownerResident ||
+        a.occupancies.find((o: any) => o.roleInHousehold === 'HEAD_OF_HOUSEHOLD')?.resident ||
+        a.occupancies[0]?.resident;
+
       return {
         code: a.code,
         building: a.building,
@@ -80,7 +91,7 @@ export class ReportService {
         area: a.area,
         status: a.status === 'OCCUPIED' ? 'Đang ở' : a.status === 'VACANT' ? 'Trống' : 'Bảo trì',
         hostName: host ? host.fullName : 'Chưa có',
-        residentCount: a.residents.length,
+        residentCount: a.occupancies.length,
       };
     });
 
@@ -105,9 +116,15 @@ export class ReportService {
   private async getResidentReport(filter: ReportFilter, skip: number, limit: number, page: number): Promise<ReportDataResult> {
     const where: any = {};
     if (filter.building || filter.floor) {
-      where.apartment = {};
-      if (filter.building) where.apartment.building = filter.building;
-      if (filter.floor) where.apartment.floor = filter.floor;
+      where.occupancies = {
+        some: {
+          isLivingHere: true,
+          apartment: {
+            ...(filter.building ? { building: filter.building } : {}),
+            ...(filter.floor ? { floor: filter.floor } : {}),
+          },
+        },
+      };
     }
 
     const [items, total] = await Promise.all([
@@ -116,7 +133,16 @@ export class ReportService {
         skip,
         take: limit,
         orderBy: { fullName: 'asc' },
-        include: { apartment: { select: { code: true, building: true } } },
+        include: {
+          occupancies: {
+            where: { isLivingHere: true },
+            include: { apartment: { select: { code: true, building: true } } },
+          },
+          ownedApartments: {
+            where: { isCurrent: true },
+            include: { apartment: { select: { code: true, building: true } } },
+          },
+        },
       }),
       prisma.resident.count({ where }),
     ]);
@@ -125,17 +151,27 @@ export class ReportService {
       { key: 'fullName', label: 'Họ Và Tên' },
       { key: 'apartment', label: 'Căn Hộ' },
       { key: 'phone', label: 'Số Điện Thoại' },
-      { key: 'role', label: 'Quan Hệ Chủ Hộ' },
+      { key: 'role', label: 'Quan Hệ / Vai Trò' },
       { key: 'status', label: 'Trạng Thái Cư Trú' },
     ];
 
-    const rows = items.map((r: any) => ({
-      fullName: r.fullName,
-      apartment: r.apartment ? `${r.apartment.code} (${r.apartment.building})` : 'Chưa liên kết',
-      phone: r.phone || 'Chưa cập nhật',
-      role: r.relationshipToOwner === 'OWNER' ? 'Chủ sở hữu' : r.relationshipToOwner === 'TENANT' ? 'Khách thuê' : 'Thành viên gia đình',
-      status: r.status === 'RESIDING' ? 'Đang sinh sống' : r.status === 'TEMPORARY_ABSENT' ? 'Tạm vắng' : 'Đã chuyển đi',
-    }));
+    const rows = items.map((r: any) => {
+      const activeApt = r.occupancies?.[0]?.apartment || r.ownedApartments?.[0]?.apartment;
+      const role =
+        r.occupancies?.[0]?.roleInHousehold === 'HEAD_OF_HOUSEHOLD' || r.ownedApartments?.length > 0
+          ? 'Chủ sở hữu'
+          : r.occupancies?.[0]?.roleInHousehold === 'TENANT'
+          ? 'Khách thuê'
+          : 'Thành viên gia đình';
+
+      return {
+        fullName: r.fullName,
+        apartment: activeApt ? `${activeApt.code} (${activeApt.building})` : 'Chưa liên kết',
+        phone: r.phone || 'Chưa cập nhật',
+        role,
+        status: r.status === 'RESIDING' ? 'Đang sinh sống' : r.status === 'TEMPORARY_ABSENT' ? 'Tạm vắng' : 'Đã chuyển đi',
+      };
+    });
 
     return {
       type: 'RESIDENT',

@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { parcelRepository } from './parcel.repository';
 import { ParcelFilter, ReceiveParcelDto, CollectParcelDto, UpdateParcelDto } from './parcel.types';
 import { ParcelStatus, Role } from '@prisma/client';
+import { getVerifiedResidentInfo } from '@/lib/authorization';
 
 export class ParcelService {
   async generateUniquePickupCode(): Promise<string> {
@@ -20,9 +21,13 @@ export class ParcelService {
     const apartment = await prisma.apartment.findUnique({
       where: { id: dto.apartmentId },
       include: {
-        residents: {
-          where: { status: 'RESIDING' },
-          select: { id: true, fullName: true, phone: true, userId: true },
+        occupancies: {
+          where: { isLivingHere: true },
+          include: {
+            resident: {
+              select: { id: true, fullName: true, phone: true, userId: true },
+            },
+          },
         },
       },
     });
@@ -31,11 +36,13 @@ export class ParcelService {
       throw new Error('Căn hộ không tồn tại trong hệ thống');
     }
 
+    const residingMembers = apartment.occupancies.map((o) => o.resident);
+
     let finalRecipientName = dto.recipientName?.trim();
     let finalRecipientPhone = dto.recipientPhone?.trim();
 
     if (dto.recipientId) {
-      const matched = apartment.residents.find((r: any) => r.id === dto.recipientId);
+      const matched = residingMembers.find((r: any) => r.id === dto.recipientId);
       if (matched) {
         if (!finalRecipientName) finalRecipientName = matched.fullName;
         if (!finalRecipientPhone) finalRecipientPhone = matched.phone;
@@ -94,14 +101,11 @@ export class ParcelService {
     let scopedApartmentId: string | undefined = undefined;
 
     if (user.role === Role.RESIDENT) {
-      const resident = await prisma.resident.findFirst({
-        where: { userId: user.id },
-        select: { apartmentId: true },
-      });
-      if (!resident?.apartmentId) {
+      const residentInfo = await getVerifiedResidentInfo(user.id);
+      if (!residentInfo?.apartmentId) {
         return { items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
       }
-      scopedApartmentId = resident.apartmentId;
+      scopedApartmentId = residentInfo.apartmentId;
     }
 
     return parcelRepository.findAll(filter, scopedApartmentId);
@@ -117,11 +121,8 @@ export class ParcelService {
     }
 
     if (user.role === Role.RESIDENT) {
-      const resident = await prisma.resident.findFirst({
-        where: { userId: user.id },
-        select: { apartmentId: true },
-      });
-      if (!resident || resident.apartmentId !== parcel.apartmentId) {
+      const residentInfo = await getVerifiedResidentInfo(user.id);
+      if (!residentInfo || residentInfo.apartmentId !== parcel.apartmentId) {
         throw new Error('Bạn không có quyền xem thông tin bưu kiện của căn hộ khác');
       }
     }
@@ -204,12 +205,9 @@ export class ParcelService {
   async getStats(user: { id: string; role: string }, buildingIds?: string[]) {
     let scopedApartmentId: string | undefined = undefined;
     if (user.role === Role.RESIDENT) {
-      const resident = await prisma.resident.findFirst({
-        where: { userId: user.id },
-        select: { apartmentId: true },
-      });
-      if (resident?.apartmentId) {
-        scopedApartmentId = resident.apartmentId;
+      const residentInfo = await getVerifiedResidentInfo(user.id);
+      if (residentInfo?.apartmentId) {
+        scopedApartmentId = residentInfo.apartmentId;
       }
     }
 

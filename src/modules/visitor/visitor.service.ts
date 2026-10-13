@@ -6,6 +6,7 @@ import {
 } from './visitor.types';
 import { prisma } from '@/lib/prisma';
 import { auditLogService } from '@/modules/audit/audit-log.service';
+import { getVerifiedResidentInfo } from '@/lib/authorization';
 
 export class VisitorService {
   async getVisitorPasses(filter: VisitorPassFilter, user: UserContext) {
@@ -13,13 +14,11 @@ export class VisitorService {
 
     // IDOR Enforcement: If user is RESIDENT, scope strictly to their apartment!
     if (user.role === 'RESIDENT') {
-      const resident = await prisma.resident.findFirst({
-        where: { userId: user.id },
-      });
-      if (!resident || !resident.apartmentId) {
+      const residentInfo = await getVerifiedResidentInfo(user.id);
+      if (!residentInfo?.apartmentId) {
         return { items: [], total: 0, page: 1, limit: 20, totalPages: 1 };
       }
-      scopedApartmentId = resident.apartmentId;
+      scopedApartmentId = residentInfo.apartmentId;
     }
 
     return visitorRepository.findPasses(filter, scopedApartmentId);
@@ -33,10 +32,8 @@ export class VisitorService {
 
     // Resident can only view their own apartment passes
     if (user.role === 'RESIDENT') {
-      const resident = await prisma.resident.findFirst({
-        where: { userId: user.id },
-      });
-      if (pass.apartmentId !== resident?.apartmentId) {
+      const residentInfo = await getVerifiedResidentInfo(user.id);
+      if (pass.apartmentId !== residentInfo?.apartmentId) {
         throw new Error('Bạn không có quyền xem thẻ khách của căn hộ khác');
       }
     }
@@ -49,14 +46,12 @@ export class VisitorService {
     let residentId: string | undefined;
 
     if (user.role === 'RESIDENT') {
-      const resident = await prisma.resident.findFirst({
-        where: { userId: user.id },
-      });
-      if (!resident || !resident.apartmentId) {
+      const residentInfo = await getVerifiedResidentInfo(user.id);
+      if (!residentInfo?.apartmentId) {
         throw new Error('Cư dân chưa được gắn với căn hộ hợp lệ');
       }
-      targetApartmentId = resident.apartmentId;
-      residentId = resident.id;
+      targetApartmentId = residentInfo.apartmentId;
+      residentId = residentInfo.id;
     } else {
       // Management creating on behalf of an apartment
       if (!targetApartmentId) {

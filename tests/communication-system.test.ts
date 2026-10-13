@@ -81,33 +81,57 @@ describe('COMMUNICATION SYSTEM TESTS (Polls, Announcements, Realtime)', async ()
     });
 
     // Link residents to apartments
-    await prisma.resident.upsert({
+    const res1 = await prisma.resident.upsert({
       where: { identityCard: 'TEST-ID-COMM-001' },
-      update: { apartmentId: apartment1.id, userId: resident1User.id },
+      update: { userId: resident1User.id },
       create: {
         identityCard: 'TEST-ID-COMM-001',
         fullName: 'Nguyễn Văn A',
         phone: '0901234567',
         userId: resident1User.id,
-        apartmentId: apartment1.id,
-        relationshipToOwner: 'OWNER',
         status: 'RESIDING',
       },
     });
 
-    await prisma.resident.upsert({
+    const existingOcc1 = await prisma.apartmentResident.findFirst({
+      where: { apartmentId: apartment1.id, residentId: res1.id },
+    });
+    if (!existingOcc1) {
+      await prisma.apartmentResident.create({
+        data: {
+          apartmentId: apartment1.id,
+          residentId: res1.id,
+          roleInHousehold: 'HEAD_OF_HOUSEHOLD',
+          isLivingHere: true,
+        },
+      });
+    }
+
+    const res2 = await prisma.resident.upsert({
       where: { identityCard: 'TEST-ID-COMM-002' },
-      update: { apartmentId: apartment2.id, userId: resident2User.id },
+      update: { userId: resident2User.id },
       create: {
         identityCard: 'TEST-ID-COMM-002',
         fullName: 'Trần Thị B',
         phone: '0901234568',
         userId: resident2User.id,
-        apartmentId: apartment2.id,
-        relationshipToOwner: 'OWNER',
         status: 'RESIDING',
       },
     });
+
+    const existingOcc2 = await prisma.apartmentResident.findFirst({
+      where: { apartmentId: apartment2.id, residentId: res2.id },
+    });
+    if (!existingOcc2) {
+      await prisma.apartmentResident.create({
+        data: {
+          apartmentId: apartment2.id,
+          residentId: res2.id,
+          roleInHousehold: 'HEAD_OF_HOUSEHOLD',
+          isLivingHere: true,
+        },
+      });
+    }
   });
 
   after(async () => {
@@ -122,6 +146,9 @@ describe('COMMUNICATION SYSTEM TESTS (Polls, Announcements, Realtime)', async ()
       where: { userId: { in: [resident1User.id, resident2User.id] } },
     });
     await prisma.notificationApartment.deleteMany({
+      where: { apartmentId: { in: [apartment1.id, apartment2.id] } },
+    });
+    await prisma.apartmentResident.deleteMany({
       where: { apartmentId: { in: [apartment1.id, apartment2.id] } },
     });
     await prisma.notification.deleteMany({

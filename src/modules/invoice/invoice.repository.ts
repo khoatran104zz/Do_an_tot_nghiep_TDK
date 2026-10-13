@@ -65,7 +65,18 @@ export class InvoiceRepository {
               code: true,
               building: true,
               area: true,
-              residents: { select: { fullName: true, phone: true, email: true } },
+              occupancies: {
+                where: { isLivingHere: true },
+                include: {
+                  resident: { select: { fullName: true, phone: true, email: true } },
+                },
+              },
+              ownerships: {
+                where: { isCurrent: true },
+                include: {
+                  ownerResident: { select: { fullName: true, phone: true, email: true } },
+                },
+              },
             },
           },
           items: true,
@@ -74,8 +85,24 @@ export class InvoiceRepository {
       prisma.invoice.count({ where }),
     ]);
 
+    const formattedItems = items.map((inv: any) => {
+      const apt = inv.apartment;
+      if (!apt) return inv;
+      const residents = [
+        ...(apt.occupancies || []).map((o: any) => o.resident),
+        ...(apt.ownerships || []).map((o: any) => o.ownerResident),
+      ];
+      return {
+        ...inv,
+        apartment: {
+          ...apt,
+          residents,
+        },
+      };
+    });
+
     return {
-      items,
+      items: formattedItems,
       total,
       page,
       limit,
@@ -84,19 +111,45 @@ export class InvoiceRepository {
   }
 
   async findById(id: string) {
-    return prisma.invoice.findUnique({
+    const invoice = await prisma.invoice.findUnique({
       where: { id },
       include: {
         apartment: {
           include: {
-            residents: true,
+            occupancies: {
+              where: { isLivingHere: true },
+              include: { resident: true },
+            },
+            ownerships: {
+              where: { isCurrent: true },
+              include: { ownerResident: true },
+            },
           },
         },
         items: {
           include: { feeCategory: true },
         },
+        payments: {
+          orderBy: { transactedAt: 'desc' },
+        },
       },
     });
+
+    if (!invoice) return null;
+
+    const apt = invoice.apartment;
+    const residents = [
+      ...(apt.occupancies || []).map((o: any) => o.resident),
+      ...(apt.ownerships || []).map((o: any) => o.ownerResident),
+    ];
+
+    return {
+      ...invoice,
+      apartment: {
+        ...apt,
+        residents,
+      },
+    };
   }
 
   async findByApartmentAndMonth(apartmentId: string, billingMonth: string, tx: Prisma.TransactionClient = prisma) {
@@ -131,6 +184,13 @@ export class InvoiceRepository {
   }
 
   async processPayment(id: string, data: ProcessPaymentDto, tx: Prisma.TransactionClient = prisma) {
+    const invoice = await tx.invoice.findUnique({ where: { id } });
+    if (!invoice) {
+      throw new Error('Hóa đơn không tồn tại');
+    }
+
+    const transactionId = data.transactionId || `PAY-${Date.now()}`;
+
     const updated = await tx.invoice.updateMany({
       where: {
         id,
@@ -140,12 +200,30 @@ export class InvoiceRepository {
         status: InvoiceStatus.PAID,
         paidAt: new Date(),
         paymentMethod: data.paymentMethod,
-        transactionId: data.transactionId || `PAY-${Date.now()}`,
+        transactionId,
       },
     });
 
     if (updated.count === 0) {
       throw new Error('Hóa đơn không tồn tại hoặc đã được thanh toán trước đó');
+    }
+
+    // Dual-write: Tạo bản ghi nhật ký thanh toán thực tế vào payment_transactions
+    const existingTxn = await tx.paymentTransaction.findFirst({
+      where: { transactionCode: transactionId },
+    });
+
+    if (!existingTxn) {
+      await tx.paymentTransaction.create({
+        data: {
+          invoiceId: id,
+          transactionCode: transactionId,
+          amount: invoice.totalAmount,
+          paymentMethod: data.paymentMethod,
+          status: 'SUCCESS',
+          transactedAt: new Date(),
+        },
+      });
     }
 
     return this.findById(id);

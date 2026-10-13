@@ -144,7 +144,7 @@ export function SmartModulePlaceholder({
               {tableTitle}
             </CardTitle>
             <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Dữ liệu đồng bộ trực tiếp từ hệ thống IoT và phân hệ vận hành tòa nhà
+              Dữ liệu đồng bộ trực tiếp từ phân hệ quản trị và vận hành tòa nhà
             </CardDescription>
           </div>
 

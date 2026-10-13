@@ -21,7 +21,6 @@ import {
   Vote,
   ShieldCheck,
   BarChart3,
-  Zap,
   Settings,
   ClipboardList,
   QrCode,
@@ -37,7 +36,6 @@ import {
   Compass,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useShell } from './ShellContext';
 import { KHomeIcon } from '@/components/shared/KHomeLogo';
@@ -68,7 +66,6 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
         { name: 'Bảng điều khiển hệ thống', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Phân quyền & Managers', href: '/settings/access-control', icon: KeyRound, badge: 'Admin' },
         { name: 'Cấu hình Biểu phí Chuẩn', href: '/fees', icon: Receipt, badge: 'Toàn cục' },
-        { name: 'Giám sát Vận hành IoT', href: '/smart-operations', icon: Zap },
       ],
     },
     {
@@ -127,7 +124,6 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
       groupName: 'Vận hành Tòa nhà',
       items: [
         { name: 'Bàn làm việc vận hành', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Vận hành thông minh', href: '/smart-operations', icon: Zap },
       ],
     },
     {

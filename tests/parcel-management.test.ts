@@ -8,7 +8,7 @@ import { ParcelStatus, Role } from '@prisma/client';
 test('Parcel Management Module Test Suite', async (t) => {
   // 1. Setup test context
   const testApartment = await prisma.apartment.findFirst({
-    include: { residents: true },
+    include: { occupancies: { include: { resident: true } } },
   });
   assert.ok(testApartment, 'Cần có ít nhất một căn hộ trong cơ sở dữ liệu để chạy test');
 
@@ -70,7 +70,7 @@ test('Parcel Management Module Test Suite', async (t) => {
   await t.test('3. Scoped Parcel Queries: IDOR Protection for residents', async () => {
     // Find resident belonging to testApartment
     const resident = await prisma.resident.findFirst({
-      where: { apartmentId: testApartment.id, userId: { not: null } },
+      where: { occupancies: { some: { apartmentId: testApartment.id } }, userId: { not: null } },
       include: { user: true },
     });
 

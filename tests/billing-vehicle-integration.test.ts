@@ -144,8 +144,14 @@ describe('Billing - Vehicle Integration Test Suite', () => {
         fullName: `Moved Out Resident ${timestamp}`,
         identityCard: `ID-${timestamp}`,
         phone: `09${Math.floor(10000000 + Math.random() * 90000000)}`,
-        apartmentId: testApartmentLifecycle.id,
         status: ResidentStatus.MOVED_OUT,
+        occupancies: {
+          create: {
+            apartmentId: testApartmentLifecycle.id,
+            roleInHousehold: 'TENANT',
+            isLivingHere: false,
+          },
+        },
       },
     });
 
@@ -218,8 +224,11 @@ describe('Billing - Vehicle Integration Test Suite', () => {
       await prisma.vehicle.deleteMany({
         where: { apartmentId: { in: aptIds } },
       });
-      await prisma.resident.deleteMany({
+      await prisma.apartmentResident.deleteMany({
         where: { apartmentId: { in: aptIds } },
+      });
+      await prisma.resident.deleteMany({
+        where: { identityCard: { startsWith: 'ID-' } },
       });
       await prisma.apartment.deleteMany({
         where: { id: { in: aptIds } },
