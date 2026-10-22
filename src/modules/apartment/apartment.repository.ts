@@ -48,6 +48,15 @@ export class ApartmentRepository {
       });
     }
 
+    if (filter.tenantId) {
+      andClauses.push({
+        OR: [
+          { buildingRef: { tenantId: filter.tenantId } },
+          { block: { building: { tenantId: filter.tenantId } } },
+        ],
+      });
+    }
+
     if (buildingIds && buildingIds.length > 0) {
       andClauses.push({
         OR: [
@@ -261,9 +270,30 @@ export class ApartmentRepository {
     };
   }
 
-  async findByCode(code: string) {
+  async findByCode(code: string, buildingId?: string) {
+    if (buildingId) {
+      return prisma.apartment.findUnique({
+        where: {
+          buildingId_code: {
+            buildingId,
+            code: code.trim().toUpperCase(),
+          },
+        },
+      });
+    }
+    return prisma.apartment.findFirst({
+      where: { code: code.trim().toUpperCase() },
+    });
+  }
+
+  async findByBuildingAndCode(buildingId: string, code: string) {
     return prisma.apartment.findUnique({
-      where: { code: code.trim() },
+      where: {
+        buildingId_code: {
+          buildingId,
+          code: code.trim().toUpperCase(),
+        },
+      },
     });
   }
 
@@ -278,29 +308,33 @@ export class ApartmentRepository {
     if (floorId) {
       const floorRecord = await prisma.floor.findUnique({
         where: { id: floorId },
-        include: { block: true },
+        include: { block: { include: { building: true } } },
       });
       if (floorRecord) {
         floorNumber = floorRecord.floorNumber;
         blockId = floorRecord.blockId;
         buildingId = floorRecord.block.buildingId;
         if (!buildingName) {
-          buildingName = floorRecord.block.name;
+          buildingName = floorRecord.block.building.name || floorRecord.block.name;
         }
       }
+    }
+
+    if (!buildingId) {
+      throw new Error('Căn hộ bắt buộc phải thuộc một tòa nhà cụ thể (buildingId không được để trống)');
     }
 
     return prisma.apartment.create({
       data: {
         code: data.code.trim().toUpperCase(),
-        building: buildingName || 'Tòa A',
+        building: buildingName || 'Tòa nhà',
         floor: floorNumber !== undefined ? floorNumber : 1,
         bedrooms: data.bedrooms || 2,
         bathrooms: data.bathrooms || 2,
         area: data.area,
         status: data.status || ApartmentStatus.VACANT,
         note: data.note || null,
-        buildingId: buildingId || null,
+        buildingId,
         blockId: blockId || null,
         floorId: floorId || null,
       },
@@ -354,8 +388,13 @@ export class ApartmentRepository {
   }
 
   // --- Building Methods ---
-  async findBuildings() {
+  async findBuildings(tenantId?: string | null) {
+    const where: Prisma.BuildingWhereInput = {};
+    if (tenantId) {
+      where.tenantId = tenantId;
+    }
     return prisma.building.findMany({
+      where,
       orderBy: { name: 'asc' },
       include: {
         blocks: {
@@ -373,6 +412,7 @@ export class ApartmentRepository {
     return prisma.building.findUnique({
       where: { id },
       include: {
+        tenant: { select: { id: true, code: true, name: true } },
         blocks: {
           orderBy: { code: 'asc' },
           include: {
@@ -395,6 +435,7 @@ export class ApartmentRepository {
       data: {
         code: data.code.trim().toUpperCase(),
         name: data.name.trim(),
+        tenantId: data.tenantId || null,
         address: data.address?.trim() || null,
         description: data.description?.trim() || null,
       },

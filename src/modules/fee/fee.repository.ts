@@ -2,8 +2,16 @@ import { prisma } from '@/lib/prisma';
 import { CreateFeeCategoryDto, UpdateFeeCategoryDto } from './fee.types';
 
 export class FeeCategoryRepository {
-  async findAll() {
+  async findAll(tenantId?: string | null) {
+    const where: any = {};
+    if (tenantId) {
+      where.OR = [
+        { tenantId },
+        { tenantId: null, isSystem: true },
+      ];
+    }
     return prisma.feeCategory.findMany({
+      where,
       orderBy: { createdAt: 'asc' },
     });
   }
@@ -14,9 +22,18 @@ export class FeeCategoryRepository {
     });
   }
 
-  async findByCode(code: string) {
-    return prisma.feeCategory.findUnique({
-      where: { code: code.trim().toUpperCase() },
+  async findByCode(code: string, tenantId?: string | null) {
+    const normalizedCode = code.trim().toUpperCase();
+    if (tenantId !== undefined) {
+      return prisma.feeCategory.findFirst({
+        where: {
+          code: normalizedCode,
+          tenantId: tenantId || null,
+        },
+      });
+    }
+    return prisma.feeCategory.findFirst({
+      where: { code: normalizedCode },
     });
   }
 
@@ -25,6 +42,7 @@ export class FeeCategoryRepository {
       data: {
         ...data,
         code: data.code.trim().toUpperCase(),
+        tenantId: data.tenantId || null,
       },
     });
   }

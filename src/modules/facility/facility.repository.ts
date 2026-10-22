@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 import {
   FacilityType,
   FacilityStatus,
@@ -367,10 +368,23 @@ export class FacilityRepository {
         resident?.ownedApartments?.[0]?.apartmentId ||
         null;
 
-      // 5. Generate Booking Code
+      // SEC-006: Resident apartment building must match facility building
+      if (facility.buildingId) {
+        if (!residentApartmentId) {
+          throw new Error('Bạn cần có thông tin căn hộ hợp lệ để đặt tiện ích thuộc tòa nhà này');
+        }
+        const apt = await tx.apartment.findUnique({
+          where: { id: residentApartmentId },
+          select: { buildingId: true },
+        });
+        if (!apt || apt.buildingId !== facility.buildingId) {
+          throw new Error('Tiện ích này chỉ dành riêng cho cư dân sinh sống tại tòa nhà tương ứng');
+        }
+      }
+
+      // 5. Generate collision-free Booking Code (FLOW-002)
       const year = new Date().getFullYear();
-      const count = await tx.facilityBooking.count();
-      const bookingCode = `BK-${year}-${(count + 1).toString().padStart(4, '0')}`;
+      const bookingCode = `BK-${year}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 
       // 6. Create booking
       const booking = await tx.facilityBooking.create({

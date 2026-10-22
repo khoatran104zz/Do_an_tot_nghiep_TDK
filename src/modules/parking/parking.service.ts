@@ -638,9 +638,8 @@ export class ParkingService {
         );
       }
 
-      // 4. Generate unique secure QR token & assignment code
-      const assignmentCount = await tx.parkingAssignment.count();
-      const assignmentCode = `PASS-${new Date().getFullYear()}-${String(assignmentCount + 1).padStart(4, '0')}`;
+      // 4. Generate unique secure QR token & collision-free assignment code (FLOW-001)
+      const assignmentCode = `PASS-${new Date().getFullYear()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
       const qrToken = `KHOME-PARK-${crypto.randomBytes(12).toString('hex').toUpperCase()}`;
 
       const userRecord = user?.id ? await tx.user.findUnique({ where: { id: user.id } }) : null;
@@ -766,8 +765,8 @@ export class ParkingService {
         );
       }
 
-      const count = await tx.parkingAssignment.count();
-      const assignmentCode = `PASS-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+      // Generate collision-free assignment code & secure QR token (FLOW-001)
+      const assignmentCode = `PASS-${new Date().getFullYear()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
       const qrToken = `KHOME-PARK-${crypto.randomBytes(12).toString('hex').toUpperCase()}`;
       const userRecord = user?.id ? await tx.user.findUnique({ where: { id: user.id } }) : null;
 

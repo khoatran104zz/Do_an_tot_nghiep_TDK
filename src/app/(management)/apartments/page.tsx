@@ -152,6 +152,7 @@ export default function ApartmentsPage() {
   const [formData, setFormData] = useState({
     code: '',
     building: 'Tòa A',
+    buildingId: '',
     floor: 1,
     bedrooms: 2,
     bathrooms: 2,
@@ -370,6 +371,7 @@ export default function ApartmentsPage() {
     setFormData({
       code: '',
       building: 'Tòa A',
+      buildingId: selectedBuildingId || hierarchyList[0]?.id || '',
       floor: 1,
       bedrooms: 2,
       bathrooms: 2,
@@ -385,6 +387,7 @@ export default function ApartmentsPage() {
     setFormData({
       code: item.code,
       building: item.building || 'Tòa A',
+      buildingId: item.buildingId || selectedBuildingId || hierarchyList[0]?.id || '',
       floor: item.floor || 1,
       bedrooms: item.bedrooms || 2,
       bathrooms: item.bathrooms || 2,
@@ -397,20 +400,24 @@ export default function ApartmentsPage() {
 
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = {
+      ...formData,
+      buildingId: formData.buildingId || selectedBuildingId || hierarchyList[0]?.id || '',
+    };
     if (editingItem) {
       updateMutation.mutate(
-        { id: editingItem.id, data: formData },
+        { id: editingItem.id, data: payload },
         {
           onSuccess: () => {
             setIsFormOpen(false);
             if (inspectingItem && inspectingItem.id === editingItem.id) {
-              setInspectingItem({ ...inspectingItem, ...formData });
+              setInspectingItem({ ...inspectingItem, ...payload });
             }
           },
         }
       );
     } else {
-      createMutation.mutate(formData, {
+      createMutation.mutate(payload, {
         onSuccess: () => {
           setIsFormOpen(false);
         },

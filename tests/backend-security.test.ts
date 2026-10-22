@@ -27,6 +27,7 @@ describe('Backend Security & Hardening Test Suite', () => {
   const managerUser: SessionUser = {
     id: 'user-manager',
     role: 'MANAGER',
+    assignedBuildingIds: ['bldg-1', 'bldg-2'],
   };
 
   const adminUser: SessionUser = {
@@ -38,10 +39,34 @@ describe('Backend Security & Hardening Test Suite', () => {
     resident: {
       findUnique: async ({ where }: { where: { userId: string } }) => {
         if (where.userId === 'user-res-1') {
-          return { id: 'res-1', apartmentId: 'apt-101' };
+          return {
+            id: 'res-1',
+            userId: 'user-res-1',
+            occupancies: [{ apartmentId: 'apt-101', isLivingHere: true }],
+            ownedApartments: [{ apartmentId: 'apt-101', isCurrent: true }],
+          };
         }
         if (where.userId === 'user-res-2') {
-          return { id: 'res-2', apartmentId: 'apt-202' };
+          return {
+            id: 'res-2',
+            userId: 'user-res-2',
+            occupancies: [{ apartmentId: 'apt-202', isLivingHere: true }],
+            ownedApartments: [{ apartmentId: 'apt-202', isCurrent: true }],
+          };
+        }
+        return null;
+      },
+    },
+    apartment: {
+      findUnique: async ({ where }: { where: { id: string } }) => {
+        if (where.id === 'apt-101') {
+          return { id: 'apt-101', buildingId: 'bldg-1' };
+        }
+        if (where.id === 'apt-202') {
+          return { id: 'apt-202', buildingId: 'bldg-2' };
+        }
+        if (where.id === 'apt-unlinked') {
+          return { id: 'apt-unlinked', buildingId: null };
         }
         return null;
       },
@@ -62,7 +87,7 @@ describe('Backend Security & Hardening Test Suite', () => {
     });
   });
 
-  describe('2. Contract IDOR Protection', () => {
+  describe('2. Contract IDOR Protection & SEC-004 Null-Check', () => {
     it('MUST DENY when resident tries to access contract of another apartment', async () => {
       const result = await authorizeContractAccess(residentUser, 'apt-202', mockPrisma);
       assert.equal(result.allowed, false);
@@ -75,9 +100,21 @@ describe('Backend Security & Hardening Test Suite', () => {
       assert.equal(result.allowed, true);
     });
 
-    it('MUST ALLOW manager or admin to access any apartment contract', async () => {
+    it('MUST ALLOW manager to access contract in assigned building', async () => {
       const result = await authorizeContractAccess(managerUser, 'apt-202', mockPrisma);
       assert.equal(result.allowed, true);
+    });
+
+    it('MUST ALLOW platform admin to access any apartment contract', async () => {
+      const result = await authorizeContractAccess(adminUser, 'apt-202', mockPrisma);
+      assert.equal(result.allowed, true);
+    });
+
+    it('SEC-004: MUST DENY manager access when apartment has no buildingId (fail-closed)', async () => {
+      const result = await authorizeContractAccess(managerUser, 'apt-unlinked', mockPrisma);
+      assert.equal(result.allowed, false);
+      assert.equal(result.statusCode, 403);
+      assert.match(result.error || '', /chưa được gắn với tòa nhà/);
     });
   });
 

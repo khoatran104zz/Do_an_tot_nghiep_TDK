@@ -4,6 +4,36 @@ import { TicketPriority, TicketStatus, ContractStatus, InvoiceStatus, Maintenanc
 import { SLA_HOURS_BY_PRIORITY } from '../feedback/ticket-workflow.service';
 import { auditLogService } from '../audit/audit-log.service';
 
+export function resolveAlertActionUrl(
+  customUrl?: string | null,
+  entityType?: string | null,
+  entityId?: string | null
+): string {
+  if (customUrl && customUrl !== '/smart-operations/alerts') {
+    return customUrl;
+  }
+  switch (entityType?.toUpperCase()) {
+    case 'INVOICE':
+      return entityId ? `/invoices?search=${entityId}` : '/invoices';
+    case 'FEEDBACK':
+    case 'TICKET':
+      return entityId ? `/feedbacks?search=${entityId}` : '/feedbacks';
+    case 'CONTRACT':
+      return entityId ? `/contracts?search=${entityId}` : '/contracts';
+    case 'MAINTENANCE':
+    case 'ASSET':
+    case 'MAINTENANCE_SCHEDULE':
+      return entityId ? `/maintenance-schedules?search=${entityId}` : '/maintenance-schedules';
+    case 'PARCEL':
+      return '/parcels';
+    case 'FACILITY':
+    case 'BOOKING':
+      return '/facilities';
+    default:
+      return '/dashboard';
+  }
+}
+
 export class SmartAlertService {
   private cache: {
     timestamp: number;
@@ -42,7 +72,7 @@ export class SmartAlertService {
         location: record.location,
         entityType: record.relatedEntityType as any,
         entityId: record.relatedEntityId,
-        actionUrl: record.actionUrl || '/smart-operations/alerts',
+        actionUrl: resolveAlertActionUrl(record.actionUrl, record.relatedEntityType, record.relatedEntityId),
         createdAt: record.createdAt,
         acknowledgedAt: record.acknowledgedAt,
         acknowledgedBy: record.acknowledgedById,
@@ -285,7 +315,7 @@ export class SmartAlertService {
           } đã quá hạn ${Math.abs(diffDays)} ngày.`,
           entityType: 'MAINTENANCE',
           entityId: schedule.id,
-          actionUrl: `/maintenance-schedule?search=${schedule.code}`,
+          actionUrl: `/maintenance-schedules?search=${schedule.code}`,
           createdAt: schedule.nextMaintenance,
           metadata: { overdueDays: Math.abs(diffDays), assetCode: schedule.asset.code, assetName: schedule.asset.name },
         });
@@ -303,7 +333,7 @@ export class SmartAlertService {
           ).toLocaleDateString('vi-VN')}.`,
           entityType: 'MAINTENANCE',
           entityId: schedule.id,
-          actionUrl: `/maintenance-schedule?search=${schedule.code}`,
+          actionUrl: `/maintenance-schedules?search=${schedule.code}`,
           createdAt: currentDate,
           metadata: { diffDays, assetCode: schedule.asset.code, assetName: schedule.asset.name },
         });

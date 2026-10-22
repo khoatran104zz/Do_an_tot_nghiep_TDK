@@ -11,6 +11,8 @@ datasource db {
 
 // Enums
 enum Role {
+  PLATFORM_ADMIN
+  TENANT_ADMIN
   ADMIN
   MANAGER
   STAFF_TECHNICIAN
@@ -267,9 +269,32 @@ enum VisitorStatus {
   CANCELLED
 }
 
+// 0. Tenant (Customer / Complex)
+model Tenant {
+  id          String        @id @default(cuid())
+  code        String        @unique // e.g. "SMART-CITY-CORP", "SUNRISE-GROUP"
+  name        String        // Tên khách hàng / Tổ hợp chung cư
+  address     String?
+  phone       String?
+  email       String?
+  status      String        @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  buildings     Building[]
+  users         User[]
+  feeCategories FeeCategory[]
+  polls         Poll[]
+  auditLogs     AuditLog[]
+
+  @@map("tenants")
+}
+
 // 1. User & Account Auth
 model User {
   id            String         @id @default(cuid())
+  tenantId      String?
+  tenant        Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   email         String         @unique
   passwordHash  String
   fullName      String
@@ -303,12 +328,15 @@ model User {
   assignedParkingAssignments ParkingAssignment[]          @relation("AssignedParkingAssignments")
   operatedParkingAccessLogs  ParkingAccessLog[]           @relation("OperatedParkingAccessLogs")
 
+  @@index([tenantId])
   @@map("users")
 }
 
 // 2. Property Hierarchy
 model Building {
   id          String      @id @default(cuid())
+  tenantId    String?
+  tenant      Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   code        String      @unique // e.g. "SMART-CITY"
   name        String      // e.g. "SmartCity Complex"
   address     String?
@@ -322,7 +350,9 @@ model Building {
   facilities  Facility[]
   managers    ManagerBuilding[] @relation("BuildingManagers")
   parkingAreas ParkingArea[]
+  polls       Poll[]
 
+  @@index([tenantId])
   @@map("buildings")
 }
 
@@ -378,7 +408,7 @@ model Floor {
 // 2.1 Apartment
 model Apartment {
   id        String          @id @default(cuid())
-  code      String          @unique // e.g. "A-1001"
+  code      String          // e.g. "A-1001"
   building  String // e.g. "Tòa A" (backward-compatible)
   floor     Int // e.g. 10 (backward-compatible)
   bedrooms  Int             @default(2)
@@ -389,9 +419,9 @@ model Apartment {
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
-  // Optional hierarchy relations
-  buildingId  String?
-  buildingRef Building?     @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+  // Hierarchy relations (buildingId is NOT NULL)
+  buildingId  String
+  buildingRef Building      @relation(fields: [buildingId], references: [id], onDelete: Restrict)
   blockId     String?
   block       Block?        @relation(fields: [blockId], references: [id], onDelete: SetNull)
   floorId     String?
@@ -415,6 +445,7 @@ model Apartment {
   parkingAssignments ParkingAssignment[]
   parkingRequests    ParkingRegistrationRequest[]
 
+  @@unique([buildingId, code])
   @@index([building])
   @@index([status])
   @@index([buildingId])
@@ -505,7 +536,9 @@ model Contract {
 // 5. Fee Category (Danh mục phí)
 model FeeCategory {
   id          String   @id @default(cuid())
-  code        String   @unique // MGMT, PARKING_MOTO, PARKING_CAR, WATER, ELECTRIC...
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  code        String   // MGMT, PARKING_MOTO, PARKING_CAR, WATER, ELECTRIC...
   name        String // Phí quản lý, Phí xe máy...
   unit        FeeUnit  @default(PER_MONTH)
   unitPrice   Float
@@ -516,6 +549,8 @@ model FeeCategory {
 
   invoiceItems InvoiceItem[]
 
+  @@unique([tenantId, code])
+  @@index([tenantId])
   @@map("fee_categories")
 }
 
@@ -691,6 +726,8 @@ model NotificationRead {
 // 9. Audit Logs
 model AuditLog {
   id         String   @id @default(cuid())
+  tenantId   String?
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   actorId    String?
   actorEmail String?
   actorRole  String?
@@ -701,6 +738,7 @@ model AuditLog {
   ipAddress  String?
   createdAt  DateTime @default(now())
 
+  @@index([tenantId])
   @@index([entity, entityId])
   @@index([action])
   @@index([createdAt])
@@ -1266,6 +1304,10 @@ enum PollTargetScope {
 
 model Poll {
   id          String          @id @default(cuid())
+  tenantId    String?
+  tenant      Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  buildingId  String?
+  building    Building?       @relation(fields: [buildingId], references: [id], onDelete: SetNull)
   title       String
   description String?
   status      PollStatus      @default(DRAFT)
@@ -1281,6 +1323,8 @@ model Poll {
   options     PollOption[]
   votes       PollVote[]
 
+  @@index([tenantId])
+  @@index([buildingId])
   @@index([status])
   @@index([startAt])
   @@index([endAt])
@@ -1323,50 +1367,8 @@ model PollVote {
 
 
 // =========================================================================
-// SMART OPERATIONS & IOT SENSOR SIMULATION
+// SMART OPERATIONS & SMART ALERTS
 // =========================================================================
-
-enum IoTSensorType {
-  TEMPERATURE
-  SMOKE
-  WATER_LEVEL
-  WATER_LEAKAGE
-  PUMP_PRESSURE
-  POWER
-  ELEVATOR
-}
-
-enum IoTSensorStatus {
-  NORMAL
-  WARNING
-  CRITICAL
-  OFFLINE
-}
-
-model IoTSensor {
-  id           String          @id @default(cuid())
-  code         String          @unique // e.g. SENSOR-LEAK-F12, SENSOR-SMOKE-F12, ELEV-A01
-  name         String          // e.g. Cảm biến rò rỉ nước tầng 12, Cảm biến khói PCCC
-  type         IoTSensorType
-  location     String          // e.g. Tầng 12 - Tháp A, Tầng hầm B2
-  unit         String          // °C, ppm, %, bar, kWh, ONLINE/OFFLINE
-  currentValue String          // Giá trị hiện tại
-  thresholdMin Float?
-  thresholdMax Float?
-  status       IoTSensorStatus @default(NORMAL)
-  lastUpdated  DateTime        @default(now())
-  isEnabled    Boolean         @default(true)
-  metadata     Json?
-
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-
-  alerts       SmartAlertRecord[]
-
-  @@index([type])
-  @@index([status])
-  @@map("iot_sensors")
-}
 
 enum AlertSeverity {
   INFO
@@ -1406,7 +1408,6 @@ model SmartAlertRecord {
   resolvedAt        DateTime?
   resolvedById      String?
   sensorId          String?
-  sensor            IoTSensor?         @relation(fields: [sensorId], references: [id], onDelete: SetNull)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 

@@ -110,8 +110,8 @@ export class InvoiceRepository {
     };
   }
 
-  async findById(id: string) {
-    const invoice = await prisma.invoice.findUnique({
+  async findById(id: string, client: Prisma.TransactionClient = prisma) {
+    const invoice = await client.invoice.findUnique({
       where: { id },
       include: {
         apartment: {
@@ -183,50 +183,57 @@ export class InvoiceRepository {
     });
   }
 
-  async processPayment(id: string, data: ProcessPaymentDto, tx: Prisma.TransactionClient = prisma) {
-    const invoice = await tx.invoice.findUnique({ where: { id } });
-    if (!invoice) {
-      throw new Error('Hóa đơn không tồn tại');
-    }
+  async processPayment(id: string, data: ProcessPaymentDto, tx?: Prisma.TransactionClient) {
+    const execute = async (client: Prisma.TransactionClient) => {
+      const invoice = await client.invoice.findUnique({ where: { id } });
+      if (!invoice) {
+        throw new Error('Hóa đơn không tồn tại');
+      }
 
-    const transactionId = data.transactionId || `PAY-${Date.now()}`;
+      const transactionId = data.transactionId || `PAY-${Date.now()}`;
 
-    const updated = await tx.invoice.updateMany({
-      where: {
-        id,
-        status: { not: InvoiceStatus.PAID },
-      },
-      data: {
-        status: InvoiceStatus.PAID,
-        paidAt: new Date(),
-        paymentMethod: data.paymentMethod,
-        transactionId,
-      },
-    });
-
-    if (updated.count === 0) {
-      throw new Error('Hóa đơn không tồn tại hoặc đã được thanh toán trước đó');
-    }
-
-    // Dual-write: Tạo bản ghi nhật ký thanh toán thực tế vào payment_transactions
-    const existingTxn = await tx.paymentTransaction.findFirst({
-      where: { transactionCode: transactionId },
-    });
-
-    if (!existingTxn) {
-      await tx.paymentTransaction.create({
+      const updated = await client.invoice.updateMany({
+        where: {
+          id,
+          status: { not: InvoiceStatus.PAID },
+        },
         data: {
-          invoiceId: id,
-          transactionCode: transactionId,
-          amount: invoice.totalAmount,
+          status: InvoiceStatus.PAID,
+          paidAt: new Date(),
           paymentMethod: data.paymentMethod,
-          status: 'SUCCESS',
-          transactedAt: new Date(),
+          transactionId,
         },
       });
-    }
 
-    return this.findById(id);
+      if (updated.count === 0) {
+        throw new Error('Hóa đơn không tồn tại hoặc đã được thanh toán trước đó');
+      }
+
+      // Dual-write: Tạo bản ghi nhật ký thanh toán thực tế vào payment_transactions trong cùng transaction
+      const existingTxn = await client.paymentTransaction.findFirst({
+        where: { transactionCode: transactionId },
+      });
+
+      if (!existingTxn) {
+        await client.paymentTransaction.create({
+          data: {
+            invoiceId: id,
+            transactionCode: transactionId,
+            amount: invoice.totalAmount,
+            paymentMethod: data.paymentMethod,
+            status: 'SUCCESS',
+            transactedAt: new Date(),
+          },
+        });
+      }
+
+      return this.findById(id, client);
+    };
+
+    if (tx) {
+      return execute(tx);
+    }
+    return prisma.$transaction((innerTx) => execute(innerTx));
   }
 
   async updateStatus(id: string, status: InvoiceStatus, tx: Prisma.TransactionClient = prisma) {

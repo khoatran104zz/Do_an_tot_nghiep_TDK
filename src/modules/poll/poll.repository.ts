@@ -14,10 +14,25 @@ export class PollRepository {
       where.status = filter.status;
     }
 
-    if (filter.search) {
+    if (filter.tenantId) {
       where.OR = [
-        { title: { contains: filter.search.trim(), mode: 'insensitive' } },
-        { description: { contains: filter.search.trim(), mode: 'insensitive' } },
+        { tenantId: filter.tenantId },
+        { tenantId: null },
+      ];
+    }
+
+    if (filter.buildingId) {
+      where.buildingId = filter.buildingId;
+    }
+
+    if (filter.search) {
+      where.AND = [
+        {
+          OR: [
+            { title: { contains: filter.search.trim(), mode: 'insensitive' } },
+            { description: { contains: filter.search.trim(), mode: 'insensitive' } },
+          ],
+        },
       ];
     }
 
@@ -89,6 +104,8 @@ export class PollRepository {
   async create(data: CreatePollDto, userId: string) {
     return prisma.poll.create({
       data: {
+        tenantId: data.tenantId || null,
+        buildingId: data.buildingId || null,
         title: data.title.trim(),
         description: data.description?.trim() || null,
         status: PollStatus.ACTIVE,

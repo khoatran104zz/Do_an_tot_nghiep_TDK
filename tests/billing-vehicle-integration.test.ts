@@ -18,29 +18,50 @@ describe('Billing - Vehicle Integration Test Suite', () => {
 
   before(async () => {
     // Ensure test fee categories exist
-    motoFeeCategory = await prisma.feeCategory.upsert({
-      where: { code: 'PARKING_MOTO' },
-      update: { unitPrice: 100000, unit: FeeUnit.PER_VEHICLE },
-      create: {
-        code: 'PARKING_MOTO',
-        name: 'Phí trông giữ xe máy',
-        unit: FeeUnit.PER_VEHICLE,
-        unitPrice: 100000,
-        isSystem: true,
-      },
-    });
+    let foundMoto = await prisma.feeCategory.findFirst({ where: { code: 'PARKING_MOTO' } });
+    if (foundMoto) {
+      motoFeeCategory = await prisma.feeCategory.update({
+        where: { id: foundMoto.id },
+        data: { unitPrice: 100000, unit: FeeUnit.PER_VEHICLE },
+      });
+    } else {
+      motoFeeCategory = await prisma.feeCategory.create({
+        data: {
+          code: 'PARKING_MOTO',
+          name: 'Phí trông giữ xe máy',
+          unit: FeeUnit.PER_VEHICLE,
+          unitPrice: 100000,
+          isSystem: true,
+        },
+      });
+    }
 
-    carFeeCategory = await prisma.feeCategory.upsert({
-      where: { code: 'PARKING_CAR' },
-      update: { unitPrice: 1200000, unit: FeeUnit.PER_VEHICLE },
-      create: {
-        code: 'PARKING_CAR',
-        name: 'Phí trông giữ ô tô',
-        unit: FeeUnit.PER_VEHICLE,
-        unitPrice: 1200000,
-        isSystem: true,
-      },
-    });
+    let foundCar = await prisma.feeCategory.findFirst({ where: { code: 'PARKING_CAR' } });
+    if (foundCar) {
+      carFeeCategory = await prisma.feeCategory.update({
+        where: { id: foundCar.id },
+        data: { unitPrice: 1200000, unit: FeeUnit.PER_VEHICLE },
+      });
+    } else {
+      carFeeCategory = await prisma.feeCategory.create({
+        data: {
+          code: 'PARKING_CAR',
+          name: 'Phí trông giữ ô tô',
+          unit: FeeUnit.PER_VEHICLE,
+          unitPrice: 1200000,
+          isSystem: true,
+        },
+      });
+    }
+
+    // Ensure default building exists for apartments
+    let defaultBuilding = await prisma.building.findFirst();
+    if (!defaultBuilding) {
+      defaultBuilding = await prisma.building.create({
+        data: { code: 'BILLING-BLDG-TEST', name: 'Tòa Nhà Test Billing' },
+      });
+    }
+    const buildingId = defaultBuilding.id;
 
     // Create unique test apartments to isolate tests
     const timestamp = Date.now();
@@ -48,6 +69,7 @@ describe('Billing - Vehicle Integration Test Suite', () => {
     testApartment0 = await prisma.apartment.create({
       data: {
         code: `T-0-${timestamp}`,
+        buildingId,
         building: 'T-BLOCK',
         floor: 1,
         area: 60,
@@ -57,6 +79,7 @@ describe('Billing - Vehicle Integration Test Suite', () => {
     testApartment2M = await prisma.apartment.create({
       data: {
         code: `T-2M-${timestamp}`,
+        buildingId,
         building: 'T-BLOCK',
         floor: 2,
         area: 70,
@@ -66,6 +89,7 @@ describe('Billing - Vehicle Integration Test Suite', () => {
     testApartmentMixed = await prisma.apartment.create({
       data: {
         code: `T-MIX-${timestamp}`,
+        buildingId,
         building: 'T-BLOCK',
         floor: 3,
         area: 85,
@@ -75,6 +99,7 @@ describe('Billing - Vehicle Integration Test Suite', () => {
     testApartmentLifecycle = await prisma.apartment.create({
       data: {
         code: `T-LIFE-${timestamp}`,
+        buildingId,
         building: 'T-BLOCK',
         floor: 4,
         area: 90,

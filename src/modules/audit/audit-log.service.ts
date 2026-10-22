@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 
 export interface RecordAuditParams {
+  tenantId?: string | null;
   actorId?: string | null;
   actorEmail?: string | null;
   actorRole?: string | null;
@@ -19,6 +20,7 @@ export class AuditLogService {
     try {
       return await prisma.auditLog.create({
         data: {
+          tenantId: params.tenantId || null,
           actorId: params.actorId || null,
           actorEmail: params.actorEmail || null,
           actorRole: params.actorRole || null,
@@ -40,16 +42,18 @@ export class AuditLogService {
    * Query audit history
    */
   async queryLogs(filter: {
+    tenantId?: string | null;
     entity?: string;
     entityId?: string;
     action?: string;
     page?: number;
     limit?: number;
   }) {
-    const { entity, entityId, action, page = 1, limit = 20 } = filter;
+    const { tenantId, entity, entityId, action, page = 1, limit = 20 } = filter;
     const skip = (page - 1) * limit;
 
     const where: any = {};
+    if (tenantId) where.tenantId = tenantId;
     if (entity) where.entity = entity;
     if (entityId) where.entityId = entityId;
     if (action) where.action = action;

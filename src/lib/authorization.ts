@@ -12,6 +12,9 @@ import {
 export interface SessionUser {
   id: string;
   role: Role | string;
+  tenantId?: string | null;
+  tenantName?: string | null;
+  tenantCode?: string | null;
   residentId?: string | null;
   apartmentId?: string | null;
   assignedBuildingIds?: string[];
@@ -115,9 +118,43 @@ export async function getManagerAssignedBuildingIds(
 }
 
 /**
+ * Authorize tenant resource access.
+ * - PLATFORM_ADMIN / legacy ADMIN: Global platform access.
+ * - TENANT_ADMIN / MANAGER / STAFF: Strictly limited to their own tenantId.
+ */
+export async function authorizeTenantAccess(
+  user: SessionUser,
+  targetTenantId: string
+): Promise<AuthorizationResult> {
+  if (
+    user.role === Role.PLATFORM_ADMIN ||
+    user.role === 'PLATFORM_ADMIN' ||
+    user.role === Role.ADMIN ||
+    user.role === 'ADMIN'
+  ) {
+    return { allowed: true };
+  }
+
+  if (
+    (user.role === Role.TENANT_ADMIN || user.role === 'TENANT_ADMIN') &&
+    user.tenantId &&
+    user.tenantId === targetTenantId
+  ) {
+    return { allowed: true };
+  }
+
+  return {
+    allowed: false,
+    statusCode: 403,
+    error: 'Bạn không có quyền quản trị thông tin của khách hàng / tổ hợp này',
+  };
+}
+
+/**
  * Authorize building resource access.
- * - ADMIN: Global access to any building.
- * - MANAGER: Strictly limited to assigned buildings.
+ * - PLATFORM_ADMIN / ADMIN: Global access to any building.
+ * - TENANT_ADMIN: Limited to buildings belonging to their own Tenant.
+ * - MANAGER: Strictly limited to assigned buildings within their Tenant.
  * - Others: Denied.
  */
 export async function authorizeBuildingAccess(
@@ -125,7 +162,42 @@ export async function authorizeBuildingAccess(
   buildingId: string,
   prismaClient: any = prisma
 ): Promise<AuthorizationResult> {
-  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+  if (
+    user.role === Role.PLATFORM_ADMIN ||
+    user.role === 'PLATFORM_ADMIN' ||
+    user.role === Role.ADMIN ||
+    user.role === 'ADMIN'
+  ) {
+    return { allowed: true };
+  }
+
+  // Tenant Admin check: building must belong to user's tenant
+  if (user.role === Role.TENANT_ADMIN || user.role === 'TENANT_ADMIN') {
+    if (!user.tenantId) {
+      return {
+        allowed: false,
+        statusCode: 403,
+        error: 'Tài khoản quản trị chưa được liên kết với tổ hợp (Tenant)',
+      };
+    }
+    const building = await prismaClient?.building?.findUnique({
+      where: { id: buildingId },
+      select: { tenantId: true },
+    });
+    if (!building) {
+      return {
+        allowed: false,
+        statusCode: 404,
+        error: 'Tòa nhà không tồn tại',
+      };
+    }
+    if (building.tenantId !== user.tenantId) {
+      return {
+        allowed: false,
+        statusCode: 403,
+        error: 'Tòa nhà này không thuộc quyền quản lý tổ hợp (Tenant) của bạn',
+      };
+    }
     return { allowed: true };
   }
 
@@ -203,17 +275,30 @@ export async function authorizeApartmentAccess(
     return { allowed: true };
   }
 
-  // 2. Admin check
-  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+  // 2. Platform Admin or legacy global admin
+  if (
+    user.role === Role.PLATFORM_ADMIN ||
+    user.role === 'PLATFORM_ADMIN' ||
+    user.role === Role.ADMIN ||
+    user.role === 'ADMIN'
+  ) {
     return { allowed: true };
   }
 
-  // 3. Manager building scope check
-  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+  // 3. Tenant Admin and Manager building scope check
+  if (
+    user.role === Role.TENANT_ADMIN ||
+    user.role === 'TENANT_ADMIN' ||
+    user.role === Role.MANAGER ||
+    user.role === 'MANAGER'
+  ) {
     const buildingId = await resolveApartmentBuildingId(targetApartmentId, prismaClient);
     if (!buildingId) {
-      // Apartment without building association or mock test
-      return { allowed: true };
+      return {
+        allowed: false,
+        statusCode: 403,
+        error: 'Căn hộ không tồn tại hoặc chưa được phân bổ tòa nhà hợp lệ',
+      };
     }
     return authorizeBuildingAccess(user, buildingId, prismaClient);
   }
@@ -256,15 +341,31 @@ export async function authorizeInvoiceAccess(
     };
   }
 
-  // 3. Admin has global access
-  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+  // 3. Platform Admin or legacy global admin
+  if (
+    user.role === Role.PLATFORM_ADMIN ||
+    user.role === 'PLATFORM_ADMIN' ||
+    user.role === Role.ADMIN ||
+    user.role === 'ADMIN'
+  ) {
     return { allowed: true };
   }
 
-  // 4. Manager building scope check
-  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+  // 4. Tenant Admin and Manager building scope check
+  if (
+    user.role === Role.TENANT_ADMIN ||
+    user.role === 'TENANT_ADMIN' ||
+    user.role === Role.MANAGER ||
+    user.role === 'MANAGER'
+  ) {
     const buildingId = await resolveApartmentBuildingId(invoiceApartmentId, prismaClient);
-    if (!buildingId) return { allowed: true };
+    if (!buildingId) {
+      return {
+        allowed: false,
+        statusCode: 403,
+        error: 'Hóa đơn căn hộ không hợp lệ hoặc chưa được gắn với tòa nhà',
+      };
+    }
     return authorizeBuildingAccess(user, buildingId, prismaClient);
   }
 
@@ -363,13 +464,29 @@ export async function authorizeContractAccess(
     };
   }
 
-  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+  if (
+    user.role === Role.PLATFORM_ADMIN ||
+    user.role === 'PLATFORM_ADMIN' ||
+    user.role === Role.ADMIN ||
+    user.role === 'ADMIN'
+  ) {
     return { allowed: true };
   }
 
-  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+  if (
+    user.role === Role.TENANT_ADMIN ||
+    user.role === 'TENANT_ADMIN' ||
+    user.role === Role.MANAGER ||
+    user.role === 'MANAGER'
+  ) {
     const buildingId = await resolveApartmentBuildingId(contractApartmentId, prismaClient);
-    if (!buildingId) return { allowed: true };
+    if (!buildingId) {
+      return {
+        allowed: false,
+        statusCode: 403,
+        error: 'Hợp đồng căn hộ không hợp lệ hoặc chưa được gắn với tòa nhà',
+      };
+    }
     return authorizeBuildingAccess(user, buildingId, prismaClient);
   }
 
@@ -421,18 +538,37 @@ export async function authorizeResidentProfileAccess(
     };
   }
 
-  if (user.role === Role.ADMIN || user.role === 'ADMIN') {
+  if (
+    user.role === Role.PLATFORM_ADMIN ||
+    user.role === 'PLATFORM_ADMIN' ||
+    user.role === Role.ADMIN ||
+    user.role === 'ADMIN'
+  ) {
     return { allowed: true };
   }
 
-  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+  if (
+    user.role === Role.TENANT_ADMIN ||
+    user.role === 'TENANT_ADMIN' ||
+    user.role === Role.MANAGER ||
+    user.role === 'MANAGER'
+  ) {
     if (targetResident.apartmentId) {
       const buildingId = await resolveApartmentBuildingId(targetResident.apartmentId, prismaClient);
       if (buildingId) {
         return authorizeBuildingAccess(user, buildingId, prismaClient);
       }
+      return {
+        allowed: false,
+        statusCode: 403,
+        error: 'Cư dân thuộc căn hộ chưa được gắn với tòa nhà hợp lệ',
+      };
     }
-    return { allowed: true };
+    return {
+      allowed: false,
+      statusCode: 403,
+      error: 'Không xác định được căn hộ của cư dân',
+    };
   }
 
   return { allowed: true };
@@ -471,6 +607,8 @@ export async function authorizeVehicleAccess(
   }
 
   if (
+    user.role === Role.PLATFORM_ADMIN ||
+    user.role === 'PLATFORM_ADMIN' ||
     user.role === Role.ADMIN ||
     user.role === 'ADMIN' ||
     user.role === Role.STAFF_SECURITY ||
@@ -479,9 +617,20 @@ export async function authorizeVehicleAccess(
     return { allowed: true };
   }
 
-  if (user.role === Role.MANAGER || user.role === 'MANAGER') {
+  if (
+    user.role === Role.TENANT_ADMIN ||
+    user.role === 'TENANT_ADMIN' ||
+    user.role === Role.MANAGER ||
+    user.role === 'MANAGER'
+  ) {
     const buildingId = await resolveApartmentBuildingId(vehicleApartmentId, prismaClient);
-    if (!buildingId) return { allowed: true };
+    if (!buildingId) {
+      return {
+        allowed: false,
+        statusCode: 403,
+        error: 'Phương tiện căn hộ không hợp lệ hoặc chưa được gắn với tòa nhà',
+      };
+    }
     return authorizeBuildingAccess(user, buildingId, prismaClient);
   }
 

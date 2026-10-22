@@ -6,7 +6,7 @@ import { NotificationCategory, NotificationPriority, PollStatus, Role } from '@p
 import { getVerifiedResidentInfo } from '@/lib/authorization';
 
 export class PollService {
-  async getPolls(filter: PollFilter, user: { id: string; role: string }) {
+  async getPolls(filter: PollFilter, user: { id: string; role: string; tenantId?: string | null }) {
     let residentApartmentId: string | undefined = undefined;
     if (user.role === Role.RESIDENT) {
       const residentInfo = await getVerifiedResidentInfo(user.id);
@@ -14,6 +14,20 @@ export class PollService {
       if (!filter.status) {
         filter.status = PollStatus.ACTIVE;
       }
+      if (residentApartmentId) {
+        const apt = await prisma.apartment.findUnique({
+          where: { id: residentApartmentId },
+          select: { buildingId: true, buildingRef: { select: { tenantId: true } } },
+        });
+        if (apt) {
+          filter.buildingId = apt.buildingId;
+          if (apt.buildingRef?.tenantId) {
+            filter.tenantId = apt.buildingRef.tenantId;
+          }
+        }
+      }
+    } else if (user.tenantId) {
+      filter.tenantId = user.tenantId;
     }
 
     return pollRepository.findAll(filter, residentApartmentId);
@@ -30,29 +44,76 @@ export class PollService {
     if (!poll) {
       throw new Error('Không tìm thấy cuộc khảo sát');
     }
+
+    if (user.role === Role.RESIDENT && residentApartmentId) {
+      const apt = await prisma.apartment.findUnique({
+        where: { id: residentApartmentId },
+        select: { buildingId: true, buildingRef: { select: { tenantId: true } } },
+      });
+      if (apt) {
+        if (poll.buildingId && apt.buildingId !== poll.buildingId) {
+          throw new Error('Bạn không có quyền xem cuộc khảo sát này do không thuộc tòa nhà tương ứng');
+        }
+        if (poll.tenantId && apt.buildingRef?.tenantId && apt.buildingRef.tenantId !== poll.tenantId) {
+          throw new Error('Bạn không có quyền xem cuộc khảo sát của tổ hợp khác');
+        }
+      }
+    }
+
     return poll;
   }
 
-  async createPoll(dto: CreatePollDto, user: { id: string; role: string }) {
-    if (user.role !== Role.ADMIN && user.role !== Role.MANAGER) {
+  async createPoll(dto: CreatePollDto, user: { id: string; role: string; tenantId?: string | null }) {
+    if (
+      user.role !== Role.PLATFORM_ADMIN &&
+      user.role !== 'PLATFORM_ADMIN' &&
+      user.role !== Role.TENANT_ADMIN &&
+      user.role !== 'TENANT_ADMIN' &&
+      user.role !== Role.ADMIN &&
+      user.role !== 'ADMIN' &&
+      user.role !== Role.MANAGER &&
+      user.role !== 'MANAGER'
+    ) {
       throw new Error('Chỉ Ban Quản Lý hoặc Quản trị viên mới có quyền tạo cuộc khảo sát');
+    }
+
+    if (user.tenantId && !dto.tenantId) {
+      dto.tenantId = user.tenantId;
     }
 
     const poll = await pollRepository.create(dto, user.id);
 
     // Create Notification and Dispatch Realtime Event
     try {
+      const isGlobal = !poll.buildingId && !poll.tenantId && poll.targetScope === 'ALL_APARTMENTS';
+      const targetScope = poll.buildingId ? 'BUILDING' : 'ALL';
+
+      let apartmentIds: string[] = [];
+      if (poll.buildingId) {
+        const apts = await prisma.apartment.findMany({
+          where: { buildingId: poll.buildingId },
+          select: { id: true },
+        });
+        apartmentIds = apts.map((a) => a.id);
+      }
+
       await prisma.notification.create({
         data: {
           title: 'Khảo sát ý kiến cư dân mới',
           content: `Ban quản lý vừa mở cuộc biểu quyết: "${poll.title}". Mời cư dân tham gia đóng góp ý kiến.`,
           category: NotificationCategory.POLL,
           priority: NotificationPriority.NORMAL,
-          isGlobal: true,
+          isGlobal,
           targetRole: Role.RESIDENT,
+          targetScope: targetScope as any,
           relatedEntityType: 'POLL',
           relatedEntityId: poll.id,
           senderId: user.id,
+          ...(apartmentIds.length > 0 && {
+            apartments: {
+              create: apartmentIds.map((apartmentId) => ({ apartmentId })),
+            },
+          }),
         },
       });
 
@@ -103,6 +164,23 @@ export class PollService {
     const poll = await pollRepository.findById(pollId);
     if (!poll) {
       throw new Error('Cuộc khảo sát không tồn tại');
+    }
+
+    // Scope check: Apartment must belong to poll building & tenant
+    const apt = await prisma.apartment.findUnique({
+      where: { id: residentInfo.apartmentId },
+      select: { buildingId: true, buildingRef: { select: { tenantId: true } } },
+    });
+    if (!apt) {
+      throw new Error('Không tìm thấy thông tin căn hộ của cư dân');
+    }
+
+    if (poll.buildingId && apt.buildingId !== poll.buildingId) {
+      throw new Error('Bạn không có quyền tham gia biểu quyết cuộc khảo sát này do không thuộc tòa nhà tương ứng');
+    }
+
+    if (poll.tenantId && apt.buildingRef?.tenantId && apt.buildingRef.tenantId !== poll.tenantId) {
+      throw new Error('Bạn không có quyền tham gia biểu quyết cuộc khảo sát của tổ hợp khác');
     }
 
     if (poll.status !== PollStatus.ACTIVE) {

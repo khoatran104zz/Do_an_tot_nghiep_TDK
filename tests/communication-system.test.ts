@@ -18,11 +18,23 @@ describe('COMMUNICATION SYSTEM TESTS (Polls, Announcements, Realtime)', async ()
 
   before(async () => {
     // 1. Setup mock/seed test apartments
+    let defaultBuilding = await prisma.building.findFirst();
+    if (!defaultBuilding) {
+      defaultBuilding = await prisma.building.create({
+        data: {
+          code: 'COMM-BLDG-TEST',
+          name: 'Tòa Nhà Test Truyền Thông',
+        },
+      });
+    }
+    const buildingId = defaultBuilding.id;
+
     apartment1 = await prisma.apartment.upsert({
-      where: { code: 'TEST-COMM-101' },
+      where: { buildingId_code: { buildingId, code: 'TEST-COMM-101' } },
       update: {},
       create: {
         code: 'TEST-COMM-101',
+        buildingId,
         building: 'Tòa A',
         floor: 1,
         area: 75.5,
@@ -33,10 +45,11 @@ describe('COMMUNICATION SYSTEM TESTS (Polls, Announcements, Realtime)', async ()
     });
 
     apartment2 = await prisma.apartment.upsert({
-      where: { code: 'TEST-COMM-102' },
+      where: { buildingId_code: { buildingId, code: 'TEST-COMM-102' } },
       update: {},
       create: {
         code: 'TEST-COMM-102',
+        buildingId,
         building: 'Tòa A',
         floor: 1,
         area: 80.0,

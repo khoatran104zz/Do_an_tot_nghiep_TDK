@@ -30,8 +30,8 @@ export class AuthRepository {
       // Find apartment if code is provided
       let apartmentId: string | undefined;
       if (data.apartmentCode) {
-        const apartment = await tx.apartment.findUnique({
-          where: { code: data.apartmentCode.trim() },
+        const apartment = await tx.apartment.findFirst({
+          where: { code: data.apartmentCode.trim().toUpperCase() },
         });
         if (apartment) {
           apartmentId = apartment.id;

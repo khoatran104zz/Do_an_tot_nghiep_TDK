@@ -3,11 +3,15 @@ import { Poll, PollOption, PollVote, PollStatus, PollTargetScope } from '@prisma
 export interface PollFilter {
   search?: string;
   status?: PollStatus;
+  tenantId?: string | null;
+  buildingId?: string | null;
   page?: number;
   limit?: number;
 }
 
 export interface CreatePollDto {
+  tenantId?: string | null;
+  buildingId?: string | null;
   title: string;
   description?: string | null;
   options: string[]; // At least 2 options

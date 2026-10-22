@@ -51,8 +51,17 @@ export async function GET(req: NextRequest) {
     // Manager Scope Guard: Restrict query to assigned buildings
     let finalBuildingId = buildingId;
     let finalBuildingIds: string[] | undefined = undefined;
+    let tenantScopeId: string | undefined = undefined;
 
-    if (session.user.role === 'MANAGER') {
+    if (session.user.role === 'TENANT_ADMIN' || (session.user.role === 'ADMIN' && session.user.tenantId)) {
+      tenantScopeId = session.user.tenantId || undefined;
+      if (buildingId) {
+        const authCheck = await authorizeBuildingAccess(session.user, buildingId);
+        if (!authCheck.allowed) {
+          return apiForbidden(authCheck.error || 'Tòa nhà này không thuộc quyền quản lý tổ hợp của bạn');
+        }
+      }
+    } else if (session.user.role === 'MANAGER') {
       const assignedIds = session.user.assignedBuildingIds?.length
         ? session.user.assignedBuildingIds
         : await getManagerAssignedBuildingIds(session.user.id);
@@ -72,6 +81,7 @@ export async function GET(req: NextRequest) {
       building,
       buildingId: finalBuildingId,
       buildingIds: finalBuildingIds,
+      tenantId: tenantScopeId,
       block,
       blockId,
       floor,
@@ -101,13 +111,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = apartmentSchema.parse(body);
 
-    // Manager Scope Guard: Can only create apartment in assigned building
-    if (session.user.role === 'MANAGER') {
-      if (validated.buildingId) {
-        const authCheck = await authorizeBuildingAccess(session.user, validated.buildingId);
-        if (!authCheck.allowed) {
-          return apiForbidden(authCheck.error || 'Bạn không có quyền tạo căn hộ tại tòa nhà này');
-        }
+    // Tenant Admin & Manager Scope Guard: Can only create apartment in authorized building
+    if (validated.buildingId) {
+      const authCheck = await authorizeBuildingAccess(session.user, validated.buildingId);
+      if (!authCheck.allowed) {
+        return apiForbidden(authCheck.error || 'Bạn không có quyền tạo căn hộ tại tòa nhà này');
       }
     }
     const item = await apartmentService.createApartment(validated, {

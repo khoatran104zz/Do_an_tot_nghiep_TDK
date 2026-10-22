@@ -2,20 +2,64 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
-import { isAdmin } from '@/lib/permissions';
+import { isAdmin, isPlatformAdmin, isTenantAdmin } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
+import { Role } from '@prisma/client';
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
 
-    if (!isAdmin(session.user.role)) {
-      return apiForbidden('Chỉ Quản trị viên cấp cao (Admin) mới có quyền truy cập Bảng điều khiển hệ thống');
+    const user = session.user;
+    if (!isAdmin(user.role)) {
+      return apiForbidden('Chỉ Quản trị viên mới có quyền truy cập Bảng điều khiển quản trị');
     }
 
-    // 1. Platform-wide high-level counts
+    const isPlatform = isPlatformAdmin(user.role) || (user.role === Role.ADMIN && !user.tenantId);
+    const tenantId = user.tenantId;
+
+    // Filter clauses based on role
+    const buildingWhere: any = isPlatform ? {} : { tenantId };
+    const apartmentWhere: any = isPlatform
+      ? {}
+      : {
+          OR: [
+            { buildingRef: { tenantId } },
+            { block: { building: { tenantId } } },
+          ],
+        };
+    const managerWhere: any = isPlatform ? { role: 'MANAGER' } : { role: 'MANAGER', tenantId };
+    const staffWhere: any = isPlatform
+      ? { role: { in: ['STAFF_TECHNICIAN', 'STAFF_SECURITY', 'STAFF_RECEPTIONIST'] } }
+      : {
+          role: { in: ['STAFF_TECHNICIAN', 'STAFF_SECURITY', 'STAFF_RECEPTIONIST'] },
+          tenantId,
+        };
+    const invoiceWhere: any = isPlatform
+      ? {}
+      : {
+          apartment: {
+            OR: [
+              { buildingRef: { tenantId } },
+              { block: { building: { tenantId } } },
+            ],
+          },
+        };
+    const ticketWhere: any = isPlatform
+      ? {}
+      : {
+          apartment: {
+            OR: [
+              { buildingRef: { tenantId } },
+              { block: { building: { tenantId } } },
+            ],
+          },
+        };
+
+    // 1. High-level counts
     const [
+      totalTenants,
       totalBuildings,
       totalManagers,
       totalStaff,
@@ -27,27 +71,36 @@ export async function GET(req: NextRequest) {
       openTicketsCount,
       recentAuditLogs,
     ] = await Promise.all([
-      prisma.building.count(),
-      prisma.user.count({ where: { role: 'MANAGER' } }),
-      prisma.user.count({
-        where: {
-          role: { in: ['STAFF_TECHNICIAN', 'STAFF_SECURITY', 'STAFF_RECEPTIONIST'] },
-        },
+      isPlatform ? prisma.tenant.count() : 1,
+      prisma.building.count({ where: buildingWhere }),
+      prisma.user.count({ where: managerWhere }),
+      prisma.user.count({ where: staffWhere }),
+      prisma.apartment.count({ where: apartmentWhere }),
+      prisma.apartment.count({ where: { ...apartmentWhere, status: 'OCCUPIED' } }),
+      prisma.resident.count({
+        where: isPlatform
+          ? { status: 'RESIDING' }
+          : {
+              status: 'RESIDING',
+              occupancies: {
+                some: {
+                  isLivingHere: true,
+                  apartment: apartmentWhere,
+                },
+              },
+            },
       }),
-      prisma.apartment.count(),
-      prisma.apartment.count({ where: { status: 'OCCUPIED' } }),
-      prisma.resident.count({ where: { status: 'RESIDING' } }),
       prisma.invoice.aggregate({
-        where: { status: 'PAID' },
+        where: { ...invoiceWhere, status: 'PAID' },
         _sum: { totalAmount: true },
       }),
       prisma.invoice.aggregate({
-        where: { status: { in: ['UNPAID', 'OVERDUE'] } },
+        where: { ...invoiceWhere, status: { in: ['UNPAID', 'OVERDUE'] } },
         _sum: { totalAmount: true },
         _count: true,
       }),
       prisma.feedback.count({
-        where: { status: { in: ['NEW', 'ASSIGNED', 'PROCESSING'] } },
+        where: { ...ticketWhere, status: { in: ['NEW', 'ASSIGNED', 'PROCESSING'] } },
       }),
       prisma.auditLog.findMany({
         orderBy: { createdAt: 'desc' },
@@ -62,7 +115,11 @@ export async function GET(req: NextRequest) {
 
     // 2. Cross-building comparison table
     const buildings = await prisma.building.findMany({
+      where: buildingWhere,
       include: {
+        tenant: {
+          select: { id: true, code: true, name: true },
+        },
         managers: {
           include: {
             manager: {
@@ -107,6 +164,7 @@ export async function GET(req: NextRequest) {
           code: b.code,
           name: b.name,
           address: b.address,
+          tenant: b.tenant,
           totalApartments: b._count.apartments,
           occupiedApartments: occupied,
           occupancyRate: occRate,
@@ -119,6 +177,7 @@ export async function GET(req: NextRequest) {
     return apiSuccess(
       {
         kpis: {
+          totalTenants,
           totalBuildings,
           totalManagers,
           totalStaff,
@@ -131,10 +190,16 @@ export async function GET(req: NextRequest) {
           unpaidInvoicesCount: overdueInvoices._count,
           openTicketsCount,
         },
+        tenantContext: {
+          isPlatformAdmin: isPlatform,
+          tenantId: user.tenantId,
+          tenantName: user.tenantName,
+          tenantCode: user.tenantCode,
+        },
         crossBuildingStats,
         recentAuditLogs,
       },
-      'Lấy dữ liệu Admin Platform Dashboard thành công'
+      'Lấy dữ liệu Admin Dashboard thành công'
     );
   } catch (error: any) {
     return apiError(error.message || 'Lỗi khi tải dữ liệu Admin Dashboard', 'FETCH_FAILED', 500);

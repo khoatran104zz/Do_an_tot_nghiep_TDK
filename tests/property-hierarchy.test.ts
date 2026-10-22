@@ -98,10 +98,12 @@ describe('Property Management Hierarchy & History Tests', () => {
     });
 
     it('MUST automatically record STATUS_CHANGE event when apartment status is updated', async () => {
+      const existingApt = await prisma.apartment.findFirst();
       // Create a temporary test apartment
       const tempApt = await apartmentService.createApartment({
         code: `TEST-${Date.now().toString().slice(-4)}`,
         building: 'Tòa A (Sky)',
+        buildingId: existingApt?.buildingId || 'bldg-default',
         floor: 15,
         bedrooms: 2,
         bathrooms: 2,

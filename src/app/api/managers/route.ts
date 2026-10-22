@@ -3,15 +3,17 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-response';
 import { prisma } from '@/lib/prisma';
-import { isAdmin } from '@/lib/permissions';
+import { isAdmin, isPlatformAdmin, isTenantAdmin } from '@/lib/permissions';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { Role } from '@prisma/client';
 
 const createManagerSchema = z.object({
   email: z.string().email('Email không đúng định dạng'),
   fullName: z.string().min(2, 'Họ và tên tối thiểu 2 ký tự'),
-  phone: z.string().min(9, 'Số điện thoại không hợp lệ').optional(),
+  phone: z.string().min(9, 'Số điện thoại không hợp lệ').optional().nullable(),
   password: z.string().min(6, 'Mật khẩu tối thiểu 6 ký tự'),
+  tenantId: z.string().optional().nullable(),
   buildingIds: z.array(z.string()).optional(),
 });
 
@@ -20,13 +22,31 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
 
+    const user = session.user;
+
     // STRICTLY ADMIN ONLY
-    if (!isAdmin(session.user.role)) {
-      return apiForbidden('Chỉ Quản trị viên cấp cao (Admin) mới có quyền quản lý danh sách Manager');
+    if (!isAdmin(user.role)) {
+      return apiForbidden('Chỉ Quản trị viên (Admin) mới có quyền quản lý danh sách Manager');
+    }
+
+    const whereClause: any = { role: 'MANAGER' };
+
+    // Tenant Admin only sees managers of their own tenant
+    if (isTenantAdmin(user.role) || (user.role === Role.ADMIN && user.tenantId)) {
+      if (!user.tenantId) {
+        return apiForbidden('Tài khoản chưa được liên kết với tổ hợp');
+      }
+      whereClause.tenantId = user.tenantId;
+    } else if (isPlatformAdmin(user.role)) {
+      const { searchParams } = new URL(req.url);
+      const queryTenantId = searchParams.get('tenantId');
+      if (queryTenantId) {
+        whereClause.tenantId = queryTenantId;
+      }
     }
 
     const managers = await prisma.user.findMany({
-      where: { role: 'MANAGER' },
+      where: whereClause,
       select: {
         id: true,
         email: true,
@@ -34,13 +54,17 @@ export async function GET(req: NextRequest) {
         phone: true,
         avatarUrl: true,
         role: true,
+        tenantId: true,
+        tenant: {
+          select: { id: true, code: true, name: true },
+        },
         isActive: true,
         createdAt: true,
         updatedAt: true,
         managedBuildings: {
           include: {
             building: {
-              select: { id: true, code: true, name: true },
+              select: { id: true, code: true, name: true, tenantId: true },
             },
           },
         },
@@ -55,6 +79,8 @@ export async function GET(req: NextRequest) {
       phone: m.phone,
       avatarUrl: m.avatarUrl,
       role: m.role,
+      tenantId: m.tenantId,
+      tenant: m.tenant,
       isActive: m.isActive,
       createdAt: m.createdAt,
       updatedAt: m.updatedAt,
@@ -72,13 +98,46 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
 
+    const user = session.user;
+
     // STRICTLY ADMIN ONLY
-    if (!isAdmin(session.user.role)) {
-      return apiForbidden('Chỉ Quản trị viên cấp cao (Admin) mới có quyền tạo tài khoản Manager');
+    if (!isAdmin(user.role)) {
+      return apiForbidden('Chỉ Quản trị viên (Admin) mới có quyền tạo tài khoản Manager');
     }
 
     const body = await req.json();
     const validated = createManagerSchema.parse(body);
+
+    let targetTenantId = user.tenantId;
+
+    if (isTenantAdmin(user.role) || (user.role === Role.ADMIN && user.tenantId)) {
+      if (!user.tenantId) {
+        return apiForbidden('Tài khoản quản trị chưa được liên kết với tổ hợp');
+      }
+      targetTenantId = user.tenantId;
+    } else if (isPlatformAdmin(user.role)) {
+      if (!validated.tenantId) {
+        return apiError('Vui lòng chỉ định tổ hợp (tenantId) cho tài khoản Manager', 'MISSING_TENANT_ID', 400);
+      }
+      targetTenantId = validated.tenantId;
+    }
+
+    // Verify building assignment belongs strictly to targetTenantId
+    if (validated.buildingIds && validated.buildingIds.length > 0) {
+      const invalidBuildings = await prisma.building.findMany({
+        where: {
+          id: { in: validated.buildingIds },
+          NOT: { tenantId: targetTenantId },
+        },
+        select: { id: true, name: true },
+      });
+
+      if (invalidBuildings.length > 0) {
+        return apiForbidden(
+          `Không thể phân công Manager vào tòa nhà (${invalidBuildings.map((b) => b.name).join(', ')}) thuộc tổ hợp khác!`
+        );
+      }
+    }
 
     // Check unique email
     const existing = await prisma.user.findUnique({
@@ -91,13 +150,14 @@ export async function POST(req: NextRequest) {
     const passwordHash = await bcrypt.hash(validated.password, 10);
 
     const newManager = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
+      const createdUser = await tx.user.create({
         data: {
           email: validated.email.toLowerCase().trim(),
           passwordHash,
           fullName: validated.fullName,
           phone: validated.phone || null,
           role: 'MANAGER',
+          tenantId: targetTenantId,
           isActive: true,
         },
       });
@@ -105,7 +165,7 @@ export async function POST(req: NextRequest) {
       if (validated.buildingIds && validated.buildingIds.length > 0) {
         await tx.managerBuilding.createMany({
           data: validated.buildingIds.map((bId) => ({
-            managerId: user.id,
+            managerId: createdUser.id,
             buildingId: bId,
           })),
         });
@@ -114,20 +174,21 @@ export async function POST(req: NextRequest) {
       // Record Audit Log
       await tx.auditLog.create({
         data: {
-          actorId: session.user.id,
-          actorEmail: session.user.email,
-          actorRole: session.user.role,
+          actorId: user.id,
+          actorEmail: user.email,
+          actorRole: user.role,
           action: 'CREATE_MANAGER',
           entity: 'USER',
-          entityId: user.id,
+          entityId: createdUser.id,
           metadata: {
-            managerName: user.fullName,
+            managerName: createdUser.fullName,
+            tenantId: targetTenantId,
             assignedBuildingIds: validated.buildingIds || [],
           },
         },
       });
 
-      return user;
+      return createdUser;
     });
 
     return apiSuccess(
@@ -136,6 +197,7 @@ export async function POST(req: NextRequest) {
         email: newManager.email,
         fullName: newManager.fullName,
         role: newManager.role,
+        tenantId: newManager.tenantId,
       },
       'Tạo tài khoản Quản lý tòa nhà thành công',
       undefined,

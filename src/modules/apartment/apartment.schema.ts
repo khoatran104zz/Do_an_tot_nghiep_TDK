@@ -4,6 +4,7 @@ import { ApartmentStatus } from '@prisma/client';
 export const buildingSchema = z.object({
   code: z.string().min(2, 'Mã tòa nhà tối thiểu 2 ký tự (VD: SMART-CITY)'),
   name: z.string().min(2, 'Tên tòa nhà tối thiểu 2 ký tự'),
+  tenantId: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
 });
@@ -30,7 +31,7 @@ export const apartmentSchema = z.object({
   area: z.coerce.number().positive('Diện tích phải là số dương'),
   status: z.nativeEnum(ApartmentStatus).default(ApartmentStatus.VACANT),
   note: z.string().optional().nullable(),
-  buildingId: z.string().optional().nullable(),
+  buildingId: z.string({ message: 'Vui lòng chọn tòa nhà thuộc về' }).min(1, 'Vui lòng chọn tòa nhà thuộc về'),
   blockId: z.string().optional().nullable(),
   floorId: z.string().optional().nullable(),
 });

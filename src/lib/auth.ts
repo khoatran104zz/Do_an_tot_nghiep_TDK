@@ -36,6 +36,9 @@ export const authOptions: NextAuthOptions = {
         const user = await prisma.user.findUnique({
           where: { email: normalizedEmail },
           include: {
+            tenant: {
+              select: { id: true, name: true, code: true, status: true },
+            },
             residentProfile: {
               include: {
                 occupancies: {
@@ -53,6 +56,11 @@ export const authOptions: NextAuthOptions = {
 
         if (!user || !user.isActive) {
           throw new Error('Tài khoản không tồn tại hoặc đã bị vô hiệu hóa');
+        }
+
+        // If user belongs to a suspended/inactive tenant, prevent login
+        if (user.tenant && user.tenant.status !== 'ACTIVE') {
+          throw new Error('Tổ hợp chung cư của bạn đang tạm ngừng hoạt động. Vui lòng liên hệ hỗ trợ K-Home.');
         }
 
         const isPasswordMatch = await bcrypt.compare(credentials.password, user.passwordHash);
@@ -80,6 +88,9 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.fullName,
           role: user.role,
+          tenantId: user.tenantId || null,
+          tenantName: user.tenant?.name || null,
+          tenantCode: user.tenant?.code || null,
           phone: user.phone,
           avatarUrl: user.avatarUrl,
           residentId: user.residentProfile?.id || null,
@@ -94,6 +105,9 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        token.tenantId = (user as any).tenantId || null;
+        token.tenantName = (user as any).tenantName || null;
+        token.tenantCode = (user as any).tenantCode || null;
         token.phone = (user as any).phone;
         token.avatarUrl = (user as any).avatarUrl;
         token.residentId = (user as any).residentId;
@@ -106,6 +120,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as any;
+        session.user.tenantId = (token.tenantId as string | null) || null;
+        session.user.tenantName = (token.tenantName as string | null) || null;
+        session.user.tenantCode = (token.tenantCode as string | null) || null;
         session.user.phone = token.phone as string | undefined;
         session.user.avatarUrl = token.avatarUrl as string | undefined;
         session.user.residentId = token.residentId as string | null | undefined;
@@ -115,5 +132,5 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || 'smart-apartment-secret-jwt-key-2026-very-secure',
+  secret: process.env.NEXTAUTH_SECRET,
 };

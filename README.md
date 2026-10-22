@@ -79,7 +79,7 @@ Hệ thống được tích hợp sẵn bộ dữ liệu mẫu trong `prisma/see
    Tạo file `.env` từ `.env.example`:
    ```bash
    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/smart_apartment"
-   NEXTAUTH_SECRET="smart-apartment-secret-jwt-key-2026-very-secure"
+   NEXTAUTH_SECRET="your-secure-random-secret-key-min-32-chars"
    NEXTAUTH_URL="http://localhost:3000"
    ```
 

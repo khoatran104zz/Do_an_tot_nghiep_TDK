@@ -140,12 +140,18 @@ describe('Role-Based Access Control (RBAC) & Permission Abstraction Tests', () =
       resident: {
         findUnique: async () => null,
       },
+      apartment: {
+        findUnique: async ({ where }: { where: { id: string } }) => {
+          if (where.id === 'apt-101') return { id: 'apt-101', buildingId: 'bldg-1' };
+          return null;
+        },
+      },
     };
 
     const techUser: SessionUser = { id: 'u-tech', role: Role.STAFF_TECHNICIAN };
-    const secUser: SessionUser = { id: 'u-sec', role: Role.STAFF_SECURITY };
+    const secUser: SessionUser = { id: 'u-sec', role: Role.STAFF_SECURITY, assignedBuildingIds: ['bldg-1'] };
     const receptUser: SessionUser = { id: 'u-rec', role: Role.STAFF_RECEPTIONIST };
-    const managerUser: SessionUser = { id: 'u-mgr', role: Role.MANAGER };
+    const managerUser: SessionUser = { id: 'u-mgr', role: Role.MANAGER, assignedBuildingIds: ['bldg-1'] };
 
     it('MUST DENY operational staff from invoice access', async () => {
       const techResult = await authorizeInvoiceAccess(techUser, 'apt-101', mockPrisma);

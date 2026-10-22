@@ -5,6 +5,9 @@ import { apiSuccess, apiError, apiUnauthorized, apiForbidden } from '@/lib/api-r
 import { apartmentService } from '@/modules/apartment/apartment.service';
 import { blockSchema } from '@/modules/apartment/apartment.schema';
 
+import { isAdmin, isManager } from '@/lib/permissions';
+import { authorizeBuildingAccess } from '@/lib/authorization';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -12,6 +15,13 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const buildingId = searchParams.get('buildingId') || undefined;
+
+    if (buildingId) {
+      const authCheck = await authorizeBuildingAccess(session.user, buildingId);
+      if (!authCheck.allowed) {
+        return apiForbidden(authCheck.error || 'Bạn không có quyền truy cập tòa nhà này');
+      }
+    }
 
     const blocks = await apartmentService.getBlocks(buildingId);
     return apiSuccess(blocks, 'Lấy danh sách khối tháp thành công');
@@ -24,12 +34,20 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER') {
-      return apiForbidden('Chỉ Ban Quản Trị mới có quyền thêm khối tháp');
+
+    const isAllowedRole = isAdmin(session.user.role) || isManager(session.user.role);
+    if (!isAllowedRole) {
+      return apiForbidden('Chỉ Ban Quản Trị hoặc Quản lý mới có quyền thêm khối tháp');
     }
 
     const body = await req.json();
     const validated = blockSchema.parse(body);
+
+    const authCheck = await authorizeBuildingAccess(session.user, validated.buildingId);
+    if (!authCheck.allowed) {
+      return apiForbidden(authCheck.error || 'Bạn không có quyền quản lý tòa nhà này');
+    }
+
     const created = await apartmentService.createBlock(validated, {
       id: session.user.id,
       email: session.user.email,

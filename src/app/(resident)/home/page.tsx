@@ -185,7 +185,7 @@ export default function ResidentHomePage() {
             </p>
           </div>
         </div>
-        <Link href="/resident/announcements" className="shrink-0">
+        <Link href="/resident/notifications" className="shrink-0">
           <Button variant="outline" size="sm" className="h-8 text-xs bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200 hover:bg-amber-500/20">
             Xem chi tiết
           </Button>

@@ -57,21 +57,58 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
   const { isCollapsed, toggleCollapse, isMobileOpen, setIsMobileOpen, setIsCommandOpen } = useShell();
 
   // =========================================================================
-  // 1. QUẢN TRỊ VIÊN CẤP CAO TOÀN HỆ THỐNG (SUPER ADMIN) Navigation
+  // 1. QUẢN TRỊ NỀN TẢNG K-HOME (PLATFORM ADMIN) Navigation
   // =========================================================================
-  const adminGroups: NavGroup[] = [
+  const platformAdminGroups: NavGroup[] = [
     {
-      groupName: 'Quản trị Tối cao',
+      groupName: 'Quản trị Nền tảng K-Home',
       items: [
+        { name: 'Khách hàng & Tổ hợp', href: '/admin/tenants', icon: Building2, badge: 'SaaS' },
         { name: 'Bảng điều khiển hệ thống', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Phân quyền & Managers', href: '/settings/access-control', icon: KeyRound, badge: 'Admin' },
-        { name: 'Cấu hình Biểu phí Chuẩn', href: '/fees', icon: Receipt, badge: 'Toàn cục' },
+        { name: 'Biểu phí định mức chuẩn', href: '/fees', icon: Receipt, badge: 'Toàn cục' },
+        { name: 'Báo cáo toàn nền tảng', href: '/reports', icon: BarChart3 },
+        { name: 'Nhật ký kiểm toán', href: '/settings/access-control', icon: KeyRound },
       ],
     },
     {
-      groupName: 'Bất động sản & Cư dân',
+      groupName: 'Hạ tầng Bất động sản',
       items: [
+        { name: 'Tòa nhà & Căn hộ', href: '/apartments', icon: Building2 },
+        { name: 'Hồ sơ Cư dân toàn sàn', href: '/residents', icon: Users },
+        { name: 'Hợp đồng toàn hệ thống', href: '/contracts', icon: FileText },
+      ],
+    },
+    {
+      groupName: 'Tài chính & Giao dịch',
+      items: [
+        { name: 'Hóa đơn toàn hệ thống', href: '/invoices', icon: Receipt },
+        { name: 'Lịch sử thanh toán', href: '/payments', icon: CreditCard },
+      ],
+    },
+    {
+      groupName: 'Hệ thống',
+      items: [
+        { name: 'Cài đặt hệ thống', href: '/settings', icon: Settings },
+      ],
+    },
+  ];
+
+  // =========================================================================
+  // 1.1 QUẢN TRỊ VIÊN TỔ HỢP / KHÁCH HÀNG (TENANT ADMIN) Navigation
+  // =========================================================================
+  const tenantAdminGroups: NavGroup[] = [
+    {
+      groupName: 'Quản trị Tổ hợp',
+      items: [
+        { name: 'Tổng quan Tổ hợp', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Căn hộ & Khối nhà', href: '/apartments', icon: Building2 },
+        { name: 'Phân công Managers', href: '/settings/access-control', icon: KeyRound, badge: 'Admin' },
+        { name: 'Nhân sự vận hành', href: '/staff', icon: ShieldCheck },
+      ],
+    },
+    {
+      groupName: 'Cư dân & Hợp đồng',
+      items: [
         { name: 'Hồ sơ Cư dân', href: '/residents', icon: Users },
         { name: 'Hợp đồng Thuê & Mua', href: '/contracts', icon: FileText },
       ],
@@ -79,8 +116,9 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     {
       groupName: 'Tài chính & Thu phí',
       items: [
-        { name: 'Hóa đơn toàn hệ thống', href: '/invoices', icon: Receipt },
+        { name: 'Hóa đơn tổ hợp', href: '/invoices', icon: Receipt },
         { name: 'Giao dịch thanh toán', href: '/payments', icon: CreditCard },
+        { name: 'Cấu hình Biểu phí', href: '/fees', icon: Receipt },
       ],
     },
     {
@@ -104,14 +142,12 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
       ],
     },
     {
-      groupName: 'Nhân sự, Truyền thông & Hệ thống',
+      groupName: 'Truyền thông & Báo cáo',
       items: [
-        { name: 'Nhân sự vận hành', href: '/staff', icon: ShieldCheck },
-        { name: 'Bản tin thông báo', href: '/announcements', icon: Megaphone },
+        { name: 'Bản tin & Thông báo', href: '/notifications', icon: Bell },
         { name: 'Khảo sát ý kiến', href: '/polls', icon: Vote },
-        { name: 'Báo cáo toàn hệ thống', href: '/reports', icon: BarChart3 },
-        { name: 'Thông báo hệ thống', href: '/notifications', icon: Bell },
-        { name: 'Cài đặt hệ thống', href: '/settings', icon: Settings },
+        { name: 'Báo cáo tổ hợp', href: '/reports', icon: BarChart3 },
+        { name: 'Cài đặt tổ hợp', href: '/settings', icon: Settings },
       ],
     },
   ];
@@ -163,9 +199,8 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     {
       groupName: 'Cộng đồng & Đội ngũ',
       items: [
-        { name: 'Bản tin tòa nhà', href: '/announcements', icon: Megaphone },
+        { name: 'Bản tin & Thông báo', href: '/notifications', icon: Bell },
         { name: 'Khảo sát ý kiến', href: '/polls', icon: Vote },
-        { name: 'Thông báo', href: '/notifications', icon: Bell },
         { name: 'Nhân viên trực tòa', href: '/staff', icon: ShieldCheck },
         { name: 'Báo cáo vận hành', href: '/reports', icon: BarChart3 },
       ],
@@ -183,7 +218,7 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
         { name: 'Nhiệm vụ của tôi', href: '/tasks', icon: ClipboardList },
         { name: 'Bảo trì & Sự cố', href: '/feedbacks', icon: Wrench },
         { name: 'Tài sản', href: '/assets', icon: Boxes },
-        { name: 'Lịch bảo trì', href: '/maintenance-schedule', icon: FileClock },
+        { name: 'Lịch bảo trì', href: '/maintenance-schedules', icon: FileClock },
         { name: 'Thông báo', href: '/notifications', icon: Bell },
       ],
     },
@@ -245,16 +280,16 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     {
       groupName: 'Cộng đồng',
       items: [
-        { name: 'Bản tin cư dân', href: '/resident/announcements', icon: Megaphone },
+        { name: 'Bản tin & Thông báo', href: '/resident/notifications', icon: Bell },
         { name: 'Khảo sát ý kiến', href: '/resident/polls', icon: Vote },
-        { name: 'Thông báo', href: '/resident/notifications', icon: Bell },
       ],
     },
   ];
 
   // Resolve active nav groups by role
   let navGroups = residentGroups;
-  if (role === 'ADMIN') navGroups = adminGroups;
+  if (role === 'PLATFORM_ADMIN') navGroups = platformAdminGroups;
+  else if (role === 'TENANT_ADMIN' || role === 'ADMIN') navGroups = tenantAdminGroups;
   else if (role === 'MANAGER') navGroups = managerGroups;
   else if (role === 'STAFF_TECHNICIAN') navGroups = technicianGroups;
   else if (role === 'STAFF_SECURITY') navGroups = securityGroups;
@@ -297,7 +332,15 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
                     K-Home
                   </span>
                   <span className="text-[9px] font-bold text-[#0F6B4F] dark:text-emerald-300 bg-[#E8F5ED] dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-[#0F6B4F]/20 uppercase tracking-wide">
-                    {role === 'ADMIN' ? (
+                    {role === 'PLATFORM_ADMIN' ? (
+                      <span className="flex items-center gap-1 text-purple-700 dark:text-purple-300">
+                        <Crown className="h-2.5 w-2.5 text-purple-500 inline" /> Platform
+                      </span>
+                    ) : role === 'TENANT_ADMIN' ? (
+                      <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-300">
+                        <Crown className="h-2.5 w-2.5 text-amber-500 inline" /> Complex
+                      </span>
+                    ) : role === 'ADMIN' ? (
                       <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-300">
                         <Crown className="h-2.5 w-2.5 text-amber-500 inline" /> Admin
                       </span>

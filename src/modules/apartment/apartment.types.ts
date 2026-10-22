@@ -11,6 +11,7 @@ export interface ApartmentFilter {
   floorId?: string;
   floorNumber?: number;
   status?: ApartmentStatus;
+  tenantId?: string;
   page?: number;
   limit?: number;
 }
@@ -18,6 +19,7 @@ export interface ApartmentFilter {
 export interface CreateBuildingDto {
   code: string;
   name: string;
+  tenantId?: string | null;
   address?: string | null;
   description?: string | null;
 }
@@ -50,7 +52,7 @@ export interface CreateApartmentDto {
   area: number;
   status?: ApartmentStatus;
   note?: string | null;
-  buildingId?: string | null;
+  buildingId: string;
   blockId?: string | null;
   floorId?: string | null;
 }

@@ -103,7 +103,12 @@ async function main() {
 
         // Check if apartment already exists
         const existingApt = await prisma.apartment.findUnique({
-          where: { code: aptCode },
+          where: {
+            buildingId_code: {
+              buildingId: building.id,
+              code: aptCode,
+            },
+          },
         });
 
         if (existingApt) {

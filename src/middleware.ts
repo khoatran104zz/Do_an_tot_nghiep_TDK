@@ -3,9 +3,14 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error('CRITICAL SECURITY ERROR: NEXTAUTH_SECRET is not configured in environment variables');
+  }
+
   const token = await getToken({
     req,
-    secret: process.env.NEXTAUTH_SECRET || 'smart-apartment-secret-jwt-key-2026-very-secure',
+    secret,
   });
   const { pathname } = req.nextUrl;
 
@@ -92,21 +97,29 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
-  // 5. Access Control & System Admin-only Routes Guard
+  // 5. Platform Admin-only Routes Guard (/admin/**)
+  const isPlatformAdminOnlyRoute = pathname.startsWith('/admin');
+  if (isPlatformAdminOnlyRoute && role !== 'PLATFORM_ADMIN' && role !== 'ADMIN') {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+
+  // 5.1 Access Control & Admin-only Routes Guard
   const isAdminOnlyRoute =
     pathname.startsWith('/settings/access-control') ||
     pathname.startsWith('/managers');
 
-  if (isAdminOnlyRoute && role !== 'ADMIN') {
+  const isAdminRole = role === 'PLATFORM_ADMIN' || role === 'TENANT_ADMIN' || role === 'ADMIN';
+
+  if (isAdminOnlyRoute && !isAdminRole) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
-  // 5.1 ADMIN has full access to all platform routes
-  if (role === 'ADMIN') {
+  // 5.2 PLATFORM_ADMIN, TENANT_ADMIN and legacy ADMIN have access to management routes
+  if (isAdminRole) {
     return NextResponse.next();
   }
 
-  // 5.2 MANAGER has operational access
+  // 5.3 MANAGER has operational access
   if (role === 'MANAGER') {
     return NextResponse.next();
   }
@@ -169,6 +182,7 @@ export const config = {
   matcher: [
     '/login',
     '/register',
+    '/admin/:path*',
     '/dashboard/:path*',
     '/apartments/:path*',
     '/residents/:path*',

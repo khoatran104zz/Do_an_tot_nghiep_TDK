@@ -82,7 +82,7 @@ export default function AssetsManagementPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <Link href="/maintenance-schedule">
+          <Link href="/maintenance-schedules">
             <Button variant="outline" className="gap-2 border-slate-300">
               <Calendar className="h-4 w-4 text-indigo-600" />
               <span>Xem Lịch bảo trì PM</span>

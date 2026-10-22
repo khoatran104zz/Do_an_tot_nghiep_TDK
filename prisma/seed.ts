@@ -40,12 +40,66 @@ async function main() {
   const securityPassword = await bcrypt.hash('security123', 10);
   const receptionistPassword = await bcrypt.hash('recept123', 10);
 
-  // 2. Fee Categories
-  console.log('--> Seeding Fee Categories...');
-  const mgmtFee = await prisma.feeCategory.upsert({
-    where: { code: 'MGMT' },
-    update: {},
+  // 1.1 Bootstrap Multi-Tenant Ecosystem
+  console.log('--> Seeding Multi-Tenant Ecosystem (Tenants & Complexes)...');
+  const tenantSmartCity = await prisma.tenant.upsert({
+    where: { code: 'SMART-CITY-CORP' },
+    update: {
+      name: 'Tổ hợp Chung cư SmartCity Landmark',
+      address: 'Số 108 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+      phone: '02838221234',
+      email: 'contact@smartcity.vn',
+      status: 'ACTIVE',
+    },
     create: {
+      code: 'SMART-CITY-CORP',
+      name: 'Tổ hợp Chung cư SmartCity Landmark',
+      address: 'Số 108 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+      phone: '02838221234',
+      email: 'contact@smartcity.vn',
+      status: 'ACTIVE',
+    },
+  });
+
+  const tenantSunrise = await prisma.tenant.upsert({
+    where: { code: 'SUNRISE-GROUP' },
+    update: {
+      name: 'Tập đoàn Bất động sản Sunrise (Sunrise Tower)',
+      address: 'Số 25 Đường Lê Duẩn, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+      phone: '02838995678',
+      email: 'contact@sunrisetower.vn',
+      status: 'ACTIVE',
+    },
+    create: {
+      code: 'SUNRISE-GROUP',
+      name: 'Tập đoàn Bất động sản Sunrise (Sunrise Tower)',
+      address: 'Số 25 Đường Lê Duẩn, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+      phone: '02838995678',
+      email: 'contact@sunrisetower.vn',
+      status: 'ACTIVE',
+    },
+  });
+
+  // 2. Bootstrap Master Building & Property Hierarchy
+  console.log('--> Seeding Property Hierarchy (Building -> Block -> Floor)...');
+  const masterBuilding = await prisma.building.upsert({
+    where: { code: 'SMART-CITY' },
+    update: {
+      tenantId: tenantSmartCity.id,
+    },
+    create: {
+      code: 'SMART-CITY',
+      name: 'Tổ hợp Chung cư SmartCity Landmark',
+      address: 'Số 108 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+      description: 'Khu phức hợp căn hộ thông minh cao cấp tích hợp IoT & BMS',
+      tenantId: tenantSmartCity.id,
+    },
+  });
+
+  // 2.1 Fee Categories
+  console.log('--> Seeding Fee Categories...');
+  const feeCategoryData = [
+    {
       code: 'MGMT',
       name: 'Phí quản lý vận hành tòa nhà',
       unit: FeeUnit.PER_M2,
@@ -53,12 +107,7 @@ async function main() {
       description: 'Phí dịch vụ quản lý tính theo diện tích m2 căn hộ',
       isSystem: true,
     },
-  });
-
-  const motoFee = await prisma.feeCategory.upsert({
-    where: { code: 'PARKING_MOTO' },
-    update: {},
-    create: {
+    {
       code: 'PARKING_MOTO',
       name: 'Phí trông giữ xe máy',
       unit: FeeUnit.PER_VEHICLE,
@@ -66,12 +115,7 @@ async function main() {
       description: 'Phí trông giữ xe máy theo tháng',
       isSystem: true,
     },
-  });
-
-  const carFee = await prisma.feeCategory.upsert({
-    where: { code: 'PARKING_CAR' },
-    update: {},
-    create: {
+    {
       code: 'PARKING_CAR',
       name: 'Phí trông giữ ô tô',
       unit: FeeUnit.PER_VEHICLE,
@@ -79,12 +123,7 @@ async function main() {
       description: 'Phí trông giữ ô tô theo tháng',
       isSystem: true,
     },
-  });
-
-  const electricFee = await prisma.feeCategory.upsert({
-    where: { code: 'ELECTRIC' },
-    update: {},
-    create: {
+    {
       code: 'ELECTRIC',
       name: 'Tiền điện sinh hoạt',
       unit: FeeUnit.PER_KWH,
@@ -92,12 +131,7 @@ async function main() {
       description: 'Tiền điện sinh hoạt tính theo kWh',
       isSystem: true,
     },
-  });
-
-  const waterFee = await prisma.feeCategory.upsert({
-    where: { code: 'WATER' },
-    update: {},
-    create: {
+    {
       code: 'WATER',
       name: 'Tiền nước sinh hoạt',
       unit: FeeUnit.PER_M3,
@@ -105,48 +139,55 @@ async function main() {
       description: 'Tiền nước sinh hoạt tính theo m3',
       isSystem: true,
     },
-  });
+  ];
+
+  const feeMap: Record<string, any> = {};
+  for (const fee of feeCategoryData) {
+    const found = await prisma.feeCategory.findFirst({ where: { code: fee.code } });
+    if (found) {
+      feeMap[fee.code] = await prisma.feeCategory.update({
+        where: { id: found.id },
+        data: fee,
+      });
+    } else {
+      feeMap[fee.code] = await prisma.feeCategory.create({
+        data: fee,
+      });
+    }
+  }
+
+  const mgmtFee = feeMap['MGMT'];
+  const motoFee = feeMap['PARKING_MOTO'];
+  const carFee = feeMap['PARKING_CAR'];
+  const electricFee = feeMap['ELECTRIC'];
+  const waterFee = feeMap['WATER'];
 
   // 3. Apartments across 3 Buildings: Tòa A (Sky), Tòa B (Ocean), Tòa C (Garden)
   console.log('--> Seeding Apartments...');
   const apartmentsData = [
-    { code: 'A-1001', building: 'Tòa A (Sky)', floor: 10, bedrooms: 2, bathrooms: 2, area: 75.5, status: ApartmentStatus.OCCUPIED, note: 'Căn góc Đông Nam' },
-    { code: 'A-1002', building: 'Tòa A (Sky)', floor: 10, bedrooms: 3, bathrooms: 2, area: 92.0, status: ApartmentStatus.OCCUPIED, note: 'Căn 3PN view hồ bơi' },
-    { code: 'A-1003', building: 'Tòa A (Sky)', floor: 10, bedrooms: 2, bathrooms: 1, area: 65.0, status: ApartmentStatus.VACANT, note: 'Đang bàn giao hoàn thiện' },
-    { code: 'A-1201', building: 'Tòa A (Sky)', floor: 12, bedrooms: 3, bathrooms: 3, area: 115.0, status: ApartmentStatus.OCCUPIED, note: 'Penthouse tầng cao' },
-    { code: 'B-2001', building: 'Tòa B (Ocean)', floor: 20, bedrooms: 2, bathrooms: 2, area: 68.0, status: ApartmentStatus.OCCUPIED, note: 'Căn hộ nội thất cao cấp' },
-    { code: 'B-2002', building: 'Tòa B (Ocean)', floor: 20, bedrooms: 2, bathrooms: 2, area: 70.0, status: ApartmentStatus.OCCUPIED, note: 'Căn 2PN view thành phố' },
-    { code: 'B-2003', building: 'Tòa B (Ocean)', floor: 20, bedrooms: 1, bathrooms: 1, area: 48.5, status: ApartmentStatus.VACANT, note: 'Khách đã cọc giữ chỗ' },
-    { code: 'B-2101', building: 'Tòa B (Ocean)', floor: 21, bedrooms: 2, bathrooms: 2, area: 72.0, status: ApartmentStatus.UNDER_MAINTENANCE, note: 'Đang bảo dưỡng hệ thống chống thấm' },
-    { code: 'C-0501', building: 'Tòa C (Garden)', floor: 5, bedrooms: 3, bathrooms: 2, area: 88.0, status: ApartmentStatus.OCCUPIED, note: 'Căn hộ sân vườn' },
-
-    { code: 'C-0502', building: 'Tòa C (Garden)', floor: 5, bedrooms: 2, bathrooms: 2, area: 74.0, status: ApartmentStatus.OCCUPIED, note: 'Ban công hướng công viên' },
-    { code: 'C-0601', building: 'Tòa C (Garden)', floor: 6, bedrooms: 2, bathrooms: 1, area: 62.0, status: ApartmentStatus.VACANT, note: 'Căn mới hoàn thiện cơ bản' },
-    { code: 'C-0602', building: 'Tòa C (Garden)', floor: 6, bedrooms: 3, bathrooms: 2, area: 85.0, status: ApartmentStatus.OCCUPIED, note: 'Gia đình 4 thành viên' },
+    { code: 'A-1001', buildingId: masterBuilding.id, building: 'Tòa A (Sky)', floor: 10, bedrooms: 2, bathrooms: 2, area: 75.5, status: ApartmentStatus.OCCUPIED, note: 'Căn góc Đông Nam' },
+    { code: 'A-1002', buildingId: masterBuilding.id, building: 'Tòa A (Sky)', floor: 10, bedrooms: 3, bathrooms: 2, area: 92.0, status: ApartmentStatus.OCCUPIED, note: 'Căn 3PN view hồ bơi' },
+    { code: 'A-1003', buildingId: masterBuilding.id, building: 'Tòa A (Sky)', floor: 10, bedrooms: 2, bathrooms: 1, area: 65.0, status: ApartmentStatus.VACANT, note: 'Đang bàn giao hoàn thiện' },
+    { code: 'A-1201', buildingId: masterBuilding.id, building: 'Tòa A (Sky)', floor: 12, bedrooms: 3, bathrooms: 3, area: 115.0, status: ApartmentStatus.OCCUPIED, note: 'Penthouse tầng cao' },
+    { code: 'B-2001', buildingId: masterBuilding.id, building: 'Tòa B (Ocean)', floor: 20, bedrooms: 2, bathrooms: 2, area: 68.0, status: ApartmentStatus.OCCUPIED, note: 'Căn hộ nội thất cao cấp' },
+    { code: 'B-2002', buildingId: masterBuilding.id, building: 'Tòa B (Ocean)', floor: 20, bedrooms: 2, bathrooms: 2, area: 70.0, status: ApartmentStatus.OCCUPIED, note: 'Căn 2PN view thành phố' },
+    { code: 'B-2003', buildingId: masterBuilding.id, building: 'Tòa B (Ocean)', floor: 20, bedrooms: 1, bathrooms: 1, area: 48.5, status: ApartmentStatus.VACANT, note: 'Khách đã cọc giữ chỗ' },
+    { code: 'B-2101', buildingId: masterBuilding.id, building: 'Tòa B (Ocean)', floor: 21, bedrooms: 2, bathrooms: 2, area: 72.0, status: ApartmentStatus.UNDER_MAINTENANCE, note: 'Đang bảo dưỡng hệ thống chống thấm' },
+    { code: 'C-0501', buildingId: masterBuilding.id, building: 'Tòa C (Garden)', floor: 5, bedrooms: 3, bathrooms: 2, area: 88.0, status: ApartmentStatus.OCCUPIED, note: 'Căn hộ sân vườn' },
+    { code: 'C-0502', buildingId: masterBuilding.id, building: 'Tòa C (Garden)', floor: 5, bedrooms: 2, bathrooms: 2, area: 74.0, status: ApartmentStatus.OCCUPIED, note: 'Ban công hướng công viên' },
+    { code: 'C-0601', buildingId: masterBuilding.id, building: 'Tòa C (Garden)', floor: 6, bedrooms: 2, bathrooms: 1, area: 62.0, status: ApartmentStatus.VACANT, note: 'Căn mới hoàn thiện cơ bản' },
+    { code: 'C-0602', buildingId: masterBuilding.id, building: 'Tòa C (Garden)', floor: 6, bedrooms: 3, bathrooms: 2, area: 85.0, status: ApartmentStatus.OCCUPIED, note: 'Gia đình 4 thành viên' },
   ];
 
   const aptMap: Record<string, any> = {};
   for (const apt of apartmentsData) {
     const created = await prisma.apartment.upsert({
-      where: { code: apt.code },
+      where: { buildingId_code: { buildingId: masterBuilding.id, code: apt.code } },
       update: { status: apt.status, area: apt.area, building: apt.building },
       create: apt,
     });
     aptMap[apt.code] = created;
   }
-
-  // 3.1 Bootstrap Property Hierarchy (Building -> Block -> Floor)
-  console.log('--> Seeding Property Hierarchy (Building -> Block -> Floor)...');
-  const masterBuilding = await prisma.building.upsert({
-    where: { code: 'SMART-CITY' },
-    update: {},
-    create: {
-      code: 'SMART-CITY',
-      name: 'Tổ hợp Chung cư SmartCity Landmark',
-      address: 'Số 108 Đường Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
-      description: 'Khu phức hợp căn hộ thông minh cao cấp tích hợp IoT & BMS',
-    },
-  });
 
   const blockConfigs = [
     { code: 'BLOCK-A', name: 'Tháp A (Sky Tower)', keyword: 'Tòa A', prefix: 'A', totalFloors: 15, aptPerFloor: 4 },
@@ -197,7 +238,7 @@ async function main() {
           const area = aptIdx === 1 ? 52.0 : aptIdx === 2 ? 75.0 : aptIdx === 3 ? 95.0 : 68.0;
 
           const createdApt = await prisma.apartment.upsert({
-            where: { code: aptCode },
+            where: { buildingId_code: { buildingId: masterBuilding.id, code: aptCode } },
             update: {
               buildingId: masterBuilding.id,
               blockId: block.id,
@@ -299,49 +340,88 @@ async function main() {
   console.log('--> Seeding Users...');
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@building.com' },
-    update: { passwordHash: adminPassword },
+    update: { passwordHash: adminPassword, role: Role.PLATFORM_ADMIN, tenantId: null },
     create: {
       email: 'admin@building.com',
       passwordHash: adminPassword,
-      fullName: 'Quản trị viên Hệ thống',
+      fullName: 'Quản trị viên Hệ thống (Platform Admin)',
       phone: '0901234567',
-      role: Role.ADMIN,
+      role: Role.PLATFORM_ADMIN,
+    },
+  });
+
+  const tenantAdmin1 = await prisma.user.upsert({
+    where: { email: 'admin.smartcity@building.com' },
+    update: {
+      role: Role.TENANT_ADMIN,
+      tenantId: tenantSmartCity.id,
+      fullName: 'Trưởng Ban Quản Trị SmartCity',
+    },
+    create: {
+      email: 'admin.smartcity@building.com',
+      passwordHash: adminPassword,
+      fullName: 'Trưởng Ban Quản Trị SmartCity',
+      phone: '0901112222',
+      role: Role.TENANT_ADMIN,
+      tenantId: tenantSmartCity.id,
+      isActive: true,
+    },
+  });
+
+  const tenantAdmin2 = await prisma.user.upsert({
+    where: { email: 'admin.sunrise@building.com' },
+    update: {
+      role: Role.TENANT_ADMIN,
+      tenantId: tenantSunrise.id,
+      fullName: 'Trưởng Ban Quản Trị Sunrise Tower',
+    },
+    create: {
+      email: 'admin.sunrise@building.com',
+      passwordHash: adminPassword,
+      fullName: 'Trưởng Ban Quản Trị Sunrise Tower',
+      phone: '0903334444',
+      role: Role.TENANT_ADMIN,
+      tenantId: tenantSunrise.id,
+      isActive: true,
     },
   });
 
   const managerUser = await prisma.user.upsert({
     where: { email: 'manager@building.com' },
-    update: { passwordHash: managerPassword, role: Role.MANAGER },
+    update: { passwordHash: managerPassword, role: Role.MANAGER, tenantId: tenantSmartCity.id },
     create: {
       email: 'manager@building.com',
       passwordHash: managerPassword,
       fullName: 'Trần Minh Đức (Trưởng BQL SmartCity)',
       phone: '0912345678',
       role: Role.MANAGER,
+      tenantId: tenantSmartCity.id,
     },
   });
 
   const manager2User = await prisma.user.upsert({
     where: { email: 'manager2@building.com' },
-    update: { passwordHash: managerPassword, role: Role.MANAGER },
+    update: { passwordHash: managerPassword, role: Role.MANAGER, tenantId: tenantSunrise.id },
     create: {
       email: 'manager2@building.com',
       passwordHash: managerPassword,
       fullName: 'Lê Thị Thu Thảo (Quản lý Sunrise Tower)',
       phone: '0918765432',
       role: Role.MANAGER,
+      tenantId: tenantSunrise.id,
     },
   });
 
   // Second Building for Multi-Property & Scope Verification
   const sunriseBuilding = await prisma.building.upsert({
     where: { code: 'SUNRISE-TOWER' },
-    update: {},
+    update: { tenantId: tenantSunrise.id },
     create: {
       code: 'SUNRISE-TOWER',
       name: 'Tòa nhà Sunrise Tower',
       address: 'Số 25 Đường Lê Duẩn, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
       description: 'Khu căn hộ dịch vụ cao cấp Sunrise Tower',
+      tenantId: tenantSunrise.id,
     },
   });
 
@@ -387,7 +467,7 @@ async function main() {
   });
 
   await prisma.apartment.upsert({
-    where: { code: 'SR-0501' },
+    where: { buildingId_code: { buildingId: sunriseBuilding.id, code: 'SR-0501' } },
     update: {
       buildingId: sunriseBuilding.id,
       blockId: sunriseBlock.id,

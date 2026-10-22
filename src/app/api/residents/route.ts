@@ -8,7 +8,9 @@ import {
   getVerifiedResidentInfo,
   getManagerAssignedBuildingIds,
   authorizeApartmentAccess,
+  authorizeBuildingAccess,
 } from '@/lib/authorization';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
@@ -41,7 +43,20 @@ export async function GET(req: NextRequest) {
     let finalBuildingId = buildingId;
     let finalBuildingIds: string[] | undefined = undefined;
 
-    if (session.user.role === 'MANAGER') {
+    if (session.user.role === 'TENANT_ADMIN' || (session.user.role === 'ADMIN' && session.user.tenantId)) {
+      if (buildingId) {
+        const authCheck = await authorizeBuildingAccess(session.user, buildingId);
+        if (!authCheck.allowed) {
+          return apiForbidden(authCheck.error || 'Cư dân không thuộc tổ hợp của bạn');
+        }
+      } else if (session.user.tenantId) {
+        const tenantBuildings = await prisma.building.findMany({
+          where: { tenantId: session.user.tenantId },
+          select: { id: true },
+        });
+        finalBuildingIds = tenantBuildings.map((b: { id: string }) => b.id);
+      }
+    } else if (session.user.role === 'MANAGER') {
       const assignedIds = session.user.assignedBuildingIds?.length
         ? session.user.assignedBuildingIds
         : await getManagerAssignedBuildingIds(session.user.id);

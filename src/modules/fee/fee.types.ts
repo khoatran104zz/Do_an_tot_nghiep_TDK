@@ -1,6 +1,7 @@
 import { FeeUnit } from '@prisma/client';
 
 export interface CreateFeeCategoryDto {
+  tenantId?: string | null;
   code: string;
   name: string;
   unit: FeeUnit;

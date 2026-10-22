@@ -40,9 +40,9 @@ export class ApartmentService {
     data: CreateApartmentDto,
     actor?: ActorContext
   ) {
-    const existing = await apartmentRepository.findByCode(data.code);
+    const existing = await apartmentRepository.findByBuildingAndCode(data.buildingId, data.code);
     if (existing) {
-      throw new Error(`Mã căn hộ "${data.code}" đã tồn tại trong hệ thống`);
+      throw new Error(`Mã căn hộ "${data.code}" đã tồn tại trong tòa nhà này`);
     }
 
     const created = await apartmentRepository.create(data);
@@ -79,10 +79,14 @@ export class ApartmentService {
   ) {
     const current = await this.getApartmentById(id);
 
-    if (data.code) {
-      const existing = await apartmentRepository.findByCode(data.code);
-      if (existing && existing.id !== id) {
-        throw new Error(`Mã căn hộ "${data.code}" đã trùng với căn hộ khác`);
+    if (data.code || data.buildingId) {
+      const targetBuildingId = data.buildingId || current.buildingId;
+      const targetCode = data.code || current.code;
+      if (targetBuildingId) {
+        const existing = await apartmentRepository.findByBuildingAndCode(targetBuildingId, targetCode);
+        if (existing && existing.id !== id) {
+          throw new Error(`Mã căn hộ "${targetCode}" đã trùng với căn hộ khác trong cùng tòa nhà`);
+        }
       }
     }
 
@@ -158,8 +162,8 @@ export class ApartmentService {
   }
 
   // --- Building Methods ---
-  async getBuildingsList() {
-    return apartmentRepository.findBuildings();
+  async getBuildingsList(tenantId?: string | null) {
+    return apartmentRepository.findBuildings(tenantId);
   }
 
   async getBuildingById(id: string) {
@@ -372,9 +376,10 @@ export class ApartmentService {
   }
 
 
-  // Legacy string list of building names
-  async getBuildings() {
-    return apartmentRepository.getBuildings();
+  // List of building names
+  async getBuildings(tenantId?: string | null) {
+    const list = await apartmentRepository.findBuildings(tenantId);
+    return list.map((b) => b.name);
   }
 
   async getHierarchy(buildingIds?: string[]) {

@@ -12,7 +12,11 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
 
-    const items = await feeCategoryService.getFeeCategories();
+    const tenantId = (session.user.role === 'TENANT_ADMIN' || session.user.role === 'MANAGER' || session.user.tenantId)
+      ? session.user.tenantId
+      : undefined;
+
+    const items = await feeCategoryService.getFeeCategories(tenantId);
     return apiSuccess(items, 'Lấy danh mục phí thành công');
   } catch (error: any) {
     return apiError(error.message || 'Lỗi lấy danh mục phí', 'FETCH_FAILED', 500);
@@ -28,6 +32,9 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validated = feeCategorySchema.parse(body);
+    if (session.user.tenantId && !validated.tenantId) {
+      validated.tenantId = session.user.tenantId;
+    }
     const item = await feeCategoryService.createFeeCategory(validated);
     return apiSuccess(item, 'Tạo mới danh mục phí thành công', undefined, 201);
   } catch (error: any) {
