@@ -435,16 +435,18 @@ export class AISafeContextService {
       }),
     ]);
 
-    const formattedAssignments = myAssignments.map((a) => ({
-      slotCode: a.slot.code,
-      areaName: a.slot.area.name,
-      floor: a.slot.floor,
-      licensePlate: a.vehicle.licensePlate,
-      vehicleBrand: a.vehicle.brand,
-      vehicleModel: a.vehicle.model,
-      startDate: a.startDate,
-      endDate: a.endDate,
-    }));
+    const formattedAssignments = myAssignments
+      .filter((a) => a.slot && a.vehicle)
+      .map((a) => ({
+        slotCode: a.slot?.code || '',
+        areaName: a.slot?.area?.name || '',
+        floor: a.slot?.floor ?? 0,
+        licensePlate: a.vehicle?.licensePlate || '',
+        vehicleBrand: a.vehicle?.brand || '',
+        vehicleModel: a.vehicle?.model || null,
+        startDate: a.startDate,
+        endDate: a.endDate,
+      }));
 
     const formattedVehicles = myVehicles.map((v) => ({
       licensePlate: v.licensePlate,

@@ -45,8 +45,14 @@ export async function apiClient<T = any>(endpoint: string, options: FetchOptions
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok || data.success === false) {
+    const errorMessage =
+      data.error?.message ||
+      (typeof data.error === 'string' ? data.error : null) ||
+      data.message ||
+      'Đã có lỗi xảy ra. Vui lòng thử lại!';
+
     throw new ApiError(
-      data.error?.message || data.message || 'Đã có lỗi xảy ra. Vui lòng thử lại!',
+      errorMessage,
       response.status,
       data.error?.code || data.errorCode
     );

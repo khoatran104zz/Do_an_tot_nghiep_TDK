@@ -214,19 +214,23 @@ export function ResidentAIAssistant({ role: propRole }: { role?: string }) {
 
     try {
       const res = await chatMutation.mutateAsync(text.trim());
+      const payload = (res as any)?.data || res;
       const aiReply: ChatItem = {
         id: `ai-${Date.now()}`,
         sender: 'ai',
-        text: res?.response || 'K-Home AI Assistant đã tiếp nhận thông tin.',
+        text: payload?.response || 'K-Home AI Assistant đã tiếp nhận thông tin.',
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        actions: (res as any)?.actions || [],
+        actions: payload?.actions || [],
       };
       setMessages((prev) => [...prev, aiReply]);
-    } catch {
+    } catch (err: any) {
+      const errorMsg =
+        err?.message ||
+        'Kết nối với K-Home AI Assistant đang gặp sự cố. Bạn có thể thử lại sau hoặc sử dụng thanh menu để thao tác trực tiếp.';
       const errorReply: ChatItem = {
         id: `ai-err-${Date.now()}`,
         sender: 'ai',
-        text: 'Kết nối với K-Home AI Assistant đang gặp sự cố. Bạn có thể thử lại sau hoặc sử dụng thanh menu để thao tác trực tiếp.',
+        text: errorMsg,
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         isError: true,
       };
