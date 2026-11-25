@@ -34,10 +34,8 @@ export function BuildingSwitcher() {
 
   if (!user || user.role === 'RESIDENT') return null;
 
-  const isPlatform =
-    user.role === 'PLATFORM_ADMIN' || (user.role === 'ADMIN' && !user.tenantId);
-  const isTenant =
-    user.role === 'TENANT_ADMIN' || (user.role === 'ADMIN' && !!user.tenantId);
+  const isPlatform = user.role === 'ADMIN' && !user.tenantId;
+  const isTenant = user.role === 'ADMIN' && !!user.tenantId;
   const isMgr = user.role === 'MANAGER';
 
   // If manager only has 1 building, render fixed badge

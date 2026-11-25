@@ -52,7 +52,13 @@ interface NavGroup {
   items: NavItem[];
 }
 
-export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
+export function Sidebar({
+  role = 'MANAGER',
+  tenantId = null,
+}: {
+  role?: string;
+  tenantId?: string | null;
+}) {
   const pathname = usePathname();
   const { isCollapsed, toggleCollapse, isMobileOpen, setIsMobileOpen, setIsCommandOpen } = useShell();
 
@@ -286,10 +292,10 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
     },
   ];
 
-  // Resolve active nav groups by role
+  // Resolve active nav groups by role & tenant scope
   let navGroups = residentGroups;
-  if (role === 'PLATFORM_ADMIN') navGroups = platformAdminGroups;
-  else if (role === 'TENANT_ADMIN' || role === 'ADMIN') navGroups = tenantAdminGroups;
+  if (role === 'ADMIN' && !tenantId) navGroups = platformAdminGroups;
+  else if (role === 'ADMIN') navGroups = tenantAdminGroups;
   else if (role === 'MANAGER') navGroups = managerGroups;
   else if (role === 'STAFF_TECHNICIAN') navGroups = technicianGroups;
   else if (role === 'STAFF_SECURITY') navGroups = securityGroups;
@@ -332,13 +338,9 @@ export function Sidebar({ role = 'MANAGER' }: { role?: string }) {
                     K-Home
                   </span>
                   <span className="text-[9px] font-bold text-[#0F6B4F] dark:text-emerald-300 bg-[#E8F5ED] dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-[#0F6B4F]/20 uppercase tracking-wide">
-                    {role === 'PLATFORM_ADMIN' ? (
+                    {role === 'ADMIN' && !tenantId ? (
                       <span className="flex items-center gap-1 text-purple-700 dark:text-purple-300">
                         <Crown className="h-2.5 w-2.5 text-purple-500 inline" /> Platform
-                      </span>
-                    ) : role === 'TENANT_ADMIN' ? (
-                      <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-300">
-                        <Crown className="h-2.5 w-2.5 text-amber-500 inline" /> Complex
                       </span>
                     ) : role === 'ADMIN' ? (
                       <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-300">

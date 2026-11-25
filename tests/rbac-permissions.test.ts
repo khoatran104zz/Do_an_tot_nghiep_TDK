@@ -70,6 +70,11 @@ describe('Role-Based Access Control (RBAC) & Permission Abstraction Tests', () =
       assert.equal(hasPermission(Role.ADMIN, 'system:manage'), true);
       assert.equal(hasPermission(Role.ADMIN, 'parking_access:log'), true);
       assert.equal(hasPermission(Role.ADMIN, 'parcel:collect'), true);
+      // Tenant-scoped ADMIN cannot access platform-only lifecycle permissions
+      assert.equal(hasPermission(Role.ADMIN, 'tenant:create', 'tenant-1'), false);
+      assert.equal(hasPermission(Role.ADMIN, 'tenant:delete', 'tenant-1'), false);
+      assert.equal(hasPermission(Role.ADMIN, 'system:manage', 'tenant-1'), false);
+      assert.equal(hasPermission(Role.ADMIN, 'building:create', 'tenant-1'), true);
     });
 
     it('MUST grant MANAGER full operational rights, but restrict superuser system admin', () => {

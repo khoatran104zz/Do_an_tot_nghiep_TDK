@@ -89,8 +89,17 @@ const DEMO_ROLES: RoleOption[] = [
   },
   {
     role: 'ADMIN',
-    label: 'Quản trị',
-    badge: 'Super Admin',
+    label: 'Admin Tổ hợp',
+    badge: 'SmartCity Corp',
+    email: 'admin.smartcity@building.com',
+    passwordDefault: 'admin123',
+    name: 'Trưởng Ban Quản Trị SmartCity',
+    destination: '/dashboard',
+  },
+  {
+    role: 'ADMIN',
+    label: 'Super Admin',
+    badge: 'Toàn hệ thống',
     email: 'admin@building.com',
     passwordDefault: 'admin123',
     name: 'Quản trị viên Hệ thống',
@@ -117,7 +126,7 @@ export function LoginForm({ onRoleChange, className }: LoginFormProps) {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '';
 
-  const [selectedRole, setSelectedRole] = useState<UserRole>('RESIDENT');
+  const [selectedEmail, setSelectedEmail] = useState<string>('resident@building.com');
   const [email, setEmail] = useState('resident@building.com');
   const [password, setPassword] = useState('resident123');
   const [showPassword, setShowPassword] = useState(false);
@@ -125,10 +134,10 @@ export function LoginForm({ onRoleChange, className }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
 
-  const activeRoleOption = DEMO_ROLES.find((r) => r.role === selectedRole) || DEMO_ROLES[0];
+  const activeRoleOption = DEMO_ROLES.find((r) => r.email === selectedEmail) || DEMO_ROLES[0];
 
   const handleSelectDemoRole = (opt: RoleOption) => {
-    setSelectedRole(opt.role);
+    setSelectedEmail(opt.email);
     setEmail(opt.email);
     setPassword(opt.passwordDefault);
     onRoleChange?.(opt.badge);
@@ -203,17 +212,19 @@ export function LoginForm({ onRoleChange, className }: LoginFormProps) {
         </div>
 
         <div className="grid grid-cols-3 gap-1.5">
-          {DEMO_ROLES.map((opt) => {
-            const isSelected = selectedRole === opt.role;
+          {DEMO_ROLES.map((opt, idx) => {
+            const isSelected = selectedEmail === opt.email;
+            const isPlatformSuperAdmin = opt.email === 'admin@building.com';
             return (
               <button
-                key={opt.role}
+                key={opt.email}
                 type="button"
                 onClick={() => handleSelectDemoRole(opt)}
                 className={cn(
                   'px-2 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex flex-col items-center justify-center text-center',
+                  isPlatformSuperAdmin && idx === DEMO_ROLES.length - 1 && 'col-span-3 flex-row gap-2 py-2',
                   isSelected
-                    ? 'bg-[#0F6B4F] text-white shadow-sm shadow-[#0F6B4F]/30 scale-[1.02]'
+                    ? 'bg-[#0F6B4F] text-white shadow-sm shadow-[#0F6B4F]/30 scale-[1.01]'
                     : 'bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#E8F5ED]/60 dark:hover:bg-slate-800 hover:text-[#0F6B4F]'
                 )}
               >
@@ -224,7 +235,7 @@ export function LoginForm({ onRoleChange, className }: LoginFormProps) {
                     isSelected ? 'text-emerald-100' : 'text-slate-400'
                   )}
                 >
-                  {opt.badge}
+                  {isPlatformSuperAdmin ? `• ${opt.badge} (${opt.email})` : opt.badge}
                 </span>
               </button>
             );

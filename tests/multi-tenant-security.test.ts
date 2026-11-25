@@ -63,14 +63,14 @@ describe('Multi-Tenant Architecture Security & Isolation Tests', () => {
     // 4. Construct test session users
     platformAdminUser = {
       id: 'platform-admin-id',
-      role: Role.PLATFORM_ADMIN,
+      role: Role.ADMIN,
       email: 'admin@building.com',
       tenantId: null,
     };
 
     tenant1AdminUser = {
       id: 'tenant1-admin-id',
-      role: Role.TENANT_ADMIN,
+      role: Role.ADMIN,
       email: 'admin.smartcity@building.com',
       tenantId: tenant1.id,
       tenantCode: tenant1.code,
@@ -79,7 +79,7 @@ describe('Multi-Tenant Architecture Security & Isolation Tests', () => {
 
     tenant2AdminUser = {
       id: 'tenant2-admin-id',
-      role: Role.TENANT_ADMIN,
+      role: Role.ADMIN,
       email: 'admin.sunrise@building.com',
       tenantId: tenant2.id,
       tenantCode: tenant2.code,
@@ -121,28 +121,28 @@ describe('Multi-Tenant Architecture Security & Isolation Tests', () => {
   // ==========================================
   describe('1. RBAC & Permission Matrix for Multi-Tenant', () => {
     it('Platform Admin has system-wide permissions and tenant management', () => {
-      assert.equal(isPlatformAdmin(platformAdminUser.role), true);
+      assert.equal(isPlatformAdmin(platformAdminUser), true);
       assert.equal(isAdmin(platformAdminUser.role), true);
-      assert.equal(hasPermission(platformAdminUser.role, 'tenant:read'), true);
-      assert.equal(hasPermission(platformAdminUser.role, 'tenant:create'), true);
-      assert.equal(hasPermission(platformAdminUser.role, 'tenant:update'), true);
-      assert.equal(hasPermission(platformAdminUser.role, 'tenant:delete'), true);
-      assert.equal(hasPermission(platformAdminUser.role, 'building:create'), true);
+      assert.equal(hasPermission(platformAdminUser.role, 'tenant:read', platformAdminUser.tenantId), true);
+      assert.equal(hasPermission(platformAdminUser.role, 'tenant:create', platformAdminUser.tenantId), true);
+      assert.equal(hasPermission(platformAdminUser.role, 'tenant:update', platformAdminUser.tenantId), true);
+      assert.equal(hasPermission(platformAdminUser.role, 'tenant:delete', platformAdminUser.tenantId), true);
+      assert.equal(hasPermission(platformAdminUser.role, 'building:create', platformAdminUser.tenantId), true);
     });
 
     it('Tenant Admin has tenant-scoped administrative rights but NOT global tenant lifecycle rights', () => {
-      assert.equal(isPlatformAdmin(tenant1AdminUser.role), false);
-      assert.equal(isTenantAdmin(tenant1AdminUser.role), true);
+      assert.equal(isPlatformAdmin(tenant1AdminUser), false);
+      assert.equal(isTenantAdmin(tenant1AdminUser), true);
       assert.equal(isAdmin(tenant1AdminUser.role), true);
       // Tenant admin cannot delete or create arbitrary new tenants on SaaS platform
-      assert.equal(hasPermission(tenant1AdminUser.role, 'tenant:create'), false);
-      assert.equal(hasPermission(tenant1AdminUser.role, 'tenant:delete'), false);
+      assert.equal(hasPermission(tenant1AdminUser.role, 'tenant:create', tenant1AdminUser.tenantId), false);
+      assert.equal(hasPermission(tenant1AdminUser.role, 'tenant:delete', tenant1AdminUser.tenantId), false);
       // Tenant admin can manage buildings, managers, residents, apartments within their complex
-      assert.equal(hasPermission(tenant1AdminUser.role, 'building:read'), true);
-      assert.equal(hasPermission(tenant1AdminUser.role, 'building:create'), true);
-      assert.equal(hasPermission(tenant1AdminUser.role, 'manager:create'), true);
-      assert.equal(hasPermission(tenant1AdminUser.role, 'manager:assign'), true);
-      assert.equal(hasPermission(tenant1AdminUser.role, 'invoice:create'), true);
+      assert.equal(hasPermission(tenant1AdminUser.role, 'building:read', tenant1AdminUser.tenantId), true);
+      assert.equal(hasPermission(tenant1AdminUser.role, 'building:create', tenant1AdminUser.tenantId), true);
+      assert.equal(hasPermission(tenant1AdminUser.role, 'manager:create', tenant1AdminUser.tenantId), true);
+      assert.equal(hasPermission(tenant1AdminUser.role, 'manager:assign', tenant1AdminUser.tenantId), true);
+      assert.equal(hasPermission(tenant1AdminUser.role, 'invoice:create', tenant1AdminUser.tenantId), true);
     });
 
     it('Manager has operational rights within their building only', () => {
@@ -308,7 +308,7 @@ describe('Multi-Tenant Architecture Security & Isolation Tests', () => {
 
       assert.ok(adminResult.id);
       assert.equal(adminResult.email, adminEmail);
-      assert.equal(adminResult.role, Role.TENANT_ADMIN);
+      assert.equal(adminResult.role, Role.ADMIN);
       assert.equal(adminResult.tenantId, createdTestTenantId);
     });
 

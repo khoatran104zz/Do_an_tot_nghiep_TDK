@@ -101,8 +101,8 @@ export default function ApartmentsPage() {
 
   const { selectedBuildingId } = useBuildingContext();
 
-  // View mode switcher: 'TREE' | 'FLOOR_PLAN' | 'LIST'
-  const [viewMode, setViewMode] = useState<'TREE' | 'FLOOR_PLAN' | 'LIST'>('TREE');
+  // View mode switcher: 'TREE' | 'FLOOR_PLAN' | 'LIST' (Default FLOOR_PLAN for visual clarity)
+  const [viewMode, setViewMode] = useState<'TREE' | 'FLOOR_PLAN' | 'LIST'>('FLOOR_PLAN');
 
   // Collapsible Left Explorer Panel in Tree mode
   const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);

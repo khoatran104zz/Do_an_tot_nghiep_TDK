@@ -14,9 +14,9 @@ export async function POST(
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
 
-    // STRICTLY PLATFORM ADMIN ONLY
-    if (!isSuperAdmin(session.user.role)) {
-      return apiForbidden('Chỉ Quản trị viên cấp cao Nền tảng mới có quyền cấp tài khoản Tenant Admin');
+    // STRICTLY PLATFORM ADMIN ONLY (ADMIN without tenantId)
+    if (!isSuperAdmin(session.user)) {
+      return apiForbidden('Chỉ Quản trị viên cấp cao Nền tảng mới có quyền cấp tài khoản Quản trị Tổ hợp');
     }
 
     const { id } = await params;

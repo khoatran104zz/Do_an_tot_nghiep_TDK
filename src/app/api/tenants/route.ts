@@ -11,8 +11,8 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
 
-    // STRICTLY PLATFORM ADMIN ONLY (or legacy ADMIN for backward-compatibility)
-    if (!isSuperAdmin(session.user.role)) {
+    // STRICTLY PLATFORM ADMIN ONLY (ADMIN without tenantId)
+    if (!isSuperAdmin(session.user)) {
       return apiForbidden('Chỉ Quản trị viên cấp cao Nền tảng (Platform Admin) mới có quyền truy cập danh sách khách hàng');
     }
 
@@ -34,8 +34,8 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
 
-    // STRICTLY PLATFORM ADMIN ONLY
-    if (!isSuperAdmin(session.user.role)) {
+    // STRICTLY PLATFORM ADMIN ONLY (ADMIN without tenantId)
+    if (!isSuperAdmin(session.user)) {
       return apiForbidden('Chỉ Quản trị viên cấp cao Nền tảng mới có quyền khởi tạo khách hàng / tổ hợp mới');
     }
 

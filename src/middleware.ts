@@ -81,6 +81,7 @@ export async function middleware(req: NextRequest) {
   }
 
   const role = token.role as string;
+  const tenantId = token.tenantId as string | null | undefined;
 
   // 3. Resident role boundary: Resident cannot access any manager route
   if (role === 'RESIDENT') {
@@ -97,9 +98,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
-  // 5. Platform Admin-only Routes Guard (/admin/**)
+  // 5. Platform Admin-only Routes Guard (/admin/**): ADMIN without tenantId
+  const isAdminRole = role === 'ADMIN';
+  const isPlatformAdminRole = isAdminRole && !tenantId;
   const isPlatformAdminOnlyRoute = pathname.startsWith('/admin');
-  if (isPlatformAdminOnlyRoute && role !== 'PLATFORM_ADMIN' && role !== 'ADMIN') {
+  if (isPlatformAdminOnlyRoute && !isPlatformAdminRole) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
@@ -108,13 +111,11 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/settings/access-control') ||
     pathname.startsWith('/managers');
 
-  const isAdminRole = role === 'PLATFORM_ADMIN' || role === 'TENANT_ADMIN' || role === 'ADMIN';
-
   if (isAdminOnlyRoute && !isAdminRole) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
-  // 5.2 PLATFORM_ADMIN, TENANT_ADMIN and legacy ADMIN have access to management routes
+  // 5.2 ADMIN (Platform or Tenant scoped) has access to management routes
   if (isAdminRole) {
     return NextResponse.next();
   }

@@ -48,45 +48,55 @@ export function ParkingGateSimulator() {
     }
   };
 
-  const handleCheckIn = async () => {
-    if (!plateInput.trim()) {
+  const handleCheckIn = async (overridePlate?: string) => {
+    const targetPlate = (overridePlate ?? plateInput).trim();
+    if (!targetPlate) {
       toast.error('Vui lòng nhập biển số xe để quét');
       return;
     }
+    if (overridePlate) setPlateInput(overridePlate);
 
     try {
       const res = await checkInMutation.mutateAsync({
-        licensePlate: plateInput.trim(),
+        licensePlate: targetPlate,
         qrToken: qrInput.trim() || undefined,
         gateName,
       });
 
       setLastScanResult(res.data);
       triggerBarrierAnimation(res.data?.authorized ?? false);
-    } catch (err) {
-      // Handled in hook toast
+    } catch (err: any) {
+      setLastScanResult({
+        authorized: false,
+        message: err?.message || 'Từ chối mở Barie — Phương tiện chưa đăng ký hoặc thẻ bị khóa',
+      });
     }
   };
 
-  const handleCheckOut = async () => {
-    if (!plateInput.trim()) {
+  const handleCheckOut = async (overridePlate?: string) => {
+    const targetPlate = (overridePlate ?? plateInput).trim();
+    if (!targetPlate) {
       toast.error('Vui lòng nhập biển số xe để quét');
       return;
     }
+    if (overridePlate) setPlateInput(overridePlate);
 
     try {
       const res = await checkOutMutation.mutateAsync({
-        licensePlate: plateInput.trim(),
+        licensePlate: targetPlate,
         gateName: gateName.replace('VÀO', 'RA'),
       });
 
       setLastScanResult({
         authorized: true,
-        message: 'Xe rời bãi thành công',
+        message: res?.data?.message || 'Xe rời bãi thành công — Đã mở Barie chiều ra',
       });
       triggerBarrierAnimation(true);
-    } catch (err) {
-      // Handled in hook toast
+    } catch (err: any) {
+      setLastScanResult({
+        authorized: false,
+        message: err?.message || 'Không tìm thấy lượt xe vào hợp lệ để xuất bến',
+      });
     }
   };
 
@@ -153,6 +163,82 @@ export function ParkingGateSimulator() {
             </div>
           </div>
 
+          {/* Live Scan Result Banner */}
+          {lastScanResult && (
+            <div
+              className={cn(
+                'rounded-xl border p-3.5 flex items-center justify-between gap-3 text-xs animate-in fade-in-50 duration-200',
+                lastScanResult.authorized
+                  ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-800 dark:text-emerald-300'
+                  : 'bg-rose-500/10 border-rose-500/40 text-rose-800 dark:text-rose-300'
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                {lastScanResult.authorized ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+                )}
+                <div>
+                  <div className="font-bold">
+                    {lastScanResult.authorized ? 'XÁC THỰC THÀNH CÔNG' : 'CẢNH BÁO AN NINH'}
+                  </div>
+                  <div className="opacity-90">
+                    {lastScanResult.message ||
+                      (lastScanResult.authorized
+                        ? 'Phương tiện hợp lệ, đã mở Barie tự động.'
+                        : 'Phương tiện không hợp lệ hoặc thẻ bị khóa.')}
+                  </div>
+                </div>
+              </div>
+              {lastScanResult.slotCode && (
+                <Badge className="bg-emerald-600 text-white font-mono shrink-0">
+                  Ô {lastScanResult.slotCode}
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* 1-Click Live Demo Scenarios */}
+          <div className="space-y-1.5">
+            <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Kịch bản Demo nhanh (1-Click chạy ngay):</span>
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 px-2.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10"
+                onClick={() => handleCheckIn('30A-999.88')}
+                disabled={checkInMutation.isPending}
+              >
+                ✅ Xe cư dân vào (30A-999.88)
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 px-2.5 border-rose-500/40 text-rose-700 dark:text-rose-300 hover:bg-rose-500/10"
+                onClick={() => handleCheckIn('UNKNOWN-999')}
+                disabled={checkInMutation.isPending}
+              >
+                🚨 Giả lập xe lạ (UNKNOWN-999)
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 px-2.5 border-blue-500/40 text-blue-700 dark:text-blue-300 hover:bg-blue-500/10"
+                onClick={() => handleCheckOut('30A-999.88')}
+                disabled={checkOutMutation.isPending}
+              >
+                🚙 Xe rời bãi (30A-999.88)
+              </Button>
+            </div>
+          </div>
+
           {/* Quick Plate Presets */}
           <div className="space-y-1.5">
             <span className="text-xs font-semibold text-muted-foreground block">
@@ -205,7 +291,7 @@ export function ParkingGateSimulator() {
           <div className="grid grid-cols-2 gap-3 pt-2">
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center justify-center gap-2"
-              onClick={handleCheckIn}
+              onClick={() => handleCheckIn()}
               disabled={checkInMutation.isPending}
             >
               <ArrowDownRight className="w-4 h-4" />
@@ -215,7 +301,7 @@ export function ParkingGateSimulator() {
             <Button
               variant="outline"
               className="border-rose-500/50 hover:bg-rose-50 text-rose-700 dark:text-rose-400 font-semibold flex items-center justify-center gap-2"
-              onClick={handleCheckOut}
+              onClick={() => handleCheckOut()}
               disabled={checkOutMutation.isPending}
             >
               <ArrowUpRight className="w-4 h-4" />

@@ -52,7 +52,7 @@ export function requirePermission(
   user: SessionUser,
   permission: Permission
 ): AuthorizationResult {
-  if (!hasPermission(user.role, permission)) {
+  if (!hasPermission(user.role, permission, user.tenantId)) {
     return {
       allowed: false,
       statusCode: 403,
@@ -119,27 +119,20 @@ export async function getManagerAssignedBuildingIds(
 
 /**
  * Authorize tenant resource access.
- * - PLATFORM_ADMIN / legacy ADMIN: Global platform access.
- * - TENANT_ADMIN / MANAGER / STAFF: Strictly limited to their own tenantId.
+ * - ADMIN (tenantId == null): Global platform access.
+ * - ADMIN (tenantId != null): Strictly limited to their own tenantId.
  */
 export async function authorizeTenantAccess(
   user: SessionUser,
   targetTenantId: string
 ): Promise<AuthorizationResult> {
-  if (
-    user.role === Role.PLATFORM_ADMIN ||
-    user.role === 'PLATFORM_ADMIN' ||
-    user.role === Role.ADMIN ||
-    user.role === 'ADMIN'
-  ) {
+  const isAdminUser = user.role === Role.ADMIN || user.role === 'ADMIN';
+
+  if (isAdminUser && !user.tenantId) {
     return { allowed: true };
   }
 
-  if (
-    (user.role === Role.TENANT_ADMIN || user.role === 'TENANT_ADMIN') &&
-    user.tenantId &&
-    user.tenantId === targetTenantId
-  ) {
+  if (isAdminUser && user.tenantId && user.tenantId === targetTenantId) {
     return { allowed: true };
   }
 
@@ -152,8 +145,8 @@ export async function authorizeTenantAccess(
 
 /**
  * Authorize building resource access.
- * - PLATFORM_ADMIN / ADMIN: Global access to any building.
- * - TENANT_ADMIN: Limited to buildings belonging to their own Tenant.
+ * - ADMIN (tenantId == null): Global access to any building.
+ * - ADMIN (tenantId != null): Limited to buildings belonging to their own Tenant.
  * - MANAGER: Strictly limited to assigned buildings within their Tenant.
  * - Others: Denied.
  */
@@ -162,24 +155,14 @@ export async function authorizeBuildingAccess(
   buildingId: string,
   prismaClient: any = prisma
 ): Promise<AuthorizationResult> {
-  if (
-    user.role === Role.PLATFORM_ADMIN ||
-    user.role === 'PLATFORM_ADMIN' ||
-    user.role === Role.ADMIN ||
-    user.role === 'ADMIN'
-  ) {
+  const isAdminUser = user.role === Role.ADMIN || user.role === 'ADMIN';
+
+  if (isAdminUser && !user.tenantId) {
     return { allowed: true };
   }
 
-  // Tenant Admin check: building must belong to user's tenant
-  if (user.role === Role.TENANT_ADMIN || user.role === 'TENANT_ADMIN') {
-    if (!user.tenantId) {
-      return {
-        allowed: false,
-        statusCode: 403,
-        error: 'Tài khoản quản trị chưa được liên kết với tổ hợp (Tenant)',
-      };
-    }
+  // Tenant-scoped Admin check: building must belong to user's tenant
+  if (isAdminUser && user.tenantId) {
     const building = await prismaClient?.building?.findUnique({
       where: { id: buildingId },
       select: { tenantId: true },
@@ -275,20 +258,15 @@ export async function authorizeApartmentAccess(
     return { allowed: true };
   }
 
-  // 2. Platform Admin or legacy global admin
-  if (
-    user.role === Role.PLATFORM_ADMIN ||
-    user.role === 'PLATFORM_ADMIN' ||
-    user.role === Role.ADMIN ||
-    user.role === 'ADMIN'
-  ) {
+  // 2. Global Admin (without tenantId)
+  const isAdminUser = user.role === Role.ADMIN || user.role === 'ADMIN';
+  if (isAdminUser && !user.tenantId) {
     return { allowed: true };
   }
 
-  // 3. Tenant Admin and Manager building scope check
+  // 3. Tenant-scoped Admin and Manager building scope check
   if (
-    user.role === Role.TENANT_ADMIN ||
-    user.role === 'TENANT_ADMIN' ||
+    (isAdminUser && user.tenantId) ||
     user.role === Role.MANAGER ||
     user.role === 'MANAGER'
   ) {
@@ -341,20 +319,15 @@ export async function authorizeInvoiceAccess(
     };
   }
 
-  // 3. Platform Admin or legacy global admin
-  if (
-    user.role === Role.PLATFORM_ADMIN ||
-    user.role === 'PLATFORM_ADMIN' ||
-    user.role === Role.ADMIN ||
-    user.role === 'ADMIN'
-  ) {
+  // 3. Global Admin (without tenantId)
+  const isAdminUser = user.role === Role.ADMIN || user.role === 'ADMIN';
+  if (isAdminUser && !user.tenantId) {
     return { allowed: true };
   }
 
-  // 4. Tenant Admin and Manager building scope check
+  // 4. Tenant-scoped Admin and Manager building scope check
   if (
-    user.role === Role.TENANT_ADMIN ||
-    user.role === 'TENANT_ADMIN' ||
+    (isAdminUser && user.tenantId) ||
     user.role === Role.MANAGER ||
     user.role === 'MANAGER'
   ) {
@@ -464,18 +437,14 @@ export async function authorizeContractAccess(
     };
   }
 
-  if (
-    user.role === Role.PLATFORM_ADMIN ||
-    user.role === 'PLATFORM_ADMIN' ||
-    user.role === Role.ADMIN ||
-    user.role === 'ADMIN'
-  ) {
+  const isAdminUser = user.role === Role.ADMIN || user.role === 'ADMIN';
+
+  if (isAdminUser && !user.tenantId) {
     return { allowed: true };
   }
 
   if (
-    user.role === Role.TENANT_ADMIN ||
-    user.role === 'TENANT_ADMIN' ||
+    (isAdminUser && user.tenantId) ||
     user.role === Role.MANAGER ||
     user.role === 'MANAGER'
   ) {
@@ -538,18 +507,14 @@ export async function authorizeResidentProfileAccess(
     };
   }
 
-  if (
-    user.role === Role.PLATFORM_ADMIN ||
-    user.role === 'PLATFORM_ADMIN' ||
-    user.role === Role.ADMIN ||
-    user.role === 'ADMIN'
-  ) {
+  const isAdminUser = user.role === Role.ADMIN || user.role === 'ADMIN';
+
+  if (isAdminUser && !user.tenantId) {
     return { allowed: true };
   }
 
   if (
-    user.role === Role.TENANT_ADMIN ||
-    user.role === 'TENANT_ADMIN' ||
+    (isAdminUser && user.tenantId) ||
     user.role === Role.MANAGER ||
     user.role === 'MANAGER'
   ) {
@@ -606,11 +571,10 @@ export async function authorizeVehicleAccess(
     };
   }
 
+  const isAdminUser = user.role === Role.ADMIN || user.role === 'ADMIN';
+
   if (
-    user.role === Role.PLATFORM_ADMIN ||
-    user.role === 'PLATFORM_ADMIN' ||
-    user.role === Role.ADMIN ||
-    user.role === 'ADMIN' ||
+    (isAdminUser && !user.tenantId) ||
     user.role === Role.STAFF_SECURITY ||
     user.role === 'STAFF_SECURITY'
   ) {
@@ -618,8 +582,7 @@ export async function authorizeVehicleAccess(
   }
 
   if (
-    user.role === Role.TENANT_ADMIN ||
-    user.role === 'TENANT_ADMIN' ||
+    (isAdminUser && user.tenantId) ||
     user.role === Role.MANAGER ||
     user.role === 'MANAGER'
   ) {

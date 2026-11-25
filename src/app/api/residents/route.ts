@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     let finalBuildingId = buildingId;
     let finalBuildingIds: string[] | undefined = undefined;
 
-    if (session.user.role === 'TENANT_ADMIN' || (session.user.role === 'ADMIN' && session.user.tenantId)) {
+    if (session.user.role === 'ADMIN' && session.user.tenantId) {
       if (buildingId) {
         const authCheck = await authorizeBuildingAccess(session.user, buildingId);
         if (!authCheck.allowed) {

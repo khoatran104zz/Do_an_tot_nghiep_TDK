@@ -11,8 +11,6 @@ datasource db {
 
 // Enums
 enum Role {
-  PLATFORM_ADMIN
-  TENANT_ADMIN
   ADMIN
   MANAGER
   STAFF_TECHNICIAN

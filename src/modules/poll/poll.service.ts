@@ -65,10 +65,6 @@ export class PollService {
 
   async createPoll(dto: CreatePollDto, user: { id: string; role: string; tenantId?: string | null }) {
     if (
-      user.role !== Role.PLATFORM_ADMIN &&
-      user.role !== 'PLATFORM_ADMIN' &&
-      user.role !== Role.TENANT_ADMIN &&
-      user.role !== 'TENANT_ADMIN' &&
       user.role !== Role.ADMIN &&
       user.role !== 'ADMIN' &&
       user.role !== Role.MANAGER &&

@@ -136,101 +136,6 @@ export type Permission =
  * Mapping of Roles to Granted Permissions
  */
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  PLATFORM_ADMIN: ['*'],
-
-  TENANT_ADMIN: [
-    // Building (Scoped to Tenant)
-    'building:read',
-    'building:create',
-    'building:update',
-    'building:delete',
-    'building:assign_manager',
-    // Manager Management (Scoped to Tenant)
-    'manager:read',
-    'manager:create',
-    'manager:update',
-    'manager:delete',
-    'manager:assign',
-    // Apartment
-    'apartment:read',
-    'apartment:create',
-    'apartment:update',
-    'apartment:delete',
-    // Resident
-    'resident:read',
-    'resident:create',
-    'resident:update',
-    'resident:delete',
-    // Contract
-    'contract:read',
-    'contract:create',
-    'contract:update',
-    'contract:delete',
-    // Staff (Scoped to Tenant)
-    'staff:read',
-    'staff:create',
-    'staff:update',
-    'staff:delete',
-    // Financial
-    'fee:read',
-    'fee:manage',
-    'invoice:read',
-    'invoice:generate',
-    'invoice:create',
-    'invoice:update',
-    'invoice:cancel',
-    'invoice:pay',
-    'payment:process',
-    'payment:read',
-    // Vehicle & Parking
-    'vehicle:read',
-    'vehicle:create',
-    'vehicle:update',
-    'vehicle:delete',
-    'vehicle:approve',
-    'vehicle:reject',
-    'parking_card:read',
-    'parking_card:manage',
-    'parking_access:read',
-    'parking_access:log',
-    'parking:read',
-    'parking:manage',
-    'parking:approve',
-    'parking:operate',
-    // Feedback & Maintenance
-    'feedback:read',
-    'feedback:create',
-    'feedback:assign',
-    'feedback:process',
-    'feedback:resolve',
-    'feedback:close',
-    'feedback:reject',
-    'feedback:comment:internal',
-    'feedback:comment:public',
-    'asset:read',
-    'maintenance:read',
-    'maintenance:update',
-    // Notification
-    'notification:create',
-    'notification:read',
-    'notification:delete',
-    // Visitor & Parcel & Facility
-    'visitor:manage',
-    'visitor:scan',
-    'visitor:checkin',
-    'parcel:manage',
-    'parcel:receive',
-    'parcel:collect',
-    'facility:manage',
-    'facility:read',
-    // Dashboard & Reports
-    'dashboard:management',
-    'report:read',
-    'report:export',
-    'audit:read',
-    'access_control:manage',
-  ],
-
   ADMIN: ['*'],
 
   MANAGER: [
@@ -384,14 +289,29 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ],
 };
 
+const PLATFORM_ONLY_PERMISSIONS: Permission[] = [
+  'tenant:create',
+  'tenant:delete',
+  'system:manage',
+];
+
 /**
- * Check if a given role has a specific permission
+ * Check if a given role has a specific permission.
+ * When tenantId is provided for an ADMIN, platform-only permissions are restricted.
  */
-export function hasPermission(role: Role | string | undefined | null, permission: Permission): boolean {
+export function hasPermission(
+  role: Role | string | undefined | null,
+  permission: Permission,
+  tenantId?: string | null
+): boolean {
   if (!role) return false;
   const roleEnum = role as Role;
   const permissions = ROLE_PERMISSIONS[roleEnum];
   if (!permissions) return false;
+
+  if (roleEnum === Role.ADMIN && tenantId && PLATFORM_ONLY_PERMISSIONS.includes(permission)) {
+    return false;
+  }
 
   // Wildcard superuser check
   if (permissions.includes('*')) return true;
@@ -404,26 +324,53 @@ export function hasPermission(role: Role | string | undefined | null, permission
  */
 export function hasAnyPermission(
   role: Role | string | undefined | null,
-  permissions: Permission[]
+  permissions: Permission[],
+  tenantId?: string | null
 ): boolean {
   if (!role) return false;
-  return permissions.some((p) => hasPermission(role, p));
+  return permissions.some((p) => hasPermission(role, p, tenantId));
+}
+
+type RoleInput =
+  | Role
+  | string
+  | { role?: Role | string | null; tenantId?: string | null }
+  | undefined
+  | null;
+
+function extractRoleAndTenant(input: RoleInput, explicitTenantId?: string | null) {
+  if (input && typeof input === 'object') {
+    return { role: input.role, tenantId: input.tenantId ?? null };
+  }
+  return { role: input, tenantId: explicitTenantId ?? null };
 }
 
 /**
  * Role category helper functions for clean business logic
  */
-export const isPlatformAdmin = (role: Role | string | undefined | null): boolean =>
-  role === Role.PLATFORM_ADMIN || role === 'PLATFORM_ADMIN';
+export const isAdmin = (role: Role | string | undefined | null): boolean =>
+  role === Role.ADMIN || role === 'ADMIN';
 
-export const isTenantAdmin = (role: Role | string | undefined | null): boolean =>
-  role === Role.TENANT_ADMIN || role === 'TENANT_ADMIN';
+export const isPlatformAdmin = (
+  input: RoleInput,
+  explicitTenantId?: string | null
+): boolean => {
+  const { role, tenantId } = extractRoleAndTenant(input, explicitTenantId);
+  return isAdmin(role) && !tenantId;
+};
 
-export const isSuperAdmin = (role: Role | string | undefined | null): boolean =>
-  role === Role.PLATFORM_ADMIN || role === Role.ADMIN || role === 'PLATFORM_ADMIN' || role === 'ADMIN';
+export const isTenantAdmin = (
+  input: RoleInput,
+  explicitTenantId?: string | null
+): boolean => {
+  const { role, tenantId } = extractRoleAndTenant(input, explicitTenantId);
+  return isAdmin(role) && !!tenantId;
+};
+
+export const isSuperAdmin = isPlatformAdmin;
 
 export const isManagementRole = (role: Role | string | undefined | null): boolean =>
-  isPlatformAdmin(role) || isTenantAdmin(role) || role === Role.ADMIN || role === 'ADMIN' || role === Role.MANAGER || role === 'MANAGER';
+  isAdmin(role) || role === Role.MANAGER || role === 'MANAGER';
 
 export const isStaffRole = (role: Role | string | undefined | null): boolean =>
   role === Role.STAFF_TECHNICIAN ||
@@ -437,27 +384,22 @@ export const isResidentRole = (role: Role | string | undefined | null): boolean 
   role === Role.RESIDENT || role === 'RESIDENT';
 
 export const isFinancialRole = (role: Role | string | undefined | null): boolean =>
-  isPlatformAdmin(role) || isTenantAdmin(role) || role === Role.ADMIN || role === 'ADMIN' || role === Role.MANAGER || role === 'MANAGER';
+  isAdmin(role) || role === Role.MANAGER || role === 'MANAGER';
 
 export const isTechnicalRole = (role: Role | string | undefined | null): boolean =>
-  isPlatformAdmin(role) || isTenantAdmin(role) || role === Role.ADMIN || role === 'ADMIN' || role === Role.MANAGER || role === 'MANAGER' || role === Role.STAFF_TECHNICIAN || role === 'STAFF_TECHNICIAN';
+  isAdmin(role) || role === Role.MANAGER || role === 'MANAGER' || role === Role.STAFF_TECHNICIAN || role === 'STAFF_TECHNICIAN';
 
 export const isSecurityRole = (role: Role | string | undefined | null): boolean =>
-  isPlatformAdmin(role) || isTenantAdmin(role) || role === Role.ADMIN || role === 'ADMIN' || role === Role.MANAGER || role === 'MANAGER' || role === Role.STAFF_SECURITY || role === 'STAFF_SECURITY';
+  isAdmin(role) || role === Role.MANAGER || role === 'MANAGER' || role === Role.STAFF_SECURITY || role === 'STAFF_SECURITY';
 
 export const isReceptionistRole = (role: Role | string | undefined | null): boolean =>
-  isPlatformAdmin(role) || isTenantAdmin(role) || role === Role.ADMIN || role === 'ADMIN' || role === Role.MANAGER || role === 'MANAGER' || role === Role.STAFF_RECEPTIONIST || role === 'STAFF_RECEPTIONIST';
-
-export const isAdmin = (role: Role | string | undefined | null): boolean =>
-  role === Role.PLATFORM_ADMIN ||
-  role === 'PLATFORM_ADMIN' ||
-  role === Role.TENANT_ADMIN ||
-  role === 'TENANT_ADMIN' ||
-  role === Role.ADMIN ||
-  role === 'ADMIN';
+  isAdmin(role) || role === Role.MANAGER || role === 'MANAGER' || role === Role.STAFF_RECEPTIONIST || role === 'STAFF_RECEPTIONIST';
 
 export const isManager = (role: Role | string | undefined | null): boolean =>
   role === Role.MANAGER || role === 'MANAGER';
 
-export const can = (role: Role | string | undefined | null, permission: Permission): boolean =>
-  hasPermission(role, permission);
+export const can = (
+  role: Role | string | undefined | null,
+  permission: Permission,
+  tenantId?: string | null
+): boolean => hasPermission(role, permission, tenantId);

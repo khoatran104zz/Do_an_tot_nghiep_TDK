@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
 
-    const tenantId = (session.user.role === 'TENANT_ADMIN' || session.user.role === 'MANAGER' || session.user.tenantId)
+    const tenantId = (session.user.role === 'MANAGER' || session.user.tenantId)
       ? session.user.tenantId
       : undefined;
 

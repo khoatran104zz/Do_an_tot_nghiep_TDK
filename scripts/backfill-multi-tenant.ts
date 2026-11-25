@@ -83,21 +83,21 @@ async function main() {
   }
 
   // 4. Update / Create Users
-  // 4.1 Platform Admin (Platform Operator)
+  // 4.1 Platform Admin (ADMIN without tenantId)
   await prisma.user.updateMany({
     where: { email: 'admin@building.com' },
     data: {
-      role: Role.PLATFORM_ADMIN,
+      role: Role.ADMIN,
       tenantId: null, // Platform Admin has no single tenant restriction
     },
   });
-  console.log('✅ admin@building.com set to PLATFORM_ADMIN');
+  console.log('✅ admin@building.com set to ADMIN (Platform scope: tenantId = null)');
 
   // 4.2 Customer Admin for Tenant 1 (SmartCity)
   const tenantAdmin1 = await prisma.user.upsert({
     where: { email: 'admin.smartcity@building.com' },
     update: {
-      role: Role.TENANT_ADMIN,
+      role: Role.ADMIN,
       tenantId: tenantSmartCity.id,
       fullName: 'Trưởng Ban Quản Trị SmartCity',
     },
@@ -106,7 +106,7 @@ async function main() {
       passwordHash: defaultPassword,
       fullName: 'Trưởng Ban Quản Trị SmartCity',
       phone: '0901112222',
-      role: Role.TENANT_ADMIN,
+      role: Role.ADMIN,
       tenantId: tenantSmartCity.id,
       isActive: true,
     },
@@ -117,7 +117,7 @@ async function main() {
   const tenantAdmin2 = await prisma.user.upsert({
     where: { email: 'admin.sunrise@building.com' },
     update: {
-      role: Role.TENANT_ADMIN,
+      role: Role.ADMIN,
       tenantId: tenantSunrise.id,
       fullName: 'Trưởng Ban Quản Trị Sunrise Tower',
     },
@@ -126,7 +126,7 @@ async function main() {
       passwordHash: defaultPassword,
       fullName: 'Trưởng Ban Quản Trị Sunrise Tower',
       phone: '0903334444',
-      role: Role.TENANT_ADMIN,
+      role: Role.ADMIN,
       tenantId: tenantSunrise.id,
       isActive: true,
     },
@@ -163,10 +163,10 @@ async function main() {
     data: { tenantId: tenantSmartCity.id },
   });
 
-  // Also convert any legacy admin.comm.test to TENANT_ADMIN
+  // Ensure admin.comm.test has ADMIN role
   await prisma.user.updateMany({
     where: { email: 'admin.comm.test@smartbuilding.local' },
-    data: { role: Role.TENANT_ADMIN },
+    data: { role: Role.ADMIN },
   });
 
   console.log('✅ Operational users backfilled to SmartCity Tenant');
@@ -175,8 +175,8 @@ async function main() {
   const totalTenants = await prisma.tenant.count();
   const buildingsWithoutTenant = await prisma.building.count({ where: { tenantId: null } });
   const usersWithTenant = await prisma.user.count({ where: { tenantId: { not: null } } });
-  const platformAdmins = await prisma.user.count({ where: { role: Role.PLATFORM_ADMIN } });
-  const tenantAdmins = await prisma.user.count({ where: { role: Role.TENANT_ADMIN } });
+  const platformAdmins = await prisma.user.count({ where: { role: Role.ADMIN, tenantId: null } });
+  const tenantAdmins = await prisma.user.count({ where: { role: Role.ADMIN, tenantId: { not: null } } });
 
   console.log('\n================ DATA RECONCILIATION ================');
   console.log('• Total Tenants:', totalTenants);

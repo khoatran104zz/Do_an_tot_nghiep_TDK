@@ -63,7 +63,7 @@ export class TenantRepository {
           },
         },
         users: {
-          where: { role: 'TENANT_ADMIN' },
+          where: { role: 'ADMIN' },
           select: {
             id: true,
             email: true,

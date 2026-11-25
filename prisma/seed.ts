@@ -340,20 +340,20 @@ async function main() {
   console.log('--> Seeding Users...');
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@building.com' },
-    update: { passwordHash: adminPassword, role: Role.PLATFORM_ADMIN, tenantId: null },
+    update: { passwordHash: adminPassword, role: Role.ADMIN, tenantId: null },
     create: {
       email: 'admin@building.com',
       passwordHash: adminPassword,
-      fullName: 'Quản trị viên Hệ thống (Platform Admin)',
+      fullName: 'Quản trị viên Hệ thống (Super Admin)',
       phone: '0901234567',
-      role: Role.PLATFORM_ADMIN,
+      role: Role.ADMIN,
     },
   });
 
   const tenantAdmin1 = await prisma.user.upsert({
     where: { email: 'admin.smartcity@building.com' },
     update: {
-      role: Role.TENANT_ADMIN,
+      role: Role.ADMIN,
       tenantId: tenantSmartCity.id,
       fullName: 'Trưởng Ban Quản Trị SmartCity',
     },
@@ -362,7 +362,7 @@ async function main() {
       passwordHash: adminPassword,
       fullName: 'Trưởng Ban Quản Trị SmartCity',
       phone: '0901112222',
-      role: Role.TENANT_ADMIN,
+      role: Role.ADMIN,
       tenantId: tenantSmartCity.id,
       isActive: true,
     },
@@ -371,7 +371,7 @@ async function main() {
   const tenantAdmin2 = await prisma.user.upsert({
     where: { email: 'admin.sunrise@building.com' },
     update: {
-      role: Role.TENANT_ADMIN,
+      role: Role.ADMIN,
       tenantId: tenantSunrise.id,
       fullName: 'Trưởng Ban Quản Trị Sunrise Tower',
     },
@@ -380,7 +380,7 @@ async function main() {
       passwordHash: adminPassword,
       fullName: 'Trưởng Ban Quản Trị Sunrise Tower',
       phone: '0903334444',
-      role: Role.TENANT_ADMIN,
+      role: Role.ADMIN,
       tenantId: tenantSunrise.id,
       isActive: true,
     },

@@ -36,7 +36,7 @@ function AppShellContent({
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50/90 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       {/* Dynamic RBAC Sidebar */}
-      <Sidebar role={role} />
+      <Sidebar role={role} tenantId={session?.user?.tenantId} />
 
       {/* Main Column */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">

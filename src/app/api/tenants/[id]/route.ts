@@ -52,8 +52,8 @@ export async function PATCH(
     const body = await req.json();
     const validated = updateTenantSchema.parse(body);
 
-    // Only Platform Admin can change tenant status (ACTIVE, SUSPENDED)
-    if (validated.status && !isPlatformAdmin(session.user.role) && session.user.role !== Role.ADMIN) {
+    // Only Platform Admin (ADMIN without tenantId) can change tenant status (ACTIVE, SUSPENDED)
+    if (validated.status && !isPlatformAdmin(session.user)) {
       delete validated.status;
     }
 
@@ -80,8 +80,8 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     if (!session) return apiUnauthorized();
 
-    // STRICTLY PLATFORM ADMIN ONLY
-    if (!isPlatformAdmin(session.user.role) && session.user.role !== Role.ADMIN) {
+    // STRICTLY PLATFORM ADMIN ONLY (ADMIN without tenantId)
+    if (!isPlatformAdmin(session.user)) {
       return apiForbidden('Chỉ Quản trị viên cấp cao Nền tảng mới có quyền xóa tổ hợp');
     }
 
