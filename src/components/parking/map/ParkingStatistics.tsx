@@ -111,12 +111,12 @@ export function ParkingStatistics({
             <div className="flex items-center justify-between mt-1.5">
               <span
                 className={cn(
-                  'text-[10px] font-bold uppercase tracking-wider',
+                  'text-[11px] font-bold uppercase tracking-wider',
                   c.color,
-                  'opacity-85'
+                  'opacity-90'
                 )}
               >
-                {c.label}
+                {c.labelVi}
               </span>
               {c.pct !== null && (
                 <span className={cn('text-[10px] font-mono font-bold', c.color, 'opacity-70')}>

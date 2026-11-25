@@ -14,11 +14,11 @@ export interface ParkingLegendProps {
  */
 export function ParkingLegend({ className }: ParkingLegendProps) {
   const items = [
-    { label: 'Available', dotClass: 'bg-[#22C55E]' },
-    { label: 'Occupied', dotClass: 'bg-[#EF4444]' },
-    { label: 'Reserved', dotClass: 'bg-[#F59E0B]' },
-    { label: 'EV / Accessible', dotClass: 'bg-[#0F6B4F] dark:bg-emerald-400' },
-    { label: 'Unavailable', dotClass: 'bg-slate-300 dark:bg-slate-600' },
+    { label: 'Còn trống', dotClass: 'bg-[#22C55E]' },
+    { label: 'Đang đỗ', dotClass: 'bg-[#EF4444]' },
+    { label: 'Đã đặt chỗ', dotClass: 'bg-[#F59E0B]' },
+    { label: 'Sạc EV / Ưu tiên', dotClass: 'bg-[#0F6B4F] dark:bg-emerald-400' },
+    { label: 'Không khả dụng', dotClass: 'bg-slate-300 dark:bg-slate-600' },
   ];
 
   return (

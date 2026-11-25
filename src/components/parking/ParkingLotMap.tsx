@@ -87,33 +87,33 @@ interface TemplateSlotItem {
 // 1. FLOOR B1: Main Basement Parking (Dense 20-slot core + 2 Accessible + 3 EV + 6 Moto)
 const B1_SLOTS_TEMPLATE: TemplateSlotItem[] = [
   // Zone A - Row 1
-  { id: 'P01', code: 'P01', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P02', code: 'P02', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P03', code: 'P03', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P04', code: 'P04', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P05', code: 'P05', status: 'reserved', statusLabel: 'RESE', isLocked: true, zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P01', code: 'P01', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P02', code: 'P02', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P03', code: 'P03', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P04', code: 'P04', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P05', code: 'P05', status: 'reserved', statusLabel: 'ĐẶT CHỖ', isLocked: true, zoneCode: 'ZONE-A', row: 1 },
   // Accessible Bay A-01
-  { id: 'A-01', code: 'A-01', status: 'accessible', statusLabel: 'ACCESS', hasInfo: true, vehicleType: 'accessible', zoneCode: 'ZONE-A', row: 1, isSpecial: true },
+  { id: 'A-01', code: 'A-01', status: 'accessible', statusLabel: 'ƯU TIÊN', hasInfo: true, vehicleType: 'accessible', zoneCode: 'ZONE-A', row: 1, isSpecial: true },
   // Zone A - Row 2
-  { id: 'P06', code: 'P06', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-A', row: 2 },
-  { id: 'P07', code: 'P07', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-A', row: 2 },
-  { id: 'P08', code: 'P08', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-A', row: 2 },
-  { id: 'P09', code: 'P09', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-A', row: 2 },
-  { id: 'P10', code: 'P10', status: 'reserved', statusLabel: 'RESE', isLocked: true, zoneCode: 'ZONE-A', row: 2 },
+  { id: 'P06', code: 'P06', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-A', row: 2 },
+  { id: 'P07', code: 'P07', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-A', row: 2 },
+  { id: 'P08', code: 'P08', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-A', row: 2 },
+  { id: 'P09', code: 'P09', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-A', row: 2 },
+  { id: 'P10', code: 'P10', status: 'reserved', statusLabel: 'ĐẶT CHỖ', isLocked: true, zoneCode: 'ZONE-A', row: 2 },
   // Zone B - Row 1
-  { id: 'P11', code: 'P11', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-B', row: 1 },
-  { id: 'P12', code: 'P12', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-B', row: 1 },
-  { id: 'P13', code: 'P13', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-B', row: 1 },
-  { id: 'P14', code: 'P14', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-B', row: 1 },
-  { id: 'P15', code: 'P15', status: 'unavailable', statusLabel: 'N/A', zoneCode: 'ZONE-B', row: 1 },
+  { id: 'P11', code: 'P11', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-B', row: 1 },
+  { id: 'P12', code: 'P12', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-B', row: 1 },
+  { id: 'P13', code: 'P13', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-B', row: 1 },
+  { id: 'P14', code: 'P14', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-B', row: 1 },
+  { id: 'P15', code: 'P15', status: 'unavailable', statusLabel: 'KHÓA', zoneCode: 'ZONE-B', row: 1 },
   // Accessible Bay A-02
-  { id: 'A-02', code: 'A-02', status: 'occupied', statusLabel: 'OCCU', hasInfo: true, vehicleType: 'accessible', zoneCode: 'ZONE-B', row: 1, isSpecial: true },
+  { id: 'A-02', code: 'A-02', status: 'occupied', statusLabel: 'ĐANG ĐỖ', hasInfo: true, vehicleType: 'accessible', zoneCode: 'ZONE-B', row: 1, isSpecial: true },
   // Zone B - Row 2
-  { id: 'P16', code: 'P16', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P17', code: 'P17', status: 'reserved', statusLabel: 'RESE', isLocked: true, zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P18', code: 'P18', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P19', code: 'P19', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P20', code: 'P20', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P16', code: 'P16', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P17', code: 'P17', status: 'reserved', statusLabel: 'ĐẶT CHỖ', isLocked: true, zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P18', code: 'P18', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P19', code: 'P19', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P20', code: 'P20', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-B', row: 2 },
 ];
 
 interface QuickSlotItem {
@@ -140,19 +140,19 @@ const B1_MOTO_SLOTS: QuickSlotItem[] = [
 // 2. FLOOR B2: Expansion & Long-term Parking (10 Resident slots + 1 Accessible + 2 EV + 3 Moto)
 const B2_SLOTS_TEMPLATE: TemplateSlotItem[] = [
   // Zone A - Row 1
-  { id: 'P21', code: 'P21', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P22', code: 'P22', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P23', code: 'P23', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P24', code: 'P24', status: 'reserved', statusLabel: 'RESE', isLocked: true, zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P25', code: 'P25', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P21', code: 'P21', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P22', code: 'P22', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P23', code: 'P23', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P24', code: 'P24', status: 'reserved', statusLabel: 'ĐẶT CHỖ', isLocked: true, zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P25', code: 'P25', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-A', row: 1 },
   // Accessible Bay A-03
-  { id: 'A-03', code: 'A-03', status: 'accessible', statusLabel: 'ACCESS', hasInfo: true, vehicleType: 'accessible', zoneCode: 'ZONE-A', row: 1, isSpecial: true },
+  { id: 'A-03', code: 'A-03', status: 'accessible', statusLabel: 'ƯU TIÊN', hasInfo: true, vehicleType: 'accessible', zoneCode: 'ZONE-A', row: 1, isSpecial: true },
   // Zone B - Row 2
-  { id: 'P26', code: 'P26', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P27', code: 'P27', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P28', code: 'P28', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P29', code: 'P29', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P30', code: 'P30', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P26', code: 'P26', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P27', code: 'P27', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P28', code: 'P28', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P29', code: 'P29', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P30', code: 'P30', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-B', row: 2 },
 ];
 
 const B2_EV_SLOTS: QuickSlotItem[] = [
@@ -169,19 +169,19 @@ const B2_MOTO_SLOTS: QuickSlotItem[] = [
 // 3. FLOOR B3: Technical & Overflow Parking (10 Reserve slots + 1 Accessible + 1 EV + 2 Moto)
 const B3_SLOTS_TEMPLATE: TemplateSlotItem[] = [
   // Zone A - Row 1
-  { id: 'P31', code: 'P31', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P32', code: 'P32', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P33', code: 'P33', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P34', code: 'P34', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-A', row: 1 },
-  { id: 'P35', code: 'P35', status: 'reserved', statusLabel: 'RESE', isLocked: true, zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P31', code: 'P31', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P32', code: 'P32', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P33', code: 'P33', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P34', code: 'P34', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-A', row: 1 },
+  { id: 'P35', code: 'P35', status: 'reserved', statusLabel: 'ĐẶT CHỖ', isLocked: true, zoneCode: 'ZONE-A', row: 1 },
   // Accessible Bay A-04
-  { id: 'A-04', code: 'A-04', status: 'accessible', statusLabel: 'ACCESS', hasInfo: true, vehicleType: 'accessible', zoneCode: 'ZONE-A', row: 1, isSpecial: true },
+  { id: 'A-04', code: 'A-04', status: 'accessible', statusLabel: 'ƯU TIÊN', hasInfo: true, vehicleType: 'accessible', zoneCode: 'ZONE-A', row: 1, isSpecial: true },
   // Zone B - Row 2
-  { id: 'P36', code: 'P36', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P37', code: 'P37', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P38', code: 'P38', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P39', code: 'P39', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-B', row: 2 },
-  { id: 'P40', code: 'P40', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P36', code: 'P36', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P37', code: 'P37', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P38', code: 'P38', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P39', code: 'P39', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-B', row: 2 },
+  { id: 'P40', code: 'P40', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-B', row: 2 },
 ];
 
 const B3_EV_SLOTS: QuickSlotItem[] = [
@@ -196,21 +196,21 @@ const B3_MOTO_SLOTS: QuickSlotItem[] = [
 // 4. OUTDOOR: Ground-level Visitor, Drop-off & Solar EV Hub
 const OUTDOOR_SLOTS_TEMPLATE: TemplateSlotItem[] = [
   // Zone V - Visitor Row 1
-  { id: 'V01', code: 'V01', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-VISITOR', row: 1 },
-  { id: 'V02', code: 'V02', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-VISITOR', row: 1 },
-  { id: 'V03', code: 'V03', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-VISITOR', row: 1 },
-  { id: 'V04', code: 'V04', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-VISITOR', row: 1 },
+  { id: 'V01', code: 'V01', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-VISITOR', row: 1 },
+  { id: 'V02', code: 'V02', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-VISITOR', row: 1 },
+  { id: 'V03', code: 'V03', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-VISITOR', row: 1 },
+  { id: 'V04', code: 'V04', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-VISITOR', row: 1 },
   // Zone V - Visitor Row 2
-  { id: 'V05', code: 'V05', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-VISITOR', row: 2 },
-  { id: 'V06', code: 'V06', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-VISITOR', row: 2 },
-  { id: 'V07', code: 'V07', status: 'reserved', statusLabel: 'RESE', isLocked: true, zoneCode: 'ZONE-VISITOR', row: 2 },
-  { id: 'V08', code: 'V08', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-VISITOR', row: 2 },
+  { id: 'V05', code: 'V05', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-VISITOR', row: 2 },
+  { id: 'V06', code: 'V06', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-VISITOR', row: 2 },
+  { id: 'V07', code: 'V07', status: 'reserved', statusLabel: 'ĐẶT CHỖ', isLocked: true, zoneCode: 'ZONE-VISITOR', row: 2 },
+  { id: 'V08', code: 'V08', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-VISITOR', row: 2 },
   // Quick Drop-off & Taxi Bays
-  { id: 'DROP-01', code: 'DROP-01', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-DROPOFF', row: 1, isSpecial: true },
-  { id: 'DROP-02', code: 'DROP-02', status: 'occupied', statusLabel: 'OCCU', zoneCode: 'ZONE-DROPOFF', row: 1, isSpecial: true },
+  { id: 'DROP-01', code: 'DROP-01', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-DROPOFF', row: 1, isSpecial: true },
+  { id: 'DROP-02', code: 'DROP-02', status: 'occupied', statusLabel: 'ĐANG ĐỖ', zoneCode: 'ZONE-DROPOFF', row: 1, isSpecial: true },
   // VIP & Delivery Loading
-  { id: 'VIP-01', code: 'VIP-01', status: 'reserved', statusLabel: 'RESE', isLocked: true, zoneCode: 'ZONE-SPECIAL', row: 2, isSpecial: true },
-  { id: 'DELIV-01', code: 'DELIV-01', status: 'available', statusLabel: 'AVAI', zoneCode: 'ZONE-SPECIAL', row: 2, isSpecial: true },
+  { id: 'VIP-01', code: 'VIP-01', status: 'reserved', statusLabel: 'ĐẶT CHỖ', isLocked: true, zoneCode: 'ZONE-SPECIAL', row: 2, isSpecial: true },
+  { id: 'DELIV-01', code: 'DELIV-01', status: 'available', statusLabel: 'TRỐNG', zoneCode: 'ZONE-SPECIAL', row: 2, isSpecial: true },
 ];
 
 const OUTDOOR_EV_SLOTS: QuickSlotItem[] = [
@@ -399,14 +399,14 @@ interface MergedSlotItem extends ParkingSlotData {
         hasInfo: isAccess,
         statusLabel:
           visualStatus === 'available'
-            ? 'AVAI'
+            ? 'TRỐNG'
             : visualStatus === 'occupied'
-            ? 'OCCU'
+            ? 'ĐANG ĐỖ'
             : visualStatus === 'reserved'
-            ? 'RESE'
+            ? 'ĐẶT CHỖ'
             : visualStatus === 'maintenance'
-            ? 'MAIN'
-            : 'SLOT',
+            ? 'BẢO TRÌ'
+            : 'KHÓA',
         zoneCode: tpl.zoneCode,
         row: tpl.row,
         isSpecial: tpl.isSpecial,
@@ -415,48 +415,48 @@ interface MergedSlotItem extends ParkingSlotData {
     });
   }, [currentTemplate, slots, currentFloorKey]);
 
-  // Compute Statistics: Synchronized with the active area in the Occupancy API
+  // Compute Statistics: Always synchronized 1:1 with the slots rendered on the active floor
   const statistics = useMemo(() => {
-    // Check if the occupancy API has metrics for this area
-    const areaSummary = occupancy?.areas?.find(
+    const dbSummary = occupancy?.areas?.find(
       (a: any) =>
         a.areaCode.toUpperCase() === currentFloorKey ||
         a.areaCode.replace(/[^A-Za-z0-9]/g, '').toUpperCase() === currentFloorKey
-    );
+    )?.metrics;
 
-    if (areaSummary?.metrics) {
-      const m = areaSummary.metrics;
-      const evCount = currentEVSlots.length;
+    // If DB has real slots for this area AND matches our rendered count, use DB metrics;
+    // otherwise calculate directly from the rendered slots so KPI cards always match the map 100%.
+    if (dbSummary && dbSummary.total > 0 && slots.length > 0) {
       return {
-        total: m.total || mergedSlots.length + currentEVSlots.length + currentMotoSlots.length,
-        available: m.available ?? mergedSlots.filter((s) => s.status === 'available').length,
-        occupied: m.occupied ?? mergedSlots.filter((s) => s.status === 'occupied').length,
-        reserved: m.reserved ?? mergedSlots.filter((s) => s.status === 'reserved').length,
-        evCharging: evCount,
+        total: dbSummary.total,
+        available: dbSummary.available ?? 0,
+        occupied: dbSummary.occupied ?? 0,
+        reserved: dbSummary.reserved ?? 0,
+        evCharging: currentEVSlots.length,
       };
     }
 
-    // Direct calculation from merged slots and utilities
     const totalSlots = mergedSlots.length + currentEVSlots.length + currentMotoSlots.length;
     const availableSlots =
-      mergedSlots.filter((s) => s.status === 'available').length +
+      mergedSlots.filter((s) => s.status === 'available' || s.status === 'accessible').length +
       currentEVSlots.filter((s) => s.status === 'available').length +
       currentMotoSlots.filter((s) => s.status === 'available').length;
     const occupiedSlots =
       mergedSlots.filter((s) => s.status === 'occupied').length +
       currentEVSlots.filter((s) => s.status === 'occupied').length +
       currentMotoSlots.filter((s) => s.status === 'occupied').length;
-    const reservedSlots = mergedSlots.filter((s) => s.status === 'reserved').length;
-    const evCount = currentEVSlots.length;
+    const reservedSlots =
+      mergedSlots.filter((s) => s.status === 'reserved').length +
+      currentEVSlots.filter((s) => s.status === 'reserved').length +
+      currentMotoSlots.filter((s) => s.status === 'reserved').length;
 
     return {
       total: totalSlots,
       available: availableSlots,
       occupied: occupiedSlots,
       reserved: reservedSlots,
-      evCharging: evCount,
+      evCharging: currentEVSlots.length,
     };
-  }, [occupancy, currentFloorKey, mergedSlots, currentEVSlots, currentMotoSlots]);
+  }, [occupancy, currentFloorKey, slots.length, mergedSlots, currentEVSlots, currentMotoSlots]);
 
   // Selected slot state (default to P07 on initial load for B1, or null)
   const activeSelectedId =

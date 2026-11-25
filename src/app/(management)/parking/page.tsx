@@ -185,81 +185,18 @@ export default function ManagementParkingPage() {
   const pendingRequests = requests.filter((r: any) => r.status === 'PENDING');
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-5 pb-12">
       {/* Header */}
       <PageHeader
         title="Quản Lý Vận Hành Bãi Đỗ Xe Thông Minh"
         description="Giám sát công suất bãi đỗ thời gian thực, điều phối ô đỗ xe và duyệt yêu cầu cư dân"
       />
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
-            Tổng sức chứa
-          </span>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-black text-foreground font-mono">
-              {occupancy?.summary?.total ?? 0}
-            </span>
-            <span className="text-xs text-muted-foreground">chỗ</span>
-          </div>
-        </div>
-
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 shadow-sm">
-          <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider block">
-            🟢 Chỗ trống
-          </span>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-black text-emerald-700 dark:text-emerald-300 font-mono">
-              {occupancy?.summary?.available ?? 0}
-            </span>
-            <span className="text-xs text-emerald-700 dark:text-emerald-300">khả dụng</span>
-          </div>
-        </div>
-
-        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 shadow-sm">
-          <span className="text-[11px] font-bold text-rose-800 dark:text-rose-300 uppercase tracking-wider block">
-            🔴 Đang đỗ
-          </span>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-black text-rose-700 dark:text-rose-300 font-mono">
-              {occupancy?.summary?.occupied ?? 0}
-            </span>
-            <span className="text-xs text-rose-700 dark:text-rose-300">xe</span>
-          </div>
-        </div>
-
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 shadow-sm">
-          <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider block">
-            🟡 Chờ duyệt
-          </span>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-black text-amber-700 dark:text-amber-300 font-mono">
-              {pendingRequests.length}
-            </span>
-            <span className="text-xs text-amber-700 dark:text-amber-300">đơn chờ</span>
-          </div>
-        </div>
-
-        <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 shadow-sm col-span-2 lg:col-span-1">
-          <span className="text-[11px] font-bold text-primary uppercase tracking-wider block">
-            ⚡ Công suất
-          </span>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-black text-primary font-mono">
-              {occupancy?.summary?.occupancyRate ?? 0}%
-            </span>
-            <span className="text-xs text-muted-foreground">lấp đầy</span>
-          </div>
-        </div>
-      </div>
-
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-border pb-1 text-sm font-medium">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-2 text-sm font-medium">
         <button
           onClick={() => setActiveTab('MAP')}
-          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'MAP'
               ? 'bg-[#0F6B4F] text-white font-semibold shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -271,19 +208,24 @@ export default function ManagementParkingPage() {
 
         <button
           onClick={() => setActiveTab('REQUESTS')}
-          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'REQUESTS'
               ? 'bg-[#0F6B4F] text-white font-semibold shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
           }`}
         >
           <FileClock className="w-4 h-4" />
-          <span>Duyệt Đăng Ký ({pendingRequests.length})</span>
+          <span>Duyệt Đăng Ký</span>
+          {pendingRequests.length > 0 && (
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500 text-white">
+              {pendingRequests.length}
+            </span>
+          )}
         </button>
 
         <button
           onClick={() => setActiveTab('LIST')}
-          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'LIST'
               ? 'bg-[#0F6B4F] text-white font-semibold shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -295,7 +237,7 @@ export default function ManagementParkingPage() {
 
         <button
           onClick={() => setActiveTab('ANALYTICS')}
-          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'ANALYTICS'
               ? 'bg-[#0F6B4F] text-white font-semibold shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -309,32 +251,8 @@ export default function ManagementParkingPage() {
       {/* TAB 1: MANAGER PARKING MAP */}
       {activeTab === 'MAP' && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2 bg-card border border-border p-2 rounded-xl">
-            <span className="text-xs font-semibold text-muted-foreground px-2">
-              Khu vực vận hành:
-            </span>
-            {areas.map((area: any) => (
-              <Button
-                key={area.id}
-                variant={activeAreaId === area.id ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedAreaId(area.id)}
-                className={`text-xs font-semibold ${
-                  activeAreaId === area.id
-                    ? 'bg-[#0F6B4F] hover:bg-[#0d5941] text-white shadow-sm'
-                    : 'text-foreground'
-                }`}
-              >
-                <span>{area.name}</span>
-                <span className="ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] bg-black/20 text-white">
-                  {area.metrics?.available ?? 0} trống / {area.metrics?.total ?? 0}
-                </span>
-              </Button>
-            ))}
-          </div>
-
           <ParkingLotMap
-            areaName={activeArea?.name || 'Khu vực bãi đỗ'}
+            areaName={activeArea?.name || 'Tầng hầm B1'}
             areaCode={activeArea?.code || 'B1'}
             floor={activeArea?.floor ?? -1}
             slots={currentSlots}
